@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>新客輔助</title>
+  <style>
+    :root{
+      --bg1:#f8fafc; --bg2:#eef2f7; --card:#ffffff; --text:#0f172a;
+      --muted:#64748b; --border:#e2e8f0; --border2:#cbd5e1;
+      --accent:#22c55e; --accentH:#16a34a;
+      --danger:#dc2626; --dangerH:#b91c1c;
+      --tabBg:#e2e8f0; --tabBorder:#cbd5e1; --tabText:#0f172a;
+      --tabActBg:#ecfdf5; --tabActBorder:#22c55e; --tabActText:#065f46;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, 'PingFang TC', 'Microsoft JhengHei', Arial, sans-serif;
+      color:var(--text);
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
+      font-size:16px;
+    }
+    .container{max-width: 980px; margin: 0 auto; padding:24px;}
+    .header{
+      background:rgba(255,255,255,.9); backdrop-filter:saturate(180%) blur(6px);
+      border:1px solid var(--border); border-radius:24px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h1{font-size:22px; margin:0; font-weight:800}
+    .btn{
+      appearance:none; border:1px solid var(--border2); background:#fff; color:#0f172a;
+      padding:12px 16px; border-radius:14px; font-size:15px; font-weight:800; cursor:pointer; transition:.15s ease;
+    }
+    .btn:hover{background:#f8fafc}
+    .btn-green{ background:#16a34a; color:#fff; border-color:transparent; box-shadow:0 8px 22px rgba(22,163,74,.18) }
+    .btn-danger{ background:#fef2f2; color:#dc2626; border-color:#fecaca }
+    .btn-danger:hover{ background:#fee2e2 }
+    .btn-primary{ background:var(--accent); color:#fff; border-color:transparent }
+    .btn-next{ font-size:19px; padding:18px 26px; border-radius:18px }
+    .btn-lg{ font-size:17px; padding:16px 22px }
+    .row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+    .grid{display:grid; gap:20px}
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:24px; padding:22px;
+      box-shadow: 0 2px 6px rgba(15,23,42,.04);
+    }
+    .sectionTitle{font-size:21px; font-weight:900; color:#065f46; letter-spacing:.04em; margin-bottom:8px}
+    .choiceWrap{border:2px dashed var(--border2); background:#fff7ed; border-radius:16px; padding:14px}
+    .choices{display:grid; grid-template-columns:1fr; gap:14px}
+    @media(min-width:700px){ .choices{ grid-template-columns:1fr 1fr } }
+    .choiceBtn{ width:100%; text-align:left; padding:16px 18px; border-radius:16px; border:2px solid var(--border2); background:#fff;
+      box-shadow: 0 1px 3px rgba(15,23,42,.06); cursor:pointer;
+    }
+    .choiceBtn:hover{box-shadow:0 2px 6px rgba(15,23,42,.08)}
+    .choiceSmall{font-size:14px; color:#ea580c; font-weight:800}
+    .choiceLabel{margin-top:8px; font-size:17px; font-weight:900; color:#c2410c}
+    .help{font-size:13px; color:#64748b; margin-top:12px}
+    .footer{ text-align:center; color:#94a3b8; font-size:12px; margin-top:8px }
+    .lineList{display:grid; gap:12px; margin-top:10px}
+    .lineItem{display:flex; align-items:flex-start; gap:10px; justify-content:space-between; border:2px solid var(--border); border-radius:14px; padding:12px 14px; background:#fff; position:relative}
+    .lineItem.active{ border-color:#16a34a; box-shadow:0 0 0 2px rgba(16,185,129,.08) inset }
+    .lineItem.active::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:6px; border-radius:14px 0 0 14px; background:#16a34a }
+    .lineText{flex:1 1 auto; font-size:17px; line-height:2; white-space:pre-wrap; word-break:break-word}
+    .lineOps{flex:0 0 auto; display:flex; gap:6px; align-items:center} /* gap縮小讓按鈕更靠近倒數 */
+    .lineCopied{
+      min-width:132px; /* 固定寬避免跳動 */
+      text-align:right;
+      font-size:17px; /* 與左側字一樣大 */
+      line-height:2;
+      font-weight:900; color:#16a34a;
+    }
+    .lineCopied:empty{ visibility:hidden } /* 沒文字時不佔位的反白 */
+    .tips{ margin-top:12px; background:#eef2ff; border:2px solid #c7d2fe; color:#3730a3;
+      border-radius:16px; padding:18px 20px; font-size:16px; line-height:2 }
+    .tips b{font-weight:900}
+
+    /* ===== Tabs (書籤) ===== */
+    .tabs{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px }
+    .tabs-rows{ display:flex; flex-direction:column; gap:12px }
+    .tabs-row{ display:flex; align-items:center; gap:14px; flex-wrap:wrap }
+    .tab-label{ font-weight:900; color:#334155; background:#e5e7eb; border:1px solid #cbd5e1; padding:8px 12px; border-radius:999px }
+    .tab-label.primary{ background:#dcfce7; border-color:#86efac; color:#166534 }
+    .tab{
+      background:var(--tabBg); color:var(--tabText); border:2px solid var(--tabBorder);
+      padding:10px 16px; font-weight:900; border-radius:999px; cursor:pointer; user-select:none;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,0.03);
+      transition:.15s ease;
+    }
+    .tab:hover{ filter:brightness(0.98) }
+    .tab.active{
+      background:var(--tabActBg);
+      color:var(--tabActText);
+      border-color:var(--tabActBorder);
+      box-shadow: 0 6px 18px rgba(34,197,94,.18), inset 0 -3px 0 rgba(34,197,94,.2);
+    }
+    .tab .sub{ font-size:12px; color:#059669; font-weight:800; margin-left:6px }
+
+    /* 說明（紅色文字） */
+    .explain{
+      background:#fff1f2; border:1px dashed #fecaca; color:#b91c1c;
+      border-radius:12px; padding:10px 12px; font-size:15px; line-height:1.9; margin:6px 0 4px 0
+    }
+    .explain b{ color:#b91c1c }
+
+    /* Focus modal styles */
+    .modal{ position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center; padding:40px 16px; background:rgba(2,6,23,.55); z-index:50 }
+    .modal.show{ display:flex }
+    .modalCard{ width: min(860px, 100%); background:#fff; border-radius:20px; border:1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(2,6,23,.35); padding:16px 16px 20px; 
+      display:flex; flex-direction:column; max-height:86vh; }
+    .modalHead{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 6px 10px }
+    .modalTitle{ font-size:19px; font-weight:900; color:#111827 }
+    .modalClose{ border:none; background:#f3f4f6; color:#111827; padding:10px 12px; border-radius:10px; font-weight:900; cursor:pointer }
+    .modalClose:hover{ background:#e5e7eb }
+    .groupTitle{ font-size:18px; font-weight:900; color:#0f172a; margin-top:8px; margin-bottom:8px }
+    .groupCard{ border:1px solid #bfdbfe; background:#eff6ff; border-radius:16px; padding:14px; margin-top:12px; box-shadow: inset 0 0 0 1px #dbeafe }
+    .announce .lineItem{ border:1px dashed #bfdbfe; background:#ffffff }
+    .announce .lineText{ font-size:18px }
+    .announce .lineItem + .lineItem{ margin-top:4px }
+    .modalBody{ overflow:auto; padding-right:4px }
+    #focusModal .modalHead{ background: linear-gradient(90deg, #22c55e, #16a34a); color:#fff; border-radius:14px; margin:-8px -8px 12px; padding:14px 16px }
+    #focusModal .modalTitle{ color:#fff; font-size:22px }
+    #focusModal .modalClose{ background:#ecfdf5; color:#065f46 }
+
+    /* 書籤列標題（純文字粗體＋冒號） */
+    .tab-heading{ font-weight:900; color:#0f172a; padding:0; margin-right:6px; }
+    .tab-heading.primary{ color:#166534 }
+    /* 主要/其它 之間的分隔線 */
+    .tabs-divider{ border:none; border-top:1px solid var(--border2); margin:10px 0; }
+
+    /* 看情況延伸｜可不丟（橘色框） */
+    .optionalBox{
+      margin-top:16px;
+      border:2px dashed #fed7aa;
+      background:#fff7ed;
+      color:#9a3412;
+      border-radius:14px;
+      padding: 12px 0;
+    }
+    .optionalTitle{ font-size:15px; font-weight:900; margin-bottom:10px; }
+    .optionalBox .lineItem{ border-color:#fed7aa; background:#fff }
+    .optionalBox .lineCopied{ color:#d97706 }
+  
+  /* Hero Title */
+  .heroTitle{
+    font-size: clamp(28px, 2vw + 20px, 44px);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: .02em;
+    margin: 0;
+    background: linear-gradient(90deg, #0ea5e9, #22c55e, #f59e0b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,.08));
+  }
+  @supports not (-webkit-background-clip: text) {
+    .heroTitle{ color:#0f172a; }
+  }
+
+  .actions{ display:flex; align-items:center; gap:10px; flex-wrap:nowrap }
+
+  /* Stronger hover for copy buttons */
+  .btn.btn-primary{
+    cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .02s ease;
+  }
+  .btn.btn-primary:hover{
+    background:#059669;
+    border-color:#059669;
+    box-shadow:0 0 0 3px rgba(16,185,129,.25), 0 6px 12px rgba(16,185,129,.20);
+    color:#fff;
+  }
+  .btn.btn-primary:focus-visible{
+    outline:0;
+    box-shadow:0 0 0 3px rgba(16,185,129,.35), 0 6px 12px rgba(16,185,129,.25);
+  }
+  .btn.btn-primary:active{
+    transform: translateY(1px);
+    background:#047857;
+    border-color:#047857;
+  }
+  .btn.btn-primary:disabled{ cursor:not-allowed; background:#e2e8f0; color:#94a3b8; border-color:#e2e8f0; box-shadow:none; }
+
+  /* 大一點、更長的複製按鈕 */
+  .btn-copy{
+    font-size:16px;
+    padding:12px 22px;
+    min-width:96px;
+    border-radius:16px;
+  }
+
+  /* Stronger hover/focus for header's green button */
+  .btn.btn-green{
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .02s ease;
+  }
+  .btn.btn-green:hover{
+    background:#059669;
+    border-color:#059669;
+    box-shadow:0 0 0 3px rgba(16,185,129,.25), 0 6px 12px rgba(16,185,129,.20);
+    color:#ffffff;
+  }
+  .btn.btn-green:focus-visible{
+    outline:0;
+    box-shadow:0 0 0 3px rgba(16,185,129,.35), 0 6px 12px rgba(16,185,129,.25);
+  }
+  .btn.btn-green:active{
+    transform: translateY(1px);
+    background:#047857;
+    border-color:#047857;
+  }
+
+  .toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:10px; font-weight:900; box-shadow:0 8px 24px rgba(0,0,0,.18); z-index:9999 }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="heroTitle">人之所以能，是因為相信自己能</h1>
+      <div class="actions">
+        <!-- 只保留「培養重點」 -->
+        <button id="btnFocus" class="btn btn-green">培養重點</button>
+      </div>
+    </div>
+
+    <details class="tips">
+      <summary><b>使用說明</b></summary>
+      <div>
+        1) 先送出開場句；<b>遇到客人回覆，就在下方選擇對應選項</b>。<br>
+        2) <b>注意發送時間不要太短</b>（建議依「字數→秒數」的倒數提醒）。
+      </div>
+    </details>
+
+    <div class="card" style="margin-top:18px">
+      <div class="tabs-rows">
+        <div class="tabs-row">
+          <span class="tab-heading primary">主要功能（剛進來一定要聊）:</span>
+          <div class="tabs" id="tabs-primary">
+            <div class="tab active" data-tab="t1">打開心房・降疑慮 <span class="sub">（聊天話題）</span></div>
+          </div>
+        </div>
+        <hr class="tabs-divider"/>
+        <div class="tabs-row">
+          <span class="tab-heading">其它功能:</span>
+          <div class="tabs" id="tabs-other">
+            <div class="tab" data-tab="t2">讓客人主動要照片</div>
+            <div class="tab" data-tab="t3">解為什麼玩交友軟體</div>
+            <div class="tab" data-tab="t4">解 IG・FB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="contentWrap" class="grid theme-msg" style="margin-top:14px">
+      <section class="card">
+        <div id="headerRow" class="row" style="margin-bottom:10px">
+          <div class="sectionTitle">打開心房・降疑慮</div>
+          <div style="display:flex; gap:12px">
+            <button id="btnBack" class="btn btn-lg">上一步</button>
+            <button id="btnReset" class="btn btn-danger btn-lg">重來</button>
+          </div>
+        </div>
+
+        <div id="content"></div>
+
+        <div id="hint" class="help">小提醒：句子要逐句傳送，不要一次全部貼上；看對方節奏適當間隔。</div>
+      </section>
+    </div>
+
+    <div class="footer">© 新客輔助 v2_4_19 by.KID</div>
+  </div>
+
+  <!-- 後續培養重點（公告式） -->
+  <div id="focusModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div class="modalTitle">後續培養重點</div>
+        <button class="modalClose" id="focusClose">關閉</button>
+      </div>
+      <div id="focusBody" class="modalBody announce"></div>
+    </div>
+  </div>
+
+  <script>
+    // ====== Data ======
+    const NODES = {
+      intro: { type: "message", title: "開場台詞", lines: ["對了 你很常在網路上跟人聊天嗎?"], next: "habitChoice" },
+      habitChoice: {
+        type: "choice", title: "客人回覆是哪一種?",
+        options: [
+          { id: "many", label: "客人回：蠻常的／很多", next: "reply_many" },
+          { id: "few", label: "客人回：很少／沒有", next: "reply_few" },
+        ],
+      },
+      reply_many: { type: "message", title: "回覆給客人", lines: ["我是蠻少的","那你有遇過什麼奇怪的人嗎?"], next: "weirdChoice" },
+      reply_few:  { type: "message", title: "回覆給客人", lines: ["我也是蠻少的","那你有遇過什麼奇怪的人嗎?"], next: "weirdChoice" },
+      weirdChoice: {
+        type: "choice", title: "客人對『奇怪的人』的回覆?",
+        options: [
+          { id: "no", label: "客人回：沒有", next: "reply_no_weird" },
+          { id: "yesScam", label: "客人回：有 例如推銷/投資/詐騙", next: "reply_yes_scams" },
+        ],
+      },
+      reply_no_weird: {
+        type: "message", title: "回覆給客人",
+        lines: [
+          "我遇過很多明明還不熟 就一直打電話 不然就是一直要約出去...",
+          "或是一直說要來找我..",
+          "感覺就是在亂槍打鳥🙄",
+          "所以後來我就很少在網路上認識人",
+        ], next: null,
+      },
+      reply_yes_scams: {
+        type: "message", title: "回覆給客人",
+        lines: [
+          "我也有遇過詐騙 還有很多明明還不熟就一直打電話",
+          "不然就是一直要來找我 約出去的..",
+          "感覺就是在亂槍打鳥🙄",
+          "所以後來我就很少在網路上認識人",
+        ],
+        optionalLines: [
+          "最扯的是還有遇過算命的 他會免費幫你算",
+          "然後說你哪裡哪裡不好 可以幫你改運 叫你買轉運香水 或是手鏈 項鍊之類的 一條就要2.3千...",
+          "我本來想說 如果幾百塊可以買看看",
+          "但是這麼貴 感覺就是假的..",
+        ],
+        next: null,
+      },
+    };
+
+    // why（移除 emoji、第二句收尾加省略號）
+    const WHY_LINES = [
+      "我是因為看到廣告無聊才想說下載看看",
+      "上次玩應該一年多前了吧 太多怪怪的人了...",
+    ];
+
+    // photo（文字細修）
+    const PHOTO_LINES = [
+      { text: "我剛剛超丟臉...", explainAfter: "說明：這句丟出去等客人回覆；沒意外對方會回「怎麼了／發生什麼事／為什麼丟臉？」" },
+      { text: "我剛剛去買咖啡 我聽到店員說美女你的好囉" },
+      { text: "我就走過去要拿 結果他說不是在叫我" },
+      { text: "好丟臉..." },
+      { text: "我是沒有到很正 但應該還算漂亮吧..", explainAfter: "說明：等客人回；通常會問「你長怎樣我看看」→ 這時再丟照片。若對方沒問，就不用主動丟。" },
+    ];
+
+    // ig/fb
+    const IG_LINES = [
+      { text: "之前有用 但是因為我前男友的關係" },
+      { text: "後來就刪掉沒再用了", explainAfter: "說明：講完上面，如果客人再追問「為什麼」，再往下丟下一段。" },
+      { text: "我想想該怎麼跟你說才好", explainAfter: "說明：先等等約 5 分鐘再開始丟下一句；每段至少間隔 3–5 分鐘以上，依訊息長度自行抓時間。" },
+      { text: "就是我跟前任也是網路上認識的..剛開始聊天感覺還不錯 之後也常聊天 見面吃飯  過一段時間他就跟我告白 那時候覺得他人還不錯 所以就在一起了" },
+      { text: "剛在一起的時候他很貼心 每天都會送飯給我吃 還有接我上下班 我本來以為會一直這樣下去 結果好像是我想太多... 他比我想像更容易生氣.. 一開始以為他只是講話比較大聲 到後面越來越誇張 動手腳還摔東西.. 有一次甚至還把我推倒.. 我第一次有那種嚇到不敢說話不敢動的感覺.. 那時候超怕他會做出更誇張的事...." },
+      { text: "後來我實在受不了就跟他分手.. 主要的原因還是他被我發現劈腿... 我真的是沒辦法接受 原本想說分手就解脫了 結果他居然一直對我死纏爛打..我不接電話就直接登我FB還有IG 還跑到我上班的地方跟我家堵我...還騷擾我的家人跟朋友 就算換了密碼封鎖也沒用 因為有共同好友..真的覺得很恐怖..." },
+      { text: "那陣子壓力真的很大... 甚至還要吃藥才睡得著.." },
+      { text: "後來我家人因為擔心我就叫我把FB跟IG都刪了.. 也叫我把電話號碼換了.. 那次我真的被嚇到...也是從那之後我就不太相信感情.." },
+      { text: "到現在我還是覺得我為什麼會遇到這種事..明明只是想好好的生活.. 好好談戀愛.." }
+    ];
+
+    // ====== Focus groups ======
+    const FOCUS_GROUPS = [
+      { title: "重點1｜聊天的質感", lines: [
+        { text: "真的把對方當成朋友 開心愉快聊天", tag: "must" },
+        { text: "不要每天就只有 起床 上班 吃飯 睡覺 追劇", tag: "avoid" },
+        { text: "如果你都只有聊這些 最後客人一定跟你不熟 不會買單", tag: "avoid" },
+        { text: "回答完客人的話或報備完 要順手丟個問題給客人", tag: "must" },
+      ]},
+      { title: "重點2｜初期互相了解（不是身家調查）", lines: [
+        { text: "剛開始要知道對方的年紀、職業、住哪裡（但不要查戶口式問法）", tag: "tip" },
+        { text: "套年紀你可以說：看你大頭貼 好像跟我差不多大 你幾歲呀", tag: "tip" },
+        { text: "套工作你可以說：對了你下班了嗎?", tag: "tip" },
+        { text: "如果下班了：怎麼這麼好 這麼早就下班了 你是做什麼的ㄚ", tag: "tip" },
+        { text: "如果沒下班：怎麼這麼好 上班還可以玩手機 你是做什麼的ㄚ", tag: "tip" },
+        { text: "套住哪裡：對了你也是台北人嗎?", tag: "tip" },
+      ]},
+      { title: "一些範本", lines: [
+        { text: "對了你也是台北人嘛（衍生地區或在地美食）", tag: "tip" },
+        { text: "聊頭像主頁（衍伸聊興趣 像是喜歡出去玩 風景/寵物照同理）", tag: "tip" },
+        { text: "今天休假嗎還是上班（衍生什麼工作）", tag: "tip" },
+        { text: "我等等去教課了／我先教課去晚點聊／準備明天的上課的東西晚點聊（讓客人主動問我們工作）", tag: "tip" },
+        { text: "那你是什麼工作的呀（衍生工作內容）", tag: "tip" },
+      ]},
+    ];
+
+    // ====== State ======
+    let activeTab = "t1";
+    let nodeId = "intro";
+    let history = ["intro"];
+    let lastCopiedKeys = new Set();
+    let lastCopiedWhySet = new Set();
+    let lastCopiedPhotoSet = new Set();
+    let lastCopiedIGSet = new Set();
+
+    const contentEl = document.getElementById("content");
+    const btnBack = document.getElementById("btnBack");
+    const btnReset = document.getElementById("btnReset");
+    const headerRow = document.getElementById("headerRow");
+    const hint = document.getElementById("hint");
+
+    // ====== 倒數狀態（0.1秒更新，顯示到小數第一位） ======
+    const countdowns = {}; // key -> 剩餘秒數（float）
+    let tickTimer = null;
+    const TICK_MS = 100;
+    const TICK_STEP = 0.1;
+
+    function ensureTick(){
+      if(tickTimer) return;
+      tickTimer = setInterval(()=>{
+        const keys = Object.keys(countdowns);
+        keys.forEach(k=>{
+          if(countdowns[k]>0){
+            // 減少0.1秒，並避免浮點誤差
+            const next = Math.max(0, Math.round((countdowns[k]-TICK_STEP)*10)/10);
+            countdowns[k] = next;
+          }
+        });
+        updateCountdownDisplays();
+        if(Object.values(countdowns).every(v=>!v||v<=0)){
+          clearInterval(tickTimer); tickTimer=null;
+        }
+      }, TICK_MS);
+    }
+
+    function updateCountdownDisplays(){
+      document.querySelectorAll('.lineCopied[data-key]').forEach(el=>{
+        const k = el.dataset.key;
+        const n = Number(countdowns[k]||0);
+        if(n>0){
+          el.textContent = `倒數 ${n.toFixed(1)} 秒`; el.style.color='#16a34a';
+        }else if(el.closest('.lineItem')?.classList.contains('active')){
+          el.textContent = '可送'; el.style.color='#16a34a';
+        }else{
+          el.textContent = '';
+        }
+      });
+    }
+
+    // ====== Tabs ======
+    document.getElementById('tabs-primary')?.setAttribute('role','tablist');
+    document.getElementById('tabs-other')?.setAttribute('role','tablist');
+
+    function clearOtherTabState(tabId){
+      // 只針對「其它功能」自動重製：清掉該分頁的「已複製狀態」與倒數
+      if(tabId==='t2'){ lastCopiedPhotoSet = new Set(); }
+      if(tabId==='t3'){ lastCopiedWhySet = new Set(); }
+      if(tabId==='t4'){ lastCopiedIGSet = new Set(); }
+      Object.keys(countdowns).forEach(k=>{ if(k.startsWith(tabId+'-')) delete countdowns[k]; });
+      if(Object.values(countdowns).every(v=>!v||v<=0) && tickTimer){ clearInterval(tickTimer); tickTimer=null; }
+    }
+
+    document.querySelectorAll(".tab").forEach(t=>{
+      t.setAttribute("role","tab");
+      t.setAttribute("tabindex","0");
+      t.setAttribute("aria-selected", t.dataset.tab===activeTab ? "true" : "false");
+      t.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); t.click(); } });
+      t.addEventListener("click", ()=>{
+        // 切換分頁前：如果離開的是「其它功能」，自動重製
+        if(activeTab !== t.dataset.tab){
+          if(activeTab==='t2'||activeTab==='t3'||activeTab==='t4'){ clearOtherTabState(activeTab); }
+        }
+        document.querySelectorAll(".tab").forEach(x=>{ x.classList.remove("active"); x.setAttribute("aria-selected","false"); });
+        t.classList.add("active"); t.setAttribute("aria-selected","true");
+        activeTab = t.dataset.tab;
+        if(activeTab === "t1"){ headerRow.style.display = "flex"; hint.style.display="block"; }
+        else { headerRow.style.display = "none"; hint.style.display="none"; }
+        render();
+      });
+    });
+
+    function copyToClipboard(text){
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(()=>true).catch(()=>false);
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      let ok=false; try{ ok=document.execCommand('copy'); }catch(e){ ok=false; }
+      document.body.removeChild(ta);
+      return Promise.resolve(ok);
+    }
+    function toast(msg, ms=1800){ const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), ms); }
+
+    function round10(n){ return Math.round(n/10)*10; }
+    function recommendSecondsFromText(s){
+      const len = (s||'').replace(/\\s/g,'').length; // 依字數
+      const sec = round10(len);
+      return Math.max(10, sec); // 至少10秒
+    }
+
+    function markCopiedAndCountdown(key, text){
+      const sec = recommendSecondsFromText(text);
+      countdowns[key] = sec;
+      toast(`已複製：建議 ${sec.toFixed(1)} 秒後再送出`);
+      ensureTick();
+      updateCountdownDisplays();
+    }
+
+    function renderLines(listEl, arr, tracker){
+      listEl.innerHTML = "";
+      arr.forEach((obj, idx) => {
+        const key = `${activeTab}-${idx}`; // 其它功能用 tab+index
+        const isCopied = (tracker && typeof tracker.has === "function") ? tracker.has(idx) : false;
+        const item = document.createElement("div"); item.className = "lineItem" + (isCopied ? " active" : "");
+        const text = document.createElement("div"); text.className = "lineText"; text.textContent = obj.text || obj;
+        const ops = document.createElement("div"); ops.className = "lineOps";
+        const btn = document.createElement("button"); btn.className = "btn btn-primary btn-copy"; btn.textContent = "複製";
+        const state = document.createElement("div"); state.className = "lineCopied"; state.dataset.key = key; state.textContent = (isCopied ? (countdowns[key]>0?`倒數 ${Number(countdowns[key]).toFixed(1)} 秒`:'可送') : "");
+        btn.addEventListener("click", async () => {
+          const content = obj.text || obj;
+          const ok = await copyToClipboard(content);
+          if(!ok){ alert("複製失敗：瀏覽器限制，請手動選取文字複製"); return; }
+          if (tracker && typeof tracker.add === "function") tracker.add(idx);
+          item.classList.add('active');
+          markCopiedAndCountdown(key, content);
+        });
+        ops.appendChild(btn); ops.appendChild(state);
+        item.appendChild(text); item.appendChild(ops); listEl.appendChild(item);
+        if(obj.explainAfter){ const exp = document.createElement("div"); exp.className = "explain"; exp.innerHTML = obj.explainAfter; listEl.appendChild(exp); }
+      });
+    }
+
+    function render(){
+      contentEl.innerHTML = "";
+
+      if(activeTab === "t1"){
+        const node = NODES[nodeId];
+        const cardTitle = document.createElement("div"); cardTitle.className = "sectionTitle"; cardTitle.textContent = node.title; contentEl.appendChild(cardTitle);
+
+        if(node.type === "message"){
+          const lines = node.lines || [];
+          const list = document.createElement("div"); list.className = "lineList";
+          lines.forEach((line, idx) => {
+            const key = `${nodeId}-${idx}`;
+            const item = document.createElement("div"); item.className = "lineItem" + (lastCopiedKeys.has(key) ? " active" : "");
+            const text = document.createElement("div"); text.className = "lineText"; text.textContent = line;
+            const ops = document.createElement("div"); ops.className = "lineOps";
+            const btn = document.createElement("button"); btn.className = "btn btn-primary btn-copy"; btn.textContent = "複製";
+            const copied = document.createElement("div"); copied.className = "lineCopied"; copied.dataset.key = key; copied.textContent = (lastCopiedKeys.has(key) ? (countdowns[key]>0?`倒數 ${Number(countdowns[key]).toFixed(1)} 秒`:'可送') : "");
+            btn.addEventListener("click", async () => {
+              const ok = await copyToClipboard(line);
+              if(!ok){ alert("複製失敗：瀏覽器限制，請手動選取文字複製"); return; }
+              lastCopiedKeys.add(key);
+              item.classList.add('active');
+              markCopiedAndCountdown(key, line);
+            });
+            ops.appendChild(btn); ops.appendChild(copied);
+            item.appendChild(text); item.appendChild(ops); list.appendChild(item);
+          });
+          contentEl.appendChild(list);
+
+          if(node.optionalLines && node.optionalLines.length){
+            const opt = document.createElement("div"); opt.className = "optionalBox";
+            const ot = document.createElement("div"); ot.className = "optionalTitle"; ot.textContent = "看情況延伸｜可不丟";
+            const olist = document.createElement("div"); olist.className = "lineList";
+            node.optionalLines.forEach((line, idx) => {
+              const key = `${nodeId}-opt-${idx}`;
+              const item = document.createElement("div"); item.className = "lineItem" + (lastCopiedKeys.has(key) ? " active" : "");
+              const text = document.createElement("div"); text.className = "lineText"; text.textContent = line;
+              const ops = document.createElement("div"); ops.className = "lineOps";
+              const btn = document.createElement("button"); btn.className = "btn btn-primary btn-copy"; btn.textContent = "複製";
+              const copied = document.createElement("div"); copied.className = "lineCopied"; copied.dataset.key = key; copied.textContent = (lastCopiedKeys.has(key) ? (countdowns[key]>0?`倒數 ${Number(countdowns[key]).toFixed(1)} 秒`:'可送') : "");
+              btn.addEventListener("click", async () => {
+                const ok = await copyToClipboard(line);
+                if(!ok){ alert("複製失敗：瀏覽器限制，請手動選取文字複製"); return; }
+                lastCopiedKeys.add(key);
+                item.classList.add('active');
+                markCopiedAndCountdown(key, line);
+              });
+              ops.appendChild(btn); ops.appendChild(copied);
+              item.appendChild(text); item.appendChild(ops); olist.appendChild(item);
+            });
+            opt.appendChild(ot); opt.appendChild(olist); contentEl.appendChild(opt);
+          }
+
+          if(node.next){
+            const nextRow = document.createElement("div"); nextRow.style.marginTop = "16px";
+            const btnNext = document.createElement("button"); btnNext.className = "btn btn-primary btn-next"; btnNext.textContent = "前往下一步（客人回覆 → 選擇）";
+            btnNext.addEventListener("click", () => { nodeId = node.next; history.push(node.next); render(); });
+            nextRow.appendChild(btnNext); contentEl.appendChild(nextRow);
+          }
+        }
+
+        if(node.type === "choice"){
+          const wrap = document.createElement("div"); wrap.className = "choiceWrap"; const grid = document.createElement("div"); grid.className = "choices";
+          node.options.forEach((opt, idx) => {
+            const btn = document.createElement("button"); btn.className = "choiceBtn";
+            const small = document.createElement("div"); small.className = "choiceSmall"; small.textContent = "選項 " + (idx+1);
+            const label = document.createElement("div"); label.className = "choiceLabel"; label.textContent = opt.label;
+            btn.appendChild(small); btn.appendChild(label);
+            btn.addEventListener("click", () => { nodeId = opt.next; history.push(opt.next); render(); });
+            grid.appendChild(btn);
+          });
+          wrap.appendChild(grid); contentEl.appendChild(wrap);
+        }
+      }
+      else if(activeTab === "t2"){
+        const t = document.createElement("div"); t.className="sectionTitle"; t.textContent = "讓客人主動要照片（含說明）"; contentEl.appendChild(t);
+        const list = document.createElement("div"); list.className="lineList"; contentEl.appendChild(list);
+        renderLines(list, PHOTO_LINES, lastCopiedPhotoSet);
+      }
+      else if(activeTab === "t3"){
+        const t = document.createElement("div"); t.className="sectionTitle"; t.textContent = "為什麼玩交友軟體（分句複製）"; contentEl.appendChild(t);
+        const list = document.createElement("div"); list.className="lineList"; contentEl.appendChild(list);
+        renderLines(list, WHY_LINES.map(x=>({text:x})), lastCopiedWhySet);
+      }
+      else if(activeTab === "t4"){
+        const t = document.createElement("div"); t.className="sectionTitle"; t.textContent = "解 IG・FB（含說明）"; contentEl.appendChild(t);
+        const list = document.createElement("div"); list.className="lineList"; contentEl.appendChild(list);
+        renderLines(list, IG_LINES, lastCopiedIGSet);
+      }
+
+      updateCountdownDisplays();
+    }
+
+    // ====== Focus modal (公告) ======
+    const focusModal = document.getElementById("focusModal");
+    function pill(tag){ return tag === "must" ? "必做" : tag === "avoid" ? "避免" : "技巧"; }
+    function renderFocus(){
+      const body = document.getElementById("focusBody");
+      body.innerHTML = "";
+      const groups = FOCUS_GROUPS;
+      groups.forEach((grp) => {
+        const shell = document.createElement("div"); shell.className = "groupCard";
+        const title = document.createElement("div"); title.className = "groupTitle"; title.textContent = grp.title;
+        const list = document.createElement("div"); list.className = "lineList";
+        grp.lines.forEach((it)=>{
+          const item = document.createElement("div"); item.className = "lineItem";
+          const text = document.createElement("div"); text.className = "lineText";
+          const msg = document.createElement("span"); msg.textContent = it.text;
+          const tag = document.createElement("span"); tag.textContent = pill(it.tag); tag.style.cssText="display:inline-block;font-weight:900;margin-right:8px;padding:4px 9px;border-radius:999px;border:1px solid #c7d2fe;background:#e0e7ff;color:#3730a3";
+          if(it.tag==='must'){ tag.style.background='#dcfce7'; tag.style.color='#166534'; tag.style.borderColor='#86efac'; }
+          if(it.tag==='avoid'){ tag.style.background='#fee2e2'; tag.style.color='#991b1b'; tag.style.borderColor='#fecaca'; }
+          text.appendChild(tag); text.appendChild(msg);
+          item.appendChild(text);
+          list.appendChild(item);
+        });
+        shell.appendChild(title); shell.appendChild(list); body.appendChild(shell);
+      });
+    }
+    function openFocus(){ renderFocus(); focusModal.classList.add("show"); focusModal.setAttribute("aria-hidden","false"); const closeBtn = document.getElementById("focusClose"); if(closeBtn) closeBtn.focus(); }
+    function closeFocus(){ focusModal.classList.remove("show"); focusModal.setAttribute("aria-hidden","true"); }
+    document.getElementById("btnFocus").addEventListener("click", openFocus);
+    document.getElementById("focusClose").addEventListener("click", closeFocus);
+    focusModal.addEventListener("click",(e)=>{ if(e.target===focusModal) closeFocus(); });
+    window.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeFocus(); });
+
+    // ====== 主要功能：上一步 & 重來 ======
+    function resetPrimary(){
+      nodeId = "intro";
+      history = ["intro"];
+      // 清掉主要流程相關的倒數（保守作法：全部清空）
+      Object.keys(countdowns).forEach(k=>{ delete countdowns[k]; });
+      if(tickTimer){ clearInterval(tickTimer); tickTimer=null; }
+      lastCopiedKeys = new Set();
+      render();
+    }
+    btnReset.addEventListener("click", resetPrimary);
+    btnBack.addEventListener("click", ()=>{
+      if(history.length>1){
+        history.pop();
+        nodeId = history[history.length-1];
+        render();
+      }
+    });
+
+    // Init
+    render();
+  </script>
+</body>
+</html>
