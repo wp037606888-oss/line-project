@@ -54,7 +54,8 @@ button{padding:8px 12px;border:none;border-radius:8px;margin:4px;font-weight:bol
 
 <script>
 
-// Firebase config
+//////////////// FIREBASE //////////////////
+
 const firebaseConfig={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
 authDomain:"smoke-queue.firebaseapp.com",
@@ -70,10 +71,15 @@ firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth();
 const db=firebase.database();
 
+//////////////// CONFIG //////////////////
+
 const ADMIN="wp037606888@gmail.com";
 
 let me=null;
 let queueData={};
+
+const queueRef=db.ref("queue");
+const kickRef=db.ref("kick");
 
 //////////////// LOGIN //////////////////
 
@@ -82,11 +88,11 @@ const provider=new firebase.auth.GoogleAuthProvider();
 auth.signInWithRedirect(provider);
 }
 
-auth.getRedirectResult();
-
 function logout(){
 auth.signOut();
 }
+
+auth.getRedirectResult().catch(console.error);
 
 auth.onAuthStateChanged(user=>{
 if(!user){
@@ -96,6 +102,7 @@ return;
 }
 
 me=user;
+
 loginBox.classList.add("hidden");
 app.classList.remove("hidden");
 
@@ -109,9 +116,6 @@ renderButtons();
 });
 
 //////////////// QUEUE //////////////////
-
-const queueRef=db.ref("queue");
-const kickRef=db.ref("kick");
 
 function listenQueue(){
 queueRef.on("value",s=>{
@@ -146,8 +150,11 @@ if(!confirm("回來後不能再出去，確定？")) return;
 queueRef.child(me.uid).update({status:"used"});
 }
 
+//////////////// BUTTONS //////////////////
+
 function renderButtons(){
 if(!me) return;
+
 let p=queueData[me.uid];
 actions.innerHTML="";
 
@@ -197,8 +204,10 @@ if(p.status==="reserved") text+="已預約";
 if(p.status==="out"){
 let sec=Math.floor((Date.now()-p.outTime)/1000);
 let remain=600-sec;
+
 if(remain>0) text+="外出 "+remain+"秒";
 else text+="超時 "+(-remain)+"秒";
+
 div.classList.add("out");
 }
 
