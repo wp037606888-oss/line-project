@@ -2,95 +2,225 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Firebase Google 登入測試</title>
+<title>抽菸排隊系統 安全版</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body{
-  font-family:Segoe UI;
-  background:#0f172a;
-  color:white;
-  padding:40px;
-}
-button{
-  padding:12px 18px;
-  border:none;
-  border-radius:8px;
-  background:#22c55e;
-  font-size:16px;
-  font-weight:bold;
-}
-.card{
-  background:#111827;
-  padding:20px;
-  border-radius:12px;
-}
+body{font-family:Segoe UI;background:#0f172a;color:white;padding:20px;}
+.card{background:#111827;border-radius:14px;padding:14px;margin-bottom:12px;}
+button{padding:8px 12px;border:none;border-radius:8px;margin:4px;font-weight:bold;}
+.primary{background:#22c55e;color:black;}
+.warn{background:#f59e0b;}
+.danger{background:#ef4444;}
+.out{background:#7f1d1d;}
+.queueItem{padding:12px;margin:6px 0;border-radius:8px;background:#020617;font-size:18px;}
+.hidden{display:none;}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 Google 登入測試</h2>
+<h2>🚬 抽菸排隊系統</h2>
 
-<div class="card">
-
-<div id="login">
-<button onclick="googleLogin()">Google 登入</button>
+<div id="loginBox" class="card">
+<button class="primary" onclick="googleLogin()">Google 登入</button>
 </div>
 
-<div id="app" style="display:none;">
-<h3>登入成功：</h3>
-<p id="user"></p>
+<div id="app" class="hidden">
+
+<div class="card">
+<h3 id="who"></h3>
 <button onclick="logout()">登出</button>
+</div>
+
+<div class="card">
+<div id="actions"></div>
+</div>
+
+<div class="card">
+<h3>排隊順序</h3>
+<div id="queue"></div>
+</div>
+
+<div id="adminPanel" class="card hidden">
+<h3>管理模式</h3>
+<button class="danger" onclick="forceLogout()">強制所有人重新登入</button>
 </div>
 
 </div>
 
 <script>
 
-// ✅ 這段就是你剛剛 Firebase Console 複製的 config
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
-  authDomain: "smoke-queue.firebaseapp.com",
-  databaseURL: "https://smoke-queue-default-rtdb.firebaseio.com",
-  projectId: "smoke-queue",
-  storageBucket: "smoke-queue.firebasestorage.app",
-  messagingSenderId: "474216861000",
-  appId: "1:474216861000:web:052d21df1bcdb183ebb77d",
-  measurementId: "G-QY5SC9E6XS"
+// Firebase config
+const firebaseConfig={
+apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+authDomain:"smoke-queue.firebaseapp.com",
+databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
+projectId:"smoke-queue",
+storageBucket:"smoke-queue.firebasestorage.app",
+messagingSenderId:"474216861000",
+appId:"1:474216861000:web:052d21df1bcdb183ebb77d"
 };
 
-// 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 
-const auth = firebase.auth();
+const auth=firebase.auth();
+const db=firebase.database();
+
+const ADMIN="wp037606888@gmail.com";
+
+let me=null;
+let queueData={};
+
+//////////////// LOGIN //////////////////
 
 function googleLogin(){
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider)
-  .catch(e=>{
-    console.error(e);
-    alert(e.message);
-  });
+const provider=new firebase.auth.GoogleAuthProvider();
+auth.signInWithRedirect(provider);
 }
 
+auth.getRedirectResult();
+
 function logout(){
-  auth.signOut();
+auth.signOut();
 }
 
 auth.onAuthStateChanged(user=>{
-  if(user){
-    login.style.display="none";
-    app.style.display="block";
-    document.getElementById("user").innerText =
-      user.displayName + " (" + user.email + ")";
-  }else{
-    login.style.display="block";
-    app.style.display="none";
-  }
+if(!user){
+loginBox.classList.remove("hidden");
+app.classList.add("hidden");
+return;
+}
+
+me=user;
+loginBox.classList.add("hidden");
+app.classList.remove("hidden");
+
+who.innerText="已登入："+user.displayName;
+
+if(user.email===ADMIN)
+adminPanel.classList.remove("hidden");
+
+listenQueue();
+renderButtons();
+});
+
+//////////////// QUEUE //////////////////
+
+const queueRef=db.ref("queue");
+const kickRef=db.ref("kick");
+
+function listenQueue(){
+queueRef.on("value",s=>{
+queueData=s.val()||{};
+renderQueue();
+renderButtons();
+});
+}
+
+function reserve(){
+queueRef.child(me.uid).set({
+name:me.displayName,
+status:"reserved",
+time:Date.now()
+});
+}
+
+function cancel(){
+queueRef.child(me.uid).remove();
+}
+
+function goOut(){
+queueRef.child(me.uid).update({
+status:"out",
+outTime:Date.now()
+});
+}
+
+function comeBack(){
+if(!confirm("確定回來？")) return;
+if(!confirm("回來後不能再出去，確定？")) return;
+queueRef.child(me.uid).update({status:"used"});
+}
+
+function renderButtons(){
+if(!me) return;
+let p=queueData[me.uid];
+actions.innerHTML="";
+
+if(!p){
+btn("預約","primary",reserve);
+return;
+}
+
+if(p.status==="reserved"){
+btn("取消預約","warn",cancel);
+btn("出去","primary",goOut);
+}
+
+if(p.status==="out"){
+btn("回來","danger",comeBack);
+}
+}
+
+function btn(t,c,f){
+let b=document.createElement("button");
+b.innerText=t;
+b.className=c;
+b.onclick=f;
+actions.appendChild(b);
+}
+
+//////////////// RENDER //////////////////
+
+function renderQueue(){
+queue.innerHTML="";
+
+let arr=Object.values(queueData);
+
+arr.sort((a,b)=>{
+const order={out:0,reserved:1,used:2};
+return order[a.status]-order[b.status];
+});
+
+arr.forEach(p=>{
+let div=document.createElement("div");
+div.className="queueItem";
+
+let text=p.name+" — ";
+
+if(p.status==="reserved") text+="已預約";
+
+if(p.status==="out"){
+let sec=Math.floor((Date.now()-p.outTime)/1000);
+let remain=600-sec;
+if(remain>0) text+="外出 "+remain+"秒";
+else text+="超時 "+(-remain)+"秒";
+div.classList.add("out");
+}
+
+if(p.status==="used") text+="本場已用";
+
+div.innerText=text;
+queue.appendChild(div);
+});
+}
+
+setInterval(renderQueue,1000);
+
+//////////////// ADMIN //////////////////
+
+function forceLogout(){
+kickRef.set(Date.now());
+}
+
+kickRef.on("value",s=>{
+if(!me) return;
+alert("管理員要求重新登入");
+logout();
 });
 
 </script>
