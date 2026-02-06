@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Firebase Google 登入測試</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<style>
+body{
+  font-family:Segoe UI;
+  background:#0f172a;
+  color:white;
+  padding:40px;
+}
+button{
+  padding:12px 18px;
+  border:none;
+  border-radius:8px;
+  background:#22c55e;
+  font-size:16px;
+  font-weight:bold;
+}
+.card{
+  background:#111827;
+  padding:20px;
+  border-radius:12px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🔥 Google 登入測試</h2>
+
+<div class="card">
+
+<div id="login">
+<button onclick="googleLogin()">Google 登入</button>
+</div>
+
+<div id="app" style="display:none;">
+<h3>登入成功：</h3>
+<p id="user"></p>
+<button onclick="logout()">登出</button>
+</div>
+
+</div>
+
+<script>
+
+// ✅ 這段就是你剛剛 Firebase Console 複製的 config
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+  authDomain: "smoke-queue.firebaseapp.com",
+  databaseURL: "https://smoke-queue-default-rtdb.firebaseio.com",
+  projectId: "smoke-queue",
+  storageBucket: "smoke-queue.firebasestorage.app",
+  messagingSenderId: "474216861000",
+  appId: "1:474216861000:web:052d21df1bcdb183ebb77d",
+  measurementId: "G-QY5SC9E6XS"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+
+function googleLogin(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+  .catch(e=>{
+    console.error(e);
+    alert(e.message);
+  });
+}
+
+function logout(){
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    login.style.display="none";
+    app.style.display="block";
+    document.getElementById("user").innerText =
+      user.displayName + " (" + user.email + ")";
+  }else{
+    login.style.display="block";
+    app.style.display="none";
+  }
+});
+
+</script>
+
+</body>
+</html>
