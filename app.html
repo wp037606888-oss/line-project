@@ -452,16 +452,29 @@ outList.appendChild(div);
 }
 
 function renderHistory(hist,slot){
+
 history.innerHTML="";
-Object.values(hist)
+
+Object.values(hist||{})
 .filter(h=>h.slot===slot)
-.slice(-20)
+.sort((a,b)=>b.time-a.time)
+.slice(0,30)
 .forEach(h=>{
+
 let div=document.createElement("div");
-div.textContent=`${h.name} ${format(h.duration)}`;
+
+let status=h.over
+?` <span class="red">超過10分鐘</span>`
+:` <span style="color:#00ff88">正常</span>`;
+
+div.innerHTML=
+`${h.name} ｜ ${format(h.duration)} ｜ ${status}`;
+
 history.appendChild(div);
+
 });
 }
+
 
 //////////////// 修正後排隊（核心修復） //////////////////
 
@@ -510,9 +523,11 @@ queueRef.child(`used/${slot}/${me.uid}`).set(true);
 
 queueRef.child("history").push({
 name:u.name,
-slot,
+slot:slot,
 duration:sec,
-timeout:false,
+over:sec>600,
+outTime:u.time,
+backTime:Date.now(),
 time:Date.now()
 });
 });
@@ -523,6 +538,7 @@ queueRef.child("out/"+me.uid)
 
 addLog(myData.name+" 回來");
 }
+
 
 //////////////// 聊天 //////////////////
 
@@ -571,4 +587,5 @@ setTimeout(()=>db.ref("reload").remove(),3000);
 </script>
 </body>
 </html>
+
 
