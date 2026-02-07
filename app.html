@@ -19,7 +19,6 @@ h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
 .online{border-left:3px solid #00ff88}
 button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white}
 button:disabled{background:#444}
-.red{color:#ff4d4d}
 #main{flex:1;display:flex;flex-direction:column}
 header{background:#141422;padding:12px;text-align:center}
 #chat{flex:1;overflow:auto;padding:12px}
@@ -27,6 +26,7 @@ header{background:#141422;padding:12px;text-align:center}
 footer{display:flex;padding:10px;background:#141422}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color:white}
 .hidden{display:none}
+.red{color:#ff4d4d}
 </style>
 </head>
 
@@ -95,14 +95,6 @@ const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
 let me,myData,engineReady=false;
-
-const LIMIT=600;
-
-function format(sec){
-let m=Math.floor(sec/60);
-let s=sec%60;
-return `${m}:${s.toString().padStart(2,"0")}`;
-}
 
 //////////////// 日誌 //////////////////
 
@@ -182,9 +174,10 @@ for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
-//////////////// 時間 //////////////////
+//////////////// 時間引擎 //////////////////
 
 function tick(){
+
 if(!engineReady) return;
 
 let now=new Date();
@@ -211,26 +204,31 @@ let d=snap.val()||{};
 let r=d.reserve||{};
 let o=d.out||{};
 let hist=d.history||{};
-let used=d.used||{};
 
 let state="none";
 
 if(o[me.uid]) state="out";
 else if(r[me.uid]) state="reserved";
 
-let alreadyUsed=used[slot]?.[me.uid];
 let canGo=(h==slot || (slot==24 && h==0));
 
 status.textContent=
-alreadyUsed?"本時段已抽":
 state=="out"?"外出中":
 state=="reserved"?(canGo?"可出去":"已預約"):
 "未預約";
 
-bReserve.disabled=state!="none"||alreadyUsed;
+bReserve.disabled=state!="none";
 bCancel.disabled=state!="reserved";
 bOut.disabled=!(state=="reserved"&&canGo);
 bBack.disabled=state!="out";
+
+queue.innerHTML="";
+Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
+.forEach((u,i)=>{
+let d=document.createElement("div");
+d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
+queue.appendChild(d);
+});
 
 renderOut(o,slot);
 renderHistory(hist,slot);
@@ -238,7 +236,9 @@ renderHistory(hist,slot);
 });
 }
 
-//////////////// 外出 //////////////////
+//////////////// 外出監控 //////////////////
+
+const LIMIT=600;
 
 function renderOut(out,slot){
 
@@ -246,17 +246,14 @@ outList.innerHTML="";
 let now=Date.now();
 
 Object.entries(out).forEach(([uid,u])=>{
-
 let sec=Math.floor((now-u.time)/1000);
 let div=document.createElement("div");
 
 if(sec>LIMIT){
-
 div.className="red";
-div.textContent=`${u.name} 超時 ${format(sec)}`;
+div.textContent=`${u.name} 超時 ${sec}s`;
 
 queueRef.child("out/"+uid).remove();
-queueRef.child(`used/${slot}/${uid}`).set(true);
 
 queueRef.child("history").push({
 name:u.name,
@@ -269,7 +266,7 @@ time:Date.now()
 addLog(u.name+" 超時自動回來");
 
 }else{
-div.textContent=`${u.name} 外出 ${format(sec)}`;
+div.textContent=`${u.name} 外出 ${sec}s`;
 }
 
 outList.appendChild(div);
@@ -281,14 +278,14 @@ function renderHistory(hist,slot){
 history.innerHTML="";
 
 Object.values(hist)
-.filter(h=>h.slot===slot)
+.filter(h=>h.slot==slot)
 .forEach(h=>{
 let div=document.createElement("div");
 if(h.timeout){
 div.className="red";
-div.textContent=`${h.name} 超時 ${format(h.duration)}`;
+div.textContent=`${h.name} 超時 ${h.duration}s`;
 }else{
-div.textContent=`${h.name} ${format(h.duration)}`;
+div.textContent=`${h.name} ${h.duration}s`;
 }
 history.appendChild(div);
 });
@@ -323,8 +320,6 @@ if(!u) return;
 
 let sec=Math.floor((Date.now()-u.time)/1000);
 let slot=getSlot(new Date().getHours());
-
-queueRef.child(`used/${slot}/${me.uid}`).set(true);
 
 queueRef.child("history").push({
 name:u.name,
@@ -363,7 +358,7 @@ chat.appendChild(d);
 chat.scrollTop=99999;
 });
 
-//////////////// 刷新 //////////////////
+//////////////// 安全刷新 //////////////////
 
 db.ref("reload").on("value",s=>{
 let t=s.val();
