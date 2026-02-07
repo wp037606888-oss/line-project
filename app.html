@@ -9,112 +9,97 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body {
-  margin:0;
-  font-family:Segoe UI;
-  background:#12121a;
-  color:white;
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
-
-header {
-  background:#1f1f2e;
-  padding:15px;
-  font-size:18px;
-  text-align:center;
-}
-
-#chat {
-  flex:1;
-  overflow-y:auto;
-  padding:15px;
-}
-
-.msg {
-  margin:6px 0;
-  padding:8px 12px;
-  background:#2a2a3a;
-  border-radius:8px;
-  width:fit-content;
-}
-
-footer {
-  display:flex;
-  padding:10px;
-  background:#1f1f2e;
-}
-
-input {
-  flex:1;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:#2b2b3d;
-  color:white;
-}
-
-button {
-  margin-left:10px;
-  padding:10px 16px;
-  border:none;
-  border-radius:8px;
-  background:#5c7cff;
-  color:white;
-  cursor:pointer;
-}
+body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;flex-direction:column;height:100vh}
+header{background:#1f1f2e;padding:15px;text-align:center}
+#chat{flex:1;overflow:auto;padding:10px}
+.msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
+footer{display:flex;padding:10px;background:#1f1f2e}
+input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
+button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
+.name{font-weight:bold;color:#8ab4ff}
+.admin{color:#ff7070}
 </style>
 </head>
 
 <body>
 
 <header>抽菸排隊系統 聊天室</header>
-
 <div id="chat"></div>
 
 <footer>
-<input id="msgInput" placeholder="輸入訊息">
+<input id="msg" placeholder="輸入訊息">
 <button onclick="send()">送出</button>
 <button onclick="logout()">登出</button>
 </footer>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
-  authDomain: "smoke-queue.firebaseapp.com",
-  databaseURL: "https://smoke-queue-default-rtdb.firebaseio.com",
-  projectId: "smoke-queue"
+const config={
+apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+authDomain:"smoke-queue.firebaseapp.com",
+databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
+projectId:"smoke-queue"
 };
+firebase.initializeApp(config);
 
-firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.database();
 
-const auth = firebase.auth();
-const db = firebase.database();
+let me=null;
 
-auth.onAuthStateChanged(user=>{
-  if(!user) location.href="login.html";
+auth.onAuthStateChanged(async user=>{
+if(!user) location.href="login.html";
+me=user;
+
+const snap=await db.ref("users/"+user.uid).once("value");
+
+if(!snap.exists()){
+await db.ref("users/"+user.uid).set({
+name:"未命名",
+role:"user"
+});
+}
+loadChat();
 });
 
-const chat = db.ref("chat");
+function loadChat(){
+db.ref("chat").limitToLast(100).on("child_added",s=>{
+const m=s.val();
 
-chat.limitToLast(100).on("child_added",snap=>{
-  const m = snap.val();
-  const div = document.createElement("div");
-  div.className="msg";
-  div.textContent = m.text;
-  document.getElementById("chat").appendChild(div);
-  document.getElementById("chat").scrollTop=99999;
+const div=document.createElement("div");
+div.className="msg";
+
+const nameSpan=document.createElement("span");
+nameSpan.className="name";
+nameSpan.textContent=m.name+" ";
+
+if(m.role==="admin") nameSpan.classList.add("admin");
+
+div.appendChild(nameSpan);
+div.append(m.text);
+
+chat.appendChild(div);
+chat.scrollTop=999999;
+});
+}
+
+async function send(){
+if(msg.value.trim()=="") return;
+
+const snap=await db.ref("users/"+me.uid).once("value");
+const u=snap.val();
+
+db.ref("chat").push({
+uid:me.uid,
+name:u.name,
+role:u.role,
+text:msg.value
 });
 
-function send(){
-  if(msgInput.value.trim()=="") return;
-  chat.push({text:msgInput.value});
-  msgInput.value="";
+msg.value="";
 }
 
 function logout(){
-  auth.signOut();
+auth.signOut();
 }
 </script>
 
