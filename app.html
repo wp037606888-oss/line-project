@@ -9,23 +9,115 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#0e0e16;color:white;display:flex;height:100vh}
-#left{width:380px;background:#161625;padding:10px;display:flex;flex-direction:column}
-.panel{background:#202035;border-radius:12px;padding:10px;margin-bottom:10px}
-h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
-#queue div,#log div,#outList div,#history div{font-size:12px;margin:2px 0}
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#1e2a4a,#101522);
+color:white;
+display:flex;
+height:100vh;
+overflow:hidden;
+}
+
+#left{
+width:520px;
+padding:14px;
+display:flex;
+flex-direction:column;
+overflow:auto;
+}
+
+.panel{
+background:rgba(255,255,255,0.06);
+backdrop-filter:blur(10px);
+border-radius:16px;
+padding:12px;
+margin-bottom:10px;
+box-shadow:0 0 20px rgba(0,0,0,0.3);
+}
+
+h3{
+margin:0 0 6px;
+font-size:14px;
+color:#9ec3ff;
+}
+
+#queue div,#log div,#outList div,#history div{
+font-size:12px;
+margin:2px 0;
+}
+
 #log{height:140px;overflow:auto}
-.user{padding:5px;background:#2a2a40;border-radius:6px;margin:3px 0}
-.online{border-left:3px solid #00ff88}
-button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white}
-button:disabled{background:#444}
-.red{color:#ff4d4d}
-#main{flex:1;display:flex;flex-direction:column}
-header{background:#141422;padding:12px;text-align:center}
-#chat{flex:1;overflow:auto;padding:12px}
-.msg{background:#222236;margin:5px 0;padding:8px;border-radius:8px}
-footer{display:flex;padding:10px;background:#141422}
-input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color:white}
+
+.user{
+padding:6px;
+background:#2a3c6b;
+border-radius:8px;
+margin:3px 0;
+}
+
+.online{border-left:4px solid #00ff88}
+
+button{
+padding:10px;
+margin:3px;
+border:none;
+border-radius:10px;
+background:#5d86ff;
+color:white;
+cursor:pointer;
+font-weight:600;
+}
+
+button:hover{background:#7aa2ff}
+button:disabled{background:#444;cursor:not-allowed}
+
+.red{color:#ff5b5b}
+
+#main{
+flex:1;
+display:flex;
+flex-direction:column;
+background:rgba(0,0,0,0.2);
+}
+
+header{
+padding:14px;
+text-align:center;
+font-size:16px;
+background:rgba(0,0,0,0.3);
+}
+
+#chat{
+flex:1;
+overflow:auto;
+padding:10px;
+}
+
+.msg{
+background:#2c355a;
+margin:4px 0;
+padding:8px;
+border-radius:10px;
+font-size:13px;
+}
+
+footer{
+display:flex;
+gap:6px;
+padding:10px;
+background:rgba(0,0,0,0.3);
+}
+
+input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:10px;
+background:#2c355a;
+color:white;
+}
+
 .hidden{display:none}
 </style>
 </head>
@@ -82,7 +174,7 @@ input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color
 <script>
 
 const config={
-apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+apiKey:"AIza...",
 authDomain:"smoke-queue.firebaseapp.com",
 databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
 projectId:"smoke-queue"
@@ -95,8 +187,13 @@ const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
 let me,myData,engineReady=false;
+let cacheQueue={};
 
 const LIMIT=600;
+
+queueRef.on("value",snap=>{
+cacheQueue=snap.val()||{};
+});
 
 function format(sec){
 let m=Math.floor(sec/60);
@@ -111,74 +208,7 @@ for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
-//////////////// 日誌 //////////////////
-
-function addLog(t){
-logRef.push({text:t,time:Date.now()});
-}
-
-logRef.limitToLast(100).on("value",snap=>{
-log.innerHTML="";
-snap.forEach(s=>{
-let l=s.val();
-let d=document.createElement("div");
-d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
-log.appendChild(d);
-});
-log.scrollTop=99999;
-});
-
-//////////////// 在線 //////////////////
-
-db.ref("users").on("value",snap=>{
-userList.innerHTML="";
-snap.forEach(s=>{
-let u=s.val();
-let d=document.createElement("div");
-d.className="user "+(u.online?"online":"");
-d.textContent=u.name;
-userList.appendChild(d);
-});
-});
-
-//////////////// 登入 //////////////////
-
-auth.onAuthStateChanged(async user=>{
-if(!user){location.href="login.html";return;}
-
-me=user;
-const ref=db.ref("users/"+user.uid);
-
-let snap=await ref.once("value");
-if(!snap.exists()){
-let name=prompt("暱稱");
-await ref.set({name:name||"訪客",role:"user"});
-}
-
-ref.on("value",s=>{
-myData=s.val();
-who.textContent="目前登入："+myData.name;
-
-if(myData.role==="admin")
-reloadBtn.classList.remove("hidden");
-
-addLog("🟢 "+myData.name+" 登入");
-engineReady=true;
-});
-
-ref.child("online").set(true);
-ref.child("online").onDisconnect().set(false);
-});
-
-function logout(){
-addLog("🔴 "+myData.name+" 登出");
-auth.signOut().then(()=>location.href="login.html");
-}
-
-//////////////// 主引擎 //////////////////
-
 function tick(){
-
 if(!engineReady) return;
 
 let now=new Date();
@@ -196,12 +226,9 @@ updateState(slot,h);
 
 setInterval(tick,1000);
 
-//////////////// 狀態 //////////////////
-
 function updateState(slot,h){
 
-queueRef.once("value").then(snap=>{
-let d=snap.val()||{};
+let d=cacheQueue;
 let r=d.reserve||{};
 let o=d.out||{};
 let hist=d.history||{};
@@ -229,7 +256,6 @@ bBack.disabled=state!="out";
 renderQueue(r);
 renderOut(o,slot);
 renderHistory(hist,slot);
-});
 }
 
 function renderQueue(r){
@@ -243,7 +269,6 @@ queue.appendChild(d);
 }
 
 function renderOut(out,slot){
-
 outList.innerHTML="";
 let now=Date.now();
 
@@ -252,23 +277,8 @@ let sec=Math.floor((now-u.time)/1000);
 let div=document.createElement("div");
 
 if(sec>LIMIT){
-
 div.className="red";
 div.textContent=`${u.name} 超時 ${format(sec)}`;
-
-queueRef.child("out/"+uid).remove();
-queueRef.child(`used/${slot}/${uid}`).set(true);
-
-queueRef.child("history").push({
-name:u.name,
-slot,
-duration:sec,
-timeout:true,
-time:Date.now()
-});
-
-addLog(u.name+" 超時自動回來");
-
 }else{
 div.textContent=`${u.name} 外出 ${format(sec)}`;
 }
@@ -278,11 +288,10 @@ outList.appendChild(div);
 }
 
 function renderHistory(hist,slot){
-
 history.innerHTML="";
-
 Object.values(hist)
 .filter(h=>h.slot===slot)
+.slice(-20)
 .forEach(h=>{
 let div=document.createElement("div");
 if(h.timeout){
@@ -293,91 +302,6 @@ div.textContent=`${h.name} ${format(h.duration)}`;
 }
 history.appendChild(div);
 });
-}
-
-//////////////// 排隊 //////////////////
-
-function reserve(){
-let slot=getSlot(new Date().getHours());
-queueRef.child("reserve/"+me.uid)
-.set({name:myData.name,time:Date.now(),slot});
-addLog(myData.name+" 預約 "+slot+"點");
-}
-
-function cancelReserve(){
-queueRef.child("reserve/"+me.uid).remove();
-addLog(myData.name+" 取消預約");
-}
-
-function goOut(){
-queueRef.child("out/"+me.uid)
-.set({name:myData.name,time:Date.now()});
-queueRef.child("reserve/"+me.uid).remove();
-addLog(myData.name+" 出去");
-}
-
-function comeBack(){
-
-queueRef.child("out/"+me.uid).once("value").then(s=>{
-let u=s.val();
-if(!u) return;
-
-let sec=Math.floor((Date.now()-u.time)/1000);
-let slot=getSlot(new Date().getHours());
-
-queueRef.child(`used/${slot}/${me.uid}`).set(true);
-
-queueRef.child("history").push({
-name:u.name,
-slot,
-duration:sec,
-timeout:false,
-time:Date.now()
-});
-});
-
-queueRef.child("out/"+me.uid).remove();
-addLog(myData.name+" 回來");
-}
-
-//////////////// 聊天 //////////////////
-
-msg.addEventListener("keydown",e=>{
-if(e.key==="Enter") send();
-});
-
-function send(){
-if(!msg.value.trim()) return;
-db.ref("chat").push({name:myData.name,text:msg.value,time:Date.now()});
-msg.value="";
-}
-
-db.ref("chat").limitToLast(200).on("value",snap=>{
-chat.innerHTML="";
-snap.forEach(s=>{
-let m=s.val();
-let d=document.createElement("div");
-d.className="msg";
-d.textContent=`${m.name}: ${m.text}`;
-chat.appendChild(d);
-});
-chat.scrollTop=99999;
-});
-
-//////////////// 刷新 //////////////////
-
-db.ref("reload").on("value",s=>{
-let t=s.val();
-if(!t) return;
-let h=sessionStorage.getItem("reload");
-if(h==t) return;
-sessionStorage.setItem("reload",t);
-location.reload();
-});
-
-function forceReload(){
-db.ref("reload").set(Date.now());
-setTimeout(()=>db.ref("reload").remove(),3000);
 }
 
 </script>
