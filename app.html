@@ -2,41 +2,122 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>抽菸排隊系統 聊天室</title>
+<title>抽菸排隊系統</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;height:100vh}
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(145deg,#0c0c12,#1a1a28);
+color:white;
+display:flex;
+height:100vh;
+}
 
-#users{width:240px;background:#1a1a28;padding:10px;overflow:auto}
-.user{padding:6px;margin:4px 0;background:#2a2a3a;border-radius:6px;cursor:pointer}
-.online{border-left:4px solid #00ff88}
+/* 左側面板 */
+#left{
+width:280px;
+background:rgba(20,20,30,.9);
+backdrop-filter:blur(12px);
+display:flex;
+flex-direction:column;
+padding:10px;
+overflow:hidden;
+}
+
+.panel{
+background:#161624;
+border-radius:12px;
+padding:10px;
+margin-bottom:10px;
+box-shadow:0 0 15px rgba(0,0,0,.4);
+}
+
+h3{margin:0 0 6px 0;font-size:14px;color:#8aaaff}
+
+/* 排隊 */
+#queue div{
+padding:4px 0;
+font-size:13px;
+}
+
+/* 日誌 */
+#log{
+height:160px;
+overflow:auto;
+font-size:12px;
+opacity:.8;
+}
+
+/* 在線 */
+.user{
+padding:5px;
+border-radius:6px;
+background:#252538;
+margin:3px 0;
+font-size:13px;
+}
+.online{border-left:3px solid #00ff88}
 .offline{opacity:.4}
 
-#queueBox{background:#101018;padding:8px;border-radius:8px;margin-bottom:10px}
-
+/* 主區 */
 #main{flex:1;display:flex;flex-direction:column}
-header{background:#1f1f2e;padding:12px;text-align:center}
 
-#adminPanel{background:#300;padding:6px;text-align:center;display:none}
+header{
+background:#141422;
+padding:12px;
+text-align:center;
+font-weight:bold;
+}
 
-#chat{flex:1;overflow:auto;padding:10px}
-.msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
+#chat{flex:1;overflow:auto;padding:12px}
+.msg{
+background:#222236;
+margin:5px 0;
+padding:8px;
+border-radius:8px;
+font-size:13px;
+}
 
-footer{display:flex;padding:10px;background:#1f1f2e}
-input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
-button{margin:4px 2px;padding:8px;border:none;border-radius:8px;background:#5c7cff;color:white;cursor:pointer}
+footer{
+display:flex;
+padding:10px;
+background:#141422;
+}
+
+input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:8px;
+background:#2b2b40;
+color:white;
+}
+
+button{
+padding:8px 10px;
+margin:2px;
+border:none;
+border-radius:8px;
+background:#5c7cff;
+color:white;
+cursor:pointer;
+font-size:12px;
+}
+
+button:hover{opacity:.9}
 </style>
 </head>
 
 <body>
 
-<div id="users">
+<div id="left">
 
-<div id="queueBox">
+<div class="panel">
 <h3>🚬 抽菸排隊</h3>
 <div id="queue"></div>
 <button onclick="reserve()">預約</button>
@@ -45,29 +126,35 @@ button{margin:4px 2px;padding:8px;border:none;border-radius:8px;background:#5c7c
 <button onclick="comeBack()">回來</button>
 </div>
 
-<h3>在線名單</h3>
+<div class="panel">
+<h3>📜 日誌</h3>
+<div id="log"></div>
+</div>
+
+<div class="panel">
+<h3>在線</h3>
 <div id="userList"></div>
+</div>
 
 </div>
 
 <div id="main">
-<header>抽菸排隊系統 聊天室</header>
 
-<div id="adminPanel">
-<button onclick="clearChat()">清空聊天室</button>
-<button onclick="forceReload()">強制全體刷新</button>
-</div>
+<header>抽菸排隊聊天室</header>
 
 <div id="chat"></div>
 
 <footer>
-<input id="msg" placeholder="輸入訊息">
+<input id="msg">
 <button onclick="send()">送出</button>
-<button onclick="logout()">登出</button>
+<button onclick="forceReload()">全體刷新</button>
 </footer>
+
 </div>
 
 <script>
+
+//////////////////// Firebase ////////////////////
 
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
@@ -75,182 +162,72 @@ authDomain:"smoke-queue.firebaseapp.com",
 databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
 projectId:"smoke-queue"
 };
-
 firebase.initializeApp(config);
 
-const auth=firebase.auth();
 const db=firebase.database();
+const auth=firebase.auth();
 
-let me=null,myData=null;
-let sendLock=false;
+//////////////////// 全域 ////////////////////
 
-msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
+let me,myData;
+const queueRef=db.ref("queue");
+const logRef=db.ref("log");
 
-/////////////////////////////
-// 強制全體刷新 修正版
-/////////////////////////////
+//////////////////// 強制刷新 ////////////////////
 
 let lastReload=0;
-
-db.ref("system/reload").on("value",s=>{
-const t=s.val();
-if(!t) return;
-if(t>lastReload){
+db.ref("reload").on("value",s=>{
+let t=s.val();
+if(t && t>lastReload){
 lastReload=t;
-location.reload();
+location.reload(true);
 }
 });
-
-/////////////////////////////
-// 登入流程
-/////////////////////////////
-
-auth.onAuthStateChanged(async user=>{
-if(!user) location.href="login.html";
-me=user;
-
-const ref=db.ref("users/"+user.uid);
-let snap=await ref.once("value");
-
-if(!snap.exists()){
-let name=prompt("請輸入你的暱稱");
-if(!name) name="訪客";
-
-await ref.set({
-name:name,
-role:"user",
-mute:false,
-online:false
-});
-}
-
-db.ref(".info/connected").on("value",s=>{
-if(s.val()){
-ref.child("online").set(true);
-ref.child("online").onDisconnect().set(false);
-}
-});
-
-ref.on("value",s=>{
-myData=s.val();
-if(myData.role==="admin"){
-adminPanel.style.display="block";
-}
-});
-
-loadUsers();
-loadChat();
-loadQueue();
-});
-
-/////////////////////////////
-// 在線名單
-/////////////////////////////
-
-function loadUsers(){
-db.ref("users").on("value",snap=>{
-userList.innerHTML="";
-snap.forEach(s=>{
-const u=s.val();
-const uid=s.key;
-
-const div=document.createElement("div");
-div.className="user "+(u.online?"online":"offline");
-div.textContent=u.name+(u.mute?" 🔇":"");
-
-if(myData?.role==="admin"){
-div.onclick=()=>adminMenu(uid,u);
-}
-
-userList.appendChild(div);
-});
-});
-}
-
-function adminMenu(uid,u){
-let a=prompt("1 改名\n2 禁言/解除");
-
-if(a==="1"){
-let n=prompt("新名字",u.name);
-if(n) db.ref("users/"+uid+"/name").set(n);
-}
-if(a==="2"){
-db.ref("users/"+uid+"/mute").set(!u.mute);
-}
-}
-
-/////////////////////////////
-// 聊天
-/////////////////////////////
-
-function loadChat(){
-db.ref("chat").on("value",snap=>{
-chat.innerHTML="";
-snap.forEach(s=>{
-const m=s.val();
-const time=new Date(m.time).toLocaleTimeString();
-
-const div=document.createElement("div");
-div.className="msg";
-div.textContent=`${m.name} [${time}] : ${m.text}`;
-
-chat.appendChild(div);
-});
-chat.scrollTop=999999;
-});
-}
-
-async function send(){
-
-if(sendLock) return;
-sendLock=true;
-setTimeout(()=>sendLock=false,1000);
-
-if(myData.mute){alert("你被禁言");return}
-if(msg.value.trim()=="") return;
-
-await db.ref("chat").push({
-uid:me.uid,
-name:myData.name,
-text:msg.value,
-time:Date.now()
-});
-
-msg.value="";
-}
-
-function clearChat(){
-if(confirm("確定清空聊天室?")) db.ref("chat").remove();
-}
 
 function forceReload(){
-db.ref("system/reload").set(Date.now());
+db.ref("reload").set(Date.now());
 }
 
-function logout(){auth.signOut()}
+//////////////////// 日誌 ////////////////////
 
-/////////////////////////////
-// 抽菸排隊系統
-/////////////////////////////
+function addLog(text){
+logRef.push({
+text:text,
+time:Date.now()
+});
+}
 
-const queueRef=db.ref("smokeQueue");
+logRef.limitToLast(100).on("value",snap=>{
+log.innerHTML="";
+snap.forEach(s=>{
+let l=s.val();
+let time=new Date(l.time).toLocaleTimeString();
+let d=document.createElement("div");
+d.textContent=`[${time}] ${l.text}`;
+log.appendChild(d);
+});
+log.scrollTop=99999;
+});
+
+//////////////////// 排隊 ////////////////////
 
 function reserve(){
 queueRef.child("reserve/"+me.uid).set({
-name:myData.name,
-time:Date.now()
+name:myData.name,time:Date.now()
 });
+addLog(myData.name+" 預約");
 }
 
 function cancelReserve(){
 queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 取消預約");
 }
 
 async function goOut(){
 
-if(!confirm("確定出去抽菸?")) return;
+if(!confirm("確定出去?")) return;
 
-const snap=await queueRef.child("out").once("value");
+let snap=await queueRef.child("out").once("value");
 let out=snap.val()||{};
 
 if(Object.keys(out).length>=3){
@@ -259,56 +236,106 @@ return;
 }
 
 queueRef.child("out/"+me.uid).set({
-name:myData.name,
-time:Date.now()
+name:myData.name,time:Date.now()
 });
-
 queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 出去");
 }
 
 function comeBack(){
 if(!confirm("確定回來?")) return;
 queueRef.child("out/"+me.uid).remove();
+addLog(myData.name+" 回來");
 }
 
-function loadQueue(){
-
 queueRef.on("value",snap=>{
-const data=snap.val()||{};
-const reserve=data.reserve||{};
-const out=data.out||{};
-
-let arr=Object.entries(reserve)
-.sort((a,b)=>a[1].time-b[1].time);
+let data=snap.val()||{};
+let r=data.reserve||{};
+let o=data.out||{};
 
 queue.innerHTML="";
 
-arr.forEach((u,i)=>{
-const div=document.createElement("div");
-div.textContent=`${i+1}. ${u[1].name}`;
-queue.appendChild(div);
+Object.entries(r)
+.sort((a,b)=>a[1].time-b[1].time)
+.forEach((u,i)=>{
+let d=document.createElement("div");
+d.textContent=`${i+1}. ${u[1].name}`;
+queue.appendChild(d);
 });
 
-Object.entries(out).forEach(([uid,u])=>{
-const t=Math.floor((Date.now()-u.time)/1000);
-const left=600-t;
+Object.entries(o).forEach(([uid,u])=>{
+let t=(Date.now()-u.time)/1000;
+let left=600-t;
 
-let status=left>0
-?`剩 ${Math.floor(left/60)}:${(left%60).toString().padStart(2,"0")}`
-:"超時";
-
-const div=document.createElement("div");
-div.textContent=`🚬 ${u.name} ${status}`;
-queue.appendChild(div);
+let d=document.createElement("div");
 
 if(left<=0){
 queueRef.child("out/"+uid).remove();
-}
-});
-});
+addLog(u.name+" 超時自動回來");
+return;
 }
 
-setInterval(()=>{},1000);
+d.textContent=`🚬 ${u.name} 剩 ${Math.floor(left/60)}:${Math.floor(left%60).toString().padStart(2,"0")}`;
+queue.appendChild(d);
+});
+});
+
+//////////////////// 聊天 ////////////////////
+
+function send(){
+if(!msg.value.trim()) return;
+
+db.ref("chat").push({
+name:myData.name,
+text:msg.value,
+time:Date.now()
+});
+msg.value="";
+}
+
+db.ref("chat").limitToLast(200).on("value",snap=>{
+chat.innerHTML="";
+snap.forEach(s=>{
+let m=s.val();
+let time=new Date(m.time).toLocaleTimeString();
+let d=document.createElement("div");
+d.className="msg";
+d.textContent=`${m.name} [${time}] ${m.text}`;
+chat.appendChild(d);
+});
+chat.scrollTop=99999;
+});
+
+//////////////////// 登入 ////////////////////
+
+auth.signInAnonymously();
+
+auth.onAuthStateChanged(async user=>{
+me=user;
+let ref=db.ref("users/"+user.uid);
+
+let snap=await ref.once("value");
+if(!snap.exists()){
+let name=prompt("暱稱");
+await ref.set({name:name||"訪客"});
+}
+
+ref.on("value",s=>myData=s.val());
+
+ref.child("online").set(true);
+ref.child("online").onDisconnect().set(false);
+
+db.ref("users").on("value",snap=>{
+userList.innerHTML="";
+snap.forEach(s=>{
+let u=s.val();
+let d=document.createElement("div");
+d.className="user "+(u.online?"online":"offline");
+d.textContent=u.name;
+userList.appendChild(d);
+});
+});
+});
 
 </script>
 </body>
