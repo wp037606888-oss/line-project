@@ -27,6 +27,7 @@ canvas{
   position:fixed;
   inset:0;
   z-index:0;
+  pointer-events:none; /* 關鍵修正 */
 }
 
 /* 卡片 */
@@ -40,12 +41,12 @@ canvas{
   width:350px;
   box-shadow:0 30px 80px rgba(0,0,0,0.8);
   border:1px solid rgba(255,255,255,0.1);
-  animation:fadeUp 0.8s ease;
+  animation:fadeUp .8s ease;
   overflow:hidden;
   transition:.4s;
 }
 
-/* 玻璃流光掃描 */
+/* 流光掃描 */
 .card::before{
   content:"";
   position:absolute;
@@ -53,24 +54,19 @@ canvas{
   left:-40%;
   width:180%;
   height:200%;
-  background:linear-gradient(120deg,transparent,rgba(255,255,255,0.08),transparent);
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.08),transparent);
   transform:rotate(25deg);
   animation:scan 6s linear infinite;
 }
 
-@keyframes scan{
-  to{top:100%}
-}
+@keyframes scan{to{top:100%}}
 
 @keyframes fadeUp{
   from{opacity:0;transform:translateY(20px) scale(.96)}
   to{opacity:1;transform:translateY(0) scale(1)}
 }
 
-.fadeOut{
-  opacity:0;
-  transform:scale(.95);
-}
+.fadeOut{opacity:0;transform:scale(.95)}
 
 .shake{animation:shake .4s}
 @keyframes shake{
@@ -82,11 +78,7 @@ canvas{
   100%{transform:translateX(0)}
 }
 
-h1{
-  text-align:center;
-  margin-bottom:28px;
-  font-weight:600;
-}
+h1{text-align:center;margin-bottom:28px;font-weight:600}
 
 input{
   width:100%;
@@ -154,10 +146,10 @@ button:hover{
 </div>
 
 <script>
-/* ===== 粒子連線網格 ===== */
+/* 粒子網格 */
 const canvas=document.getElementById("bg");
 const ctx=canvas.getContext("2d");
-let w,h,mouse={x:null,y:null};
+let w,h;
 function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
 onresize=resize;resize();
 
@@ -172,16 +164,11 @@ for(let i=0;i<P;i++){
   });
 }
 
-onmousemove=e=>{mouse.x=e.clientX;mouse.y=e.clientY};
-
 function draw(){
   ctx.clearRect(0,0,w,h);
-
   for(let i=0;i<P;i++){
     const a=particles[i];
-    a.x+=a.vx;
-    a.y+=a.vy;
-
+    a.x+=a.vx; a.y+=a.vy;
     if(a.x<0||a.x>w)a.vx*=-1;
     if(a.y<0||a.y>h)a.vy*=-1;
 
@@ -195,7 +182,6 @@ function draw(){
       const dx=a.x-b.x;
       const dy=a.y-b.y;
       const d=Math.sqrt(dx*dx+dy*dy);
-
       if(d<120){
         ctx.strokeStyle="rgba(125,140,255,"+(1-d/120)+")";
         ctx.lineWidth=.5;
@@ -205,26 +191,12 @@ function draw(){
         ctx.stroke();
       }
     }
-
-    if(mouse.x){
-      const dx=a.x-mouse.x;
-      const dy=a.y-mouse.y;
-      const d=Math.sqrt(dx*dx+dy*dy);
-      if(d<150){
-        ctx.strokeStyle="rgba(255,255,255,"+(1-d/150)+")";
-        ctx.beginPath();
-        ctx.moveTo(a.x,a.y);
-        ctx.lineTo(mouse.x,mouse.y);
-        ctx.stroke();
-      }
-    }
   }
-
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ===== Firebase ===== */
+/* Firebase */
 const firebaseConfig={
   apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
   authDomain:"smoke-queue.firebaseapp.com",
@@ -240,7 +212,7 @@ auth.onAuthStateChanged(user=>{
   if(user)location.href="app.html";
 });
 
-/* ===== 登入 ===== */
+/* 登入 */
 const form=document.getElementById("loginForm");
 const btn=document.getElementById("loginBtn");
 const card=document.getElementById("card");
