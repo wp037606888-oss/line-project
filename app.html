@@ -10,11 +10,11 @@
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#0e0e16;color:white;display:flex;height:100vh}
-#left{width:360px;background:#161625;padding:10px;display:flex;flex-direction:column}
+#left{width:380px;background:#161625;padding:10px;display:flex;flex-direction:column}
 .panel{background:#202035;border-radius:12px;padding:10px;margin-bottom:10px}
 h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
-#queue div,#log div{font-size:12px;margin:2px 0}
-#log{height:160px;overflow:auto}
+#queue div,#log div,#outList div,#history div{font-size:12px;margin:2px 0}
+#log{height:140px;overflow:auto}
 .user{padding:5px;background:#2a2a40;border-radius:6px;margin:3px 0;font-size:13px}
 .online{border-left:3px solid #00ff88}
 button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white}
@@ -26,6 +26,7 @@ header{background:#141422;padding:12px;text-align:center}
 footer{display:flex;padding:10px;background:#141422}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color:white}
 .hidden{display:none}
+.red{color:#ff4d4d}
 </style>
 </head>
 
@@ -47,6 +48,12 @@ input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color
 <button id="bCancel" onclick="cancelReserve()">取消</button>
 <button id="bOut" onclick="goOut()">出去</button>
 <button id="bBack" onclick="comeBack()">回來</button>
+
+<h3>🚶 正在外面</h3>
+<div id="outList"></div>
+
+<h3>📊 本時段紀錄</h3>
+<div id="history"></div>
 </div>
 
 <div class="panel">
@@ -73,8 +80,6 @@ input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color
 </div>
 
 <script>
-
-//////////////// Firebase //////////////////
 
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
@@ -144,7 +149,6 @@ who.textContent="目前登入："+myData.name;
 if(myData.role==="admin")
 reloadBtn.classList.remove("hidden");
 
-// 登入後才寫 log
 addLog("🟢 "+myData.name+" 登入");
 
 engineReady=true;
@@ -161,20 +165,12 @@ addLog("🔴 "+myData.name+" 登出");
 auth.signOut().then(()=>location.href="login.html");
 }
 
-//////////////// 下午時段規則 //////////////////
+//////////////// 時段 //////////////////
 
 function getSlot(h){
-
-// 下午時段
 const slots=[14,16,18,20,22,24];
-
-// 凌晨 00:xx 算 12 點
 if(h===0) return 24;
-
-for(let s of slots){
-if(h<=s) return s;
-}
-
+for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
@@ -207,6 +203,7 @@ queueRef.once("value").then(snap=>{
 let d=snap.val()||{};
 let r=d.reserve||{};
 let o=d.out||{};
+let hist=d.history||{};
 
 let state="none";
 
@@ -232,6 +229,65 @@ let d=document.createElement("div");
 d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
 queue.appendChild(d);
 });
+
+renderOut(o,slot);
+renderHistory(hist,slot);
+
+});
+}
+
+//////////////// 外出監控 //////////////////
+
+const LIMIT=600;
+
+function renderOut(out,slot){
+
+outList.innerHTML="";
+let now=Date.now();
+
+Object.entries(out).forEach(([uid,u])=>{
+let sec=Math.floor((now-u.time)/1000);
+let div=document.createElement("div");
+
+if(sec>LIMIT){
+div.className="red";
+div.textContent=`${u.name} 超時 ${sec}s`;
+
+queueRef.child("out/"+uid).remove();
+
+queueRef.child("history").push({
+name:u.name,
+slot,
+duration:sec,
+timeout:true,
+time:Date.now()
+});
+
+addLog(u.name+" 超時自動回來");
+
+}else{
+div.textContent=`${u.name} 外出 ${sec}s`;
+}
+
+outList.appendChild(div);
+});
+}
+
+function renderHistory(hist,slot){
+
+history.innerHTML="";
+
+Object.values(hist)
+.filter(h=>h.slot==slot)
+.forEach(h=>{
+let div=document.createElement("div");
+if(h.timeout){
+div.className="red";
+div.textContent=`${h.name} 超時 ${h.duration}s`;
+}else{
+div.textContent=`${h.name} ${h.duration}s`;
+}
+history.appendChild(div);
 });
 }
 
@@ -257,6 +313,23 @@ addLog(myData.name+" 出去");
 }
 
 function comeBack(){
+
+queueRef.child("out/"+me.uid).once("value").then(s=>{
+let u=s.val();
+if(!u) return;
+
+let sec=Math.floor((Date.now()-u.time)/1000);
+let slot=getSlot(new Date().getHours());
+
+queueRef.child("history").push({
+name:u.name,
+slot,
+duration:sec,
+timeout:false,
+time:Date.now()
+});
+});
+
 queueRef.child("out/"+me.uid).remove();
 addLog(myData.name+" 回來");
 }
