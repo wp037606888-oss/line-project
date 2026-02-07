@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>聊天室</title>
+<title>抽菸排隊系統 聊天室</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -17,26 +17,29 @@ body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;h
 
 #main{flex:1;display:flex;flex-direction:column}
 header{background:#1f1f2e;padding:12px;text-align:center}
+
+#adminPanel{background:#300;padding:6px;text-align:center;display:none}
+
 #chat{flex:1;overflow:auto;padding:10px}
 .msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
 
 footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
 button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
-
-.adminPanel{background:#300;padding:6px;text-align:center}
-.time{font-size:11px;opacity:.6;margin-left:6px}
 </style>
 </head>
 
 <body>
 
-<div id="users"><h3>在線名單</h3><div id="userList"></div></div>
+<div id="users">
+<h3>在線名單</h3>
+<div id="userList"></div>
+</div>
 
 <div id="main">
 <header>抽菸排隊系統 聊天室</header>
 
-<div id="adminPanel" class="adminPanel" style="display:none">
+<div id="adminPanel">
 <button onclick="clearChat()">清空聊天室</button>
 <button onclick="forceReload()">強制全體刷新</button>
 </div>
@@ -64,9 +67,13 @@ const db=firebase.database();
 
 let me=null,myData=null;
 let sendLock=false;
-let lastReload=0;
 
 msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
+
+// ===== 強制 reload 監聽 =====
+db.ref("system/reload").on("value",s=>{
+if(s.val()) location.reload();
+});
 
 // ===== 登入 =====
 auth.onAuthStateChanged(async user=>{
@@ -88,27 +95,15 @@ ref.child("online").onDisconnect().set(false);
 }
 });
 
-// 即時監聽自己狀態
+// 即時同步自己資料
 ref.on("value",s=>{
 myData=s.val();
 if(myData.role==="admin") adminPanel.style.display="block";
 });
 
-watchSystem();
 loadUsers();
 loadChat();
 });
-
-// ===== 強制刷新監聽 =====
-function watchSystem(){
-db.ref("system/forceReload").on("value",s=>{
-const v=s.val();
-if(!v) return;
-if(v===lastReload) return;
-lastReload=v;
-location.reload();
-});
-}
 
 // ===== 在線名單 =====
 function loadUsers(){
@@ -148,12 +143,10 @@ db.ref("users/"+uid+"/mute").set(!u.mute);
 function loadChat(){
 db.ref("chat").on("child_added",s=>{
 const m=s.val();
+const time=new Date(m.time).toLocaleTimeString();
 
 const div=document.createElement("div");
 div.className="msg";
-
-const time=new Date(m.time).toLocaleTimeString();
-
 div.textContent=`${m.name} [${time}] : ${m.text}`;
 
 chat.appendChild(div);
@@ -161,7 +154,7 @@ chat.scrollTop=999999;
 });
 }
 
-// ===== 發送 =====
+// ===== 發送（1秒冷卻） =====
 async function send(){
 
 if(sendLock) return;
@@ -183,11 +176,11 @@ msg.value="";
 
 // ===== 管理員工具 =====
 function clearChat(){
-if(confirm("確定清空?")) db.ref("chat").remove();
+if(confirm("確定清空聊天室?")) db.ref("chat").remove();
 }
 
 function forceReload(){
-db.ref("system/forceReload").set(Date.now());
+db.ref("system/reload").set(Date.now());
 }
 
 function logout(){auth.signOut()}
