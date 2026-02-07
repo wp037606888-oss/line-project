@@ -74,6 +74,8 @@ input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color
 
 <script>
 
+//////////////// Firebase //////////////////
+
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
 authDomain:"smoke-queue.firebaseapp.com",
@@ -142,13 +144,14 @@ who.textContent="目前登入："+myData.name;
 if(myData.role==="admin")
 reloadBtn.classList.remove("hidden");
 
+// 登入後才寫 log
+addLog("🟢 "+myData.name+" 登入");
+
 engineReady=true;
 });
 
 ref.child("online").set(true);
 ref.child("online").onDisconnect().set(false);
-
-addLog("🟢 "+myData?.name+" 登入");
 
 loadUsers();
 });
@@ -158,15 +161,24 @@ addLog("🔴 "+myData.name+" 登出");
 auth.signOut().then(()=>location.href="login.html");
 }
 
-//////////////// 時間引擎 //////////////////
+//////////////// 下午時段規則 //////////////////
 
 function getSlot(h){
-const slots=[2,4,6,8,10,12];
+
+// 下午時段
+const slots=[14,16,18,20,22,24];
+
+// 凌晨 00:xx 算 12 點
+if(h===0) return 24;
+
 for(let s of slots){
 if(h<=s) return s;
 }
-return 2;
+
+return 14;
 }
+
+//////////////// 時間引擎 //////////////////
 
 function tick(){
 
@@ -201,7 +213,7 @@ let state="none";
 if(o[me.uid]) state="out";
 else if(r[me.uid]) state="reserved";
 
-let canGo=(h==slot);
+let canGo=(h==slot || (slot==24 && h==0));
 
 status.textContent=
 state=="out"?"外出中":
@@ -217,7 +229,7 @@ queue.innerHTML="";
 Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
 .forEach((u,i)=>{
 let d=document.createElement("div");
-d.textContent=`${i+1}. ${u[1].name}`;
+d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
 queue.appendChild(d);
 });
 });
@@ -273,7 +285,7 @@ chat.appendChild(d);
 chat.scrollTop=99999;
 });
 
-//////////////// 刷新 //////////////////
+//////////////// 安全刷新 //////////////////
 
 db.ref("reload").on("value",s=>{
 let t=s.val();
