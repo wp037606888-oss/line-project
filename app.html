@@ -1,3 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>抽菸排隊系統 聊天室</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;height:100vh}
+#users{width:220px;background:#1a1a28;padding:10px;overflow:auto}
+.user{padding:6px;margin:4px 0;background:#2a2a3a;border-radius:6px;cursor:pointer}
+.online{border-left:4px solid #00ff88}
+.offline{opacity:.4}
+
+#main{flex:1;display:flex;flex-direction:column}
+header{background:#1f1f2e;padding:12px;text-align:center}
+
+#adminPanel{background:#300;padding:6px;text-align:center;display:none}
+
+#chat{flex:1;overflow:auto;padding:10px}
+.msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
+
+footer{display:flex;padding:10px;background:#1f1f2e}
+input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
+button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
+</style>
+</head>
+
+<body>
+
+<div id="users">
+<h3>在線名單</h3>
+<div id="userList"></div>
+</div>
+
+<div id="main">
+<header>抽菸排隊系統 聊天室</header>
+
+<div id="adminPanel">
+<button onclick="clearChat()">清空聊天室</button>
+<button onclick="forceReload()">強制全體刷新</button>
+</div>
+
+<div id="chat"></div>
+
+<footer>
+<input id="msg" placeholder="輸入訊息">
+<button onclick="send()">送出</button>
+<button onclick="logout()">登出</button>
+</footer>
+</div>
+
+<script>
+const config={
+apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+authDomain:"smoke-queue.firebaseapp.com",
+databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
+projectId:"smoke-queue"
+};
+firebase.initializeApp(config);
+
 const auth=firebase.auth();
 const db=firebase.database();
 
@@ -6,7 +70,7 @@ let sendLock=false;
 
 msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 
-// 強制 reload
+// ===== 強制 reload =====
 db.ref("system/reload").on("value",s=>{
 if(s.val()) location.reload();
 });
@@ -20,7 +84,7 @@ const ref=db.ref("users/"+user.uid);
 let snap=await ref.once("value");
 
 if(!snap.exists()){
-let name=prompt("請輸入暱稱");
+let name=prompt("請輸入你的暱稱");
 if(!name) name="訪客";
 
 await ref.set({
@@ -39,7 +103,7 @@ ref.child("online").onDisconnect().set(false);
 }
 });
 
-// 即時同步自己資料
+// 同步自己資料
 ref.on("value",s=>{
 myData=s.val();
 if(myData.role==="admin"){
@@ -85,10 +149,8 @@ db.ref("users/"+uid+"/mute").set(!u.mute);
 }
 }
 
-// ===== 聊天 =====
+// ===== 聊天（即時同步 + 清空修正） =====
 function loadChat(){
-
-// ⭐ 監聽整個 chat 節點（修清空 bug）
 db.ref("chat").on("value",snap=>{
 chat.innerHTML="";
 snap.forEach(s=>{
@@ -103,7 +165,6 @@ chat.appendChild(div);
 });
 chat.scrollTop=999999;
 });
-
 }
 
 // ===== 發送 =====
@@ -136,3 +197,6 @@ db.ref("system/reload").set(Date.now());
 }
 
 function logout(){auth.signOut()}
+</script>
+</body>
+</html>
