@@ -14,7 +14,7 @@ margin:0;
 font-family:Segoe UI;
 background:linear-gradient(135deg,#0b0b14,#1a1a2b);
 color:white;
-display:flex;
+display:none;
 height:100vh;
 }
 
@@ -36,23 +36,10 @@ margin-bottom:10px;
 box-shadow:0 0 15px rgba(0,0,0,.4);
 }
 
-h3{
-margin:0 0 6px;
-font-size:14px;
-color:#7fa9ff;
-}
+h3{margin:0 0 6px;font-size:14px;color:#7fa9ff;}
 
-.user{
-padding:6px;
-background:#2a2a44;
-border-radius:8px;
-margin:3px 0;
-transition:.2s;
-}
-
-.online{
-border-left:4px solid #00ff88;
-}
+.user{padding:6px;background:#2a2a44;border-radius:8px;margin:3px 0;}
+.online{border-left:4px solid #00ff88;}
 
 button{
 padding:9px;
@@ -65,51 +52,28 @@ cursor:pointer;
 font-weight:600;
 }
 
-button:hover{filter:brightness(1.15);}
 button:disabled{background:#333;cursor:not-allowed;}
-
 .red{color:#ff5a5a}
 
-#main{
-flex:1;
-display:flex;
-flex-direction:column;
-background:rgba(0,0,0,.25);
-}
+#main{flex:1;display:flex;flex-direction:column;background:rgba(0,0,0,.25);}
 
 header{
 background:rgba(0,0,0,.4);
 padding:14px;
 text-align:center;
 font-weight:bold;
-letter-spacing:1px;
 }
 
-#chat{
-flex:1;
-overflow:auto;
-padding:12px;
-}
+#chat{flex:1;overflow:auto;padding:12px;}
 
 .msg{
 background:#24243a;
 margin:6px 0;
 padding:10px;
 border-radius:10px;
-animation:fade .2s ease;
 }
 
-@keyframes fade{
-from{opacity:0;transform:translateY(5px)}
-to{opacity:1}
-}
-
-footer{
-display:flex;
-gap:6px;
-padding:10px;
-background:rgba(0,0,0,.35);
-}
+footer{display:flex;gap:6px;padding:10px;background:rgba(0,0,0,.35);}
 
 input{
 flex:1;
@@ -141,10 +105,10 @@ color:white;
 <button id="bOut" onclick="goOut()">出去</button>
 <button id="bBack" onclick="comeBack()">回來</button>
 
-<h3>🚶 正在外面</h3>
+<h3>🚶 外出</h3>
 <div id="outList"></div>
 
-<h3>📊 本時段紀錄</h3>
+<h3>📊 紀錄</h3>
 <div id="history"></div>
 </div>
 
@@ -166,7 +130,6 @@ color:white;
 <footer>
 <input id="msg">
 <button onclick="send()">送出</button>
-<button id="reloadBtn" class="hidden" onclick="forceReload()">全體刷新</button>
 <button onclick="logout()">登出</button>
 </footer>
 </div>
@@ -179,6 +142,7 @@ authDomain:"YOUR_DOMAIN",
 databaseURL:"YOUR_DB",
 projectId:"YOUR_PROJECT"
 };
+
 firebase.initializeApp(config);
 
 const db=firebase.database();
@@ -186,9 +150,8 @@ const auth=firebase.auth();
 const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
-let me,myData,engineReady=false;
+let me,myData;
 let queueData={};
-
 const LIMIT=600;
 
 function format(sec){
@@ -204,38 +167,14 @@ for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
-queueRef.on("value",snap=>{
-queueData=snap.val()||{};
-});
+auth.onAuthStateChanged(async user=>{
 
-function addLog(t){
-logRef.push({text:t,time:Date.now()});
+if(!user){
+location.replace("login.html");
+return;
 }
 
-logRef.limitToLast(100).on("value",snap=>{
-log.innerHTML="";
-snap.forEach(s=>{
-let l=s.val();
-let d=document.createElement("div");
-d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
-log.appendChild(d);
-});
-log.scrollTop=99999;
-});
-
-db.ref("users").on("value",snap=>{
-userList.innerHTML="";
-snap.forEach(s=>{
-let u=s.val();
-let d=document.createElement("div");
-d.className="user "+(u.online?"online":"");
-d.textContent=u.name;
-userList.appendChild(d);
-});
-});
-
-auth.onAuthStateChanged(async user=>{
-if(!user){location.href="login.html";return;}
+document.body.style.display="flex";
 
 me=user;
 const ref=db.ref("users/"+user.uid);
@@ -249,20 +188,28 @@ await ref.set({name:name||"訪客",role:"user"});
 ref.on("value",s=>{
 myData=s.val();
 who.textContent="目前登入："+myData.name;
-if(myData.role==="admin") reloadBtn.classList.remove("hidden");
-engineReady=true;
 });
 
 ref.child("online").set(true);
 ref.child("online").onDisconnect().set(false);
+
+startEngine();
 });
 
 function logout(){
-auth.signOut().then(()=>location.href="login.html");
+auth.signOut().then(()=>location.replace("login.html"));
+}
+
+queueRef.on("value",snap=>{
+queueData=snap.val()||{};
+});
+
+function startEngine(){
+setInterval(tick,1000);
 }
 
 function tick(){
-if(!engineReady) return;
+if(!myData) return;
 
 let now=new Date();
 let h=now.getHours();
@@ -276,7 +223,6 @@ slotInfo.textContent=`時段：${slot}:00–${slot}:59`;
 
 updateState(slot,h);
 }
-setInterval(tick,1000);
 
 function updateState(slot,h){
 
@@ -325,24 +271,17 @@ let now=Date.now();
 
 Object.entries(out).forEach(([uid,u])=>{
 let sec=Math.floor((now-u.time)/1000);
-let div=document.createElement("div");
 
 if(sec>LIMIT && !u.timeoutHandled){
-queueRef.child("out/"+uid).update({timeoutHandled:true});
 queueRef.child("out/"+uid).remove();
 queueRef.child(`used/${slot}/${uid}`).set(true);
-
 queueRef.child("history").push({
-name:u.name,
-slot,
-duration:sec,
-timeout:true,
-time:Date.now()
+name:u.name,slot,duration:sec,timeout:true,time:Date.now()
 });
-addLog(u.name+" 超時自動回來");
 return;
 }
 
+let div=document.createElement("div");
 div.textContent=`${u.name} 外出 ${format(sec)}`;
 outList.appendChild(div);
 });
@@ -386,11 +325,7 @@ let slot=getSlot(new Date().getHours());
 queueRef.child(`used/${slot}/${me.uid}`).set(true);
 
 queueRef.child("history").push({
-name:u.name,
-slot,
-duration:sec,
-timeout:false,
-time:Date.now()
+name:u.name,slot,duration:sec,timeout:false,time:Date.now()
 });
 });
 queueRef.child("out/"+me.uid).remove();
@@ -417,20 +352,6 @@ chat.appendChild(d);
 });
 chat.scrollTop=99999;
 });
-
-db.ref("reload").on("value",s=>{
-let t=s.val();
-if(!t) return;
-let h=sessionStorage.getItem("reload");
-if(h==t) return;
-sessionStorage.setItem("reload",t);
-location.reload();
-});
-
-function forceReload(){
-db.ref("reload").set(Date.now());
-setTimeout(()=>db.ref("reload").remove(),3000);
-}
 
 </script>
 </body>
