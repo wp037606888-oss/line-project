@@ -10,11 +10,11 @@
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#0f0f18;color:white;display:flex;height:100vh}
-#left{width:280px;background:#171728;padding:10px;display:flex;flex-direction:column}
+#left{width:300px;background:#171728;padding:10px;display:flex;flex-direction:column}
 .panel{background:#202035;border-radius:12px;padding:10px;margin-bottom:10px}
 h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
 #queue div,#log div{font-size:12px;margin:2px 0}
-#log{height:160px;overflow:auto}
+#log{height:150px;overflow:auto}
 .user{padding:5px;background:#2a2a40;border-radius:6px;margin:3px 0;font-size:13px}
 .online{border-left:3px solid #00ff88}
 .offline{opacity:.4}
@@ -25,6 +25,8 @@ header{background:#141422;padding:12px;text-align:center}
 footer{display:flex;padding:10px;background:#141422}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color:white}
 button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white;cursor:pointer}
+#who{font-size:12px;opacity:.7;margin-bottom:6px}
+.hidden{display:none}
 </style>
 </head>
 
@@ -33,12 +35,16 @@ button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;c
 <div id="left">
 
 <div class="panel">
+<div id="who">登入中...</div>
+</div>
+
+<div class="panel">
 <h3>🚬 抽菸排隊</h3>
 <div id="queue"></div>
-<button onclick="reserve()">預約</button>
-<button onclick="cancelReserve()">取消</button>
-<button onclick="goOut()">出去</button>
-<button onclick="comeBack()">回來</button>
+<button id="bReserve" onclick="reserve()">預約</button>
+<button id="bCancel" onclick="cancelReserve()">取消</button>
+<button id="bOut" onclick="goOut()">出去</button>
+<button id="bBack" onclick="comeBack()">回來</button>
 </div>
 
 <div class="panel">
@@ -59,14 +65,12 @@ button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;c
 <footer>
 <input id="msg">
 <button onclick="send()">送出</button>
+<button id="reloadBtn" class="hidden" onclick="forceReload()">全體刷新</button>
 <button onclick="logout()">登出</button>
-<button onclick="forceReload()">全體刷新</button>
 </footer>
 </div>
 
 <script>
-
-//////////////// Firebase //////////////////
 
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
@@ -79,29 +83,45 @@ firebase.initializeApp(config);
 const db=firebase.database();
 const auth=firebase.auth();
 
-//////////////// 登入守門 //////////////////
+let me,myData,ready=false;
 
-let me,myData;
+const queueRef=db.ref("queue");
+const logRef=db.ref("log");
+
+function lockButtons(v){
+["bReserve","bCancel","bOut","bBack"].forEach(id=>{
+document.getElementById(id).disabled=v;
+});
+}
+
+lockButtons(true);
+
+//////////////// 登入 //////////////////
 
 auth.onAuthStateChanged(async user=>{
 
-// ❌ 沒登入 → 踢回 login
-if(!user){
-location.href="login.html";
-return;
-}
+if(!user){location.href="login.html";return;}
 
 me=user;
-
 const ref=db.ref("users/"+user.uid);
-let snap=await ref.once("value");
 
+let snap=await ref.once("value");
 if(!snap.exists()){
 let name=prompt("暱稱");
-await ref.set({name:name||"訪客"});
+await ref.set({name:name||"訪客",role:"user"});
 }
 
-ref.on("value",s=>myData=s.val());
+ref.on("value",s=>{
+myData=s.val();
+who.textContent="目前登入："+myData.name;
+
+if(myData.role==="admin"){
+reloadBtn.classList.remove("hidden");
+}
+
+ready=true;
+lockButtons(false);
+});
 
 ref.child("online").set(true);
 ref.child("online").onDisconnect().set(false);
@@ -124,25 +144,7 @@ userList.appendChild(d);
 });
 }
 
-//////////////// 強制刷新 //////////////////
-
-let lastReload=0;
-
-db.ref("reload").on("value",s=>{
-let t=s.val();
-if(t && t>lastReload){
-lastReload=t;
-location.reload(true);
-}
-});
-
-function forceReload(){
-db.ref("reload").set(Date.now());
-}
-
 //////////////// 日誌 //////////////////
-
-const logRef=db.ref("log");
 
 function addLog(t){
 logRef.push({text:t,time:Date.now()});
@@ -152,9 +154,8 @@ logRef.limitToLast(100).on("value",snap=>{
 log.innerHTML="";
 snap.forEach(s=>{
 let l=s.val();
-let time=new Date(l.time).toLocaleTimeString();
 let d=document.createElement("div");
-d.textContent=`[${time}] ${l.text}`;
+d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
 log.appendChild(d);
 });
 log.scrollTop=99999;
@@ -162,29 +163,25 @@ log.scrollTop=99999;
 
 //////////////// 排隊 //////////////////
 
-const queueRef=db.ref("queue");
-
 function reserve(){
+if(!ready) return;
 queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now()});
 addLog(myData.name+" 預約");
 }
 
 function cancelReserve(){
+if(!ready) return;
 queueRef.child("reserve/"+me.uid).remove();
 addLog(myData.name+" 取消預約");
 }
 
 async function goOut(){
-
+if(!ready) return;
 if(!confirm("確定出去?")) return;
 
 let snap=await queueRef.child("out").once("value");
 let out=snap.val()||{};
-
-if(Object.keys(out).length>=3){
-alert("已滿3人");
-return;
-}
+if(Object.keys(out).length>=3){alert("已滿3人");return;}
 
 queueRef.child("out/"+me.uid).set({name:myData.name,time:Date.now()});
 queueRef.child("reserve/"+me.uid).remove();
@@ -192,6 +189,7 @@ addLog(myData.name+" 出去");
 }
 
 function comeBack(){
+if(!ready) return;
 if(!confirm("確定回來?")) return;
 queueRef.child("out/"+me.uid).remove();
 addLog(myData.name+" 回來");
@@ -201,11 +199,9 @@ queueRef.on("value",snap=>{
 let data=snap.val()||{};
 let r=data.reserve||{};
 let o=data.out||{};
-
 queue.innerHTML="";
 
-Object.entries(r)
-.sort((a,b)=>a[1].time-b[1].time)
+Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
 .forEach((u,i)=>{
 let d=document.createElement("div");
 d.textContent=`${i+1}. ${u[1].name}`;
@@ -215,13 +211,11 @@ queue.appendChild(d);
 Object.entries(o).forEach(([uid,u])=>{
 let t=(Date.now()-u.time)/1000;
 let left=600-t;
-
 if(left<=0){
 queueRef.child("out/"+uid).remove();
 addLog(u.name+" 超時自動回來");
 return;
 }
-
 let d=document.createElement("div");
 d.textContent=`🚬 ${u.name} 剩 ${Math.floor(left/60)}:${Math.floor(left%60).toString().padStart(2,"0")}`;
 queue.appendChild(d);
@@ -232,11 +226,7 @@ queue.appendChild(d);
 
 function send(){
 if(!msg.value.trim()) return;
-db.ref("chat").push({
-name:myData.name,
-text:msg.value,
-time:Date.now()
-});
+db.ref("chat").push({name:myData.name,text:msg.value,time:Date.now()});
 msg.value="";
 }
 
@@ -244,14 +234,22 @@ db.ref("chat").limitToLast(200).on("value",snap=>{
 chat.innerHTML="";
 snap.forEach(s=>{
 let m=s.val();
-let time=new Date(m.time).toLocaleTimeString();
 let d=document.createElement("div");
 d.className="msg";
-d.textContent=`${m.name} [${time}] ${m.text}`;
+d.textContent=`${m.name} ${m.text}`;
 chat.appendChild(d);
 });
 chat.scrollTop=99999;
 });
+
+//////////////// 刷新 //////////////////
+
+let lastReload=0;
+db.ref("reload").on("value",s=>{
+let t=s.val();
+if(t && t>lastReload){lastReload=t;location.reload(true);}
+});
+function forceReload(){db.ref("reload").set(Date.now());}
 
 function logout(){
 auth.signOut().then(()=>location.href="login.html");
