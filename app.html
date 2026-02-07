@@ -36,23 +36,11 @@ margin-bottom:10px;
 box-shadow:0 0 20px rgba(0,0,0,0.3);
 }
 
-h3{
-margin:0 0 6px;
-font-size:14px;
-color:#9ec3ff;
-}
-
+h3{margin:0 0 6px;font-size:14px;color:#9ec3ff}
 button{
-padding:10px;
-margin:3px;
-border:none;
-border-radius:10px;
-background:#5d86ff;
-color:white;
-cursor:pointer;
-font-weight:600;
+padding:10px;margin:3px;border:none;border-radius:10px;
+background:#5d86ff;color:white;cursor:pointer;font-weight:600;
 }
-
 button:hover{background:#7aa2ff}
 button:disabled{background:#444}
 
@@ -67,66 +55,39 @@ background:rgba(0,0,0,0.25);
 }
 
 header{
-padding:12px;
-text-align:center;
-font-size:16px;
+padding:12px;text-align:center;font-size:16px;
 background:rgba(0,0,0,0.3);
 }
 
 #onlineBar{
 display:grid;
 grid-template-columns:repeat(2,1fr);
-gap:6px;
-padding:8px;
-background:rgba(0,0,0,0.25);
+gap:6px;padding:8px;background:rgba(0,0,0,0.25);
 }
 
 .userBox{
-padding:6px;
-border-radius:8px;
-font-size:12px;
-text-align:center;
+padding:6px;border-radius:8px;font-size:12px;text-align:center;
 background:#444;
 }
 
-.onlineUser{
-background:#1e5f3c;
-border:1px solid #00ff88;
-}
+.onlineUser{background:#1e5f3c;border:1px solid #00ff88}
+.offlineUser{background:#3a3a3a;opacity:0.6}
 
-.offlineUser{
-background:#3a3a3a;
-opacity:0.6;
-}
-
-#chat{
-flex:1;
-overflow:auto;
-padding:10px;
-}
+#chat{flex:1;overflow:auto;padding:10px}
 
 .msg{
-background:#2c355a;
-margin:4px 0;
-padding:8px;
-border-radius:10px;
-font-size:13px;
+background:#2c355a;margin:4px 0;padding:8px;
+border-radius:10px;font-size:13px;
 }
 
 footer{
-display:flex;
-gap:6px;
-padding:10px;
+display:flex;gap:6px;padding:10px;
 background:rgba(0,0,0,0.3);
 }
 
 input{
-flex:1;
-padding:10px;
-border:none;
-border-radius:10px;
-background:#2c355a;
-color:white;
+flex:1;padding:10px;border:none;border-radius:10px;
+background:#2c355a;color:white;
 }
 
 .hidden{display:none}
@@ -176,9 +137,7 @@ color:white;
 
 <div id="main">
 <header>聊天室</header>
-
 <div id="onlineBar"></div>
-
 <div id="chat"></div>
 
 <footer>
@@ -212,7 +171,7 @@ queueRef.on("value",snap=>{
 cacheQueue=snap.val()||{};
 });
 
-//////////////// 在線顯示 //////////////////
+//////////////// 在線 //////////////////
 
 db.ref("users").on("value",snap=>{
 onlineBar.innerHTML="";
@@ -282,40 +241,67 @@ function clearChat(){db.ref("chat").remove();addLog("管理員清空聊天室");
 function clearLog(){logRef.remove();}
 function resetQueue(){queueRef.remove();addLog("管理員重置排隊");}
 
-//////////////// 其餘引擎（與上一版相同） //////////////////
+//////////////// 工具 //////////////////
 
-function format(sec){let m=Math.floor(sec/60);let s=sec%60;return `${m}:${s.toString().padStart(2,"0")}`;}
-function getSlot(h){const slots=[14,16,18,20,22,24];if(h===0) return 24;for(let s of slots) if(h<=s) return s;return 14;}
+function format(sec){
+let m=Math.floor(sec/60);
+let s=sec%60;
+return `${m}:${s.toString().padStart(2,"0")}`;
+}
+
+function getSlot(h){
+const slots=[14,16,18,20,22,24];
+if(h===0) return 24;
+for(let s of slots) if(h<=s) return s;
+return 14;
+}
+
+//////////////// 引擎 //////////////////
 
 function tick(){
 if(!engineReady) return;
+
 let now=new Date();
 let h=now.getHours();
 let m=now.getMinutes();
 let s=now.getSeconds();
+
 clock.textContent=`現在時間：${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+
 let slot=getSlot(h);
 slotInfo.textContent=`時段：${slot}:00–${slot}:59`;
+
 updateState(slot,h);
 }
 setInterval(tick,1000);
 
 function updateState(slot,h){
+
 let d=cacheQueue;
 let r=d.reserve||{};
 let o=d.out||{};
 let hist=d.history||{};
 let used=d.used||{};
+
 let state="none";
+
 if(o[me.uid]) state="out";
 else if(r[me.uid]) state="reserved";
+
 let alreadyUsed=used[slot]?.[me.uid];
 let canGo=(h==slot || (slot==24 && h==0));
-status.textContent=alreadyUsed?"本時段已抽":state=="out"?"外出中":state=="reserved"?(canGo?"可出去":"已預約"):"未預約";
+
+status.textContent=
+alreadyUsed?"本時段已抽":
+state=="out"?"外出中":
+state=="reserved"?(canGo?"可出去":"已預約"):
+"未預約";
+
 bReserve.disabled=state!="none" || alreadyUsed;
 bCancel.disabled=state!="reserved";
 bOut.disabled=!(state=="reserved"&&canGo);
 bBack.disabled=state!="out";
+
 renderQueue(r);
 renderOut(o,slot);
 renderHistory(hist,slot);
@@ -344,7 +330,9 @@ outList.appendChild(div);
 
 function renderHistory(hist,slot){
 history.innerHTML="";
-Object.values(hist).filter(h=>h.slot===slot).slice(-20)
+Object.values(hist)
+.filter(h=>h.slot===slot)
+.slice(-20)
 .forEach(h=>{
 let div=document.createElement("div");
 div.textContent=`${h.name} ${format(h.duration)}`;
@@ -352,10 +340,82 @@ history.appendChild(div);
 });
 }
 
+//////////////// 修正後排隊（核心修復） //////////////////
+
+function refreshCache(){
+return queueRef.once("value").then(s=>cacheQueue=s.val()||{});
+}
+
+function reserve(){
+let slot=getSlot(new Date().getHours());
+queueRef.child("reserve/"+me.uid)
+.set({name:myData.name,time:Date.now(),slot})
+.then(refreshCache);
+
+addLog(myData.name+" 預約 "+slot+"點");
+}
+
+function cancelReserve(){
+queueRef.child("reserve/"+me.uid)
+.remove()
+.then(refreshCache);
+
+addLog(myData.name+" 取消預約");
+}
+
+function goOut(){
+queueRef.child("out/"+me.uid)
+.set({name:myData.name,time:Date.now()})
+.then(()=>{
+queueRef.child("reserve/"+me.uid).remove();
+return refreshCache();
+});
+
+addLog(myData.name+" 出去");
+}
+
+function comeBack(){
+
+queueRef.child("out/"+me.uid).once("value").then(s=>{
+let u=s.val();
+if(!u) return;
+
+let sec=Math.floor((Date.now()-u.time)/1000);
+let slot=getSlot(new Date().getHours());
+
+queueRef.child(`used/${slot}/${me.uid}`).set(true);
+
+queueRef.child("history").push({
+name:u.name,
+slot,
+duration:sec,
+timeout:false,
+time:Date.now()
+});
+});
+
+queueRef.child("out/"+me.uid)
+.remove()
+.then(refreshCache);
+
+addLog(myData.name+" 回來");
+}
+
 //////////////// 聊天 //////////////////
 
-msg.addEventListener("keydown",e=>{if(e.key==="Enter") send();});
-function send(){if(!msg.value.trim()) return;db.ref("chat").push({name:myData.name,text:msg.value,time:Date.now()});msg.value="";}
+msg.addEventListener("keydown",e=>{
+if(e.key==="Enter") send();
+});
+
+function send(){
+if(!msg.value.trim()) return;
+db.ref("chat").push({
+name:myData.name,
+text:msg.value,
+time:Date.now()
+});
+msg.value="";
+}
 
 db.ref("chat").limitToLast(200).on("value",snap=>{
 chat.innerHTML="";
