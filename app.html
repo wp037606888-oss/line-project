@@ -9,80 +9,24 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body{
-margin:0;
-font-family:Segoe UI;
-background:linear-gradient(135deg,#0b0b14,#1a1a2b);
-color:white;
-display:none;
-height:100vh;
-}
-
-#left{
-width:380px;
-background:rgba(20,20,40,.85);
-backdrop-filter:blur(12px);
-padding:12px;
-display:flex;
-flex-direction:column;
-overflow:auto;
-}
-
-.panel{
-background:rgba(255,255,255,.06);
-border-radius:14px;
-padding:12px;
-margin-bottom:10px;
-box-shadow:0 0 15px rgba(0,0,0,.4);
-}
-
-h3{margin:0 0 6px;font-size:14px;color:#7fa9ff;}
-
-.user{padding:6px;background:#2a2a44;border-radius:8px;margin:3px 0;}
-.online{border-left:4px solid #00ff88;}
-
-button{
-padding:9px;
-margin:3px 0;
-border:none;
-border-radius:10px;
-background:linear-gradient(135deg,#6d8cff,#425bff);
-color:white;
-cursor:pointer;
-font-weight:600;
-}
-
-button:disabled{background:#333;cursor:not-allowed;}
-.red{color:#ff5a5a}
-
-#main{flex:1;display:flex;flex-direction:column;background:rgba(0,0,0,.25);}
-
-header{
-background:rgba(0,0,0,.4);
-padding:14px;
-text-align:center;
-font-weight:bold;
-}
-
-#chat{flex:1;overflow:auto;padding:12px;}
-
-.msg{
-background:#24243a;
-margin:6px 0;
-padding:10px;
-border-radius:10px;
-}
-
-footer{display:flex;gap:6px;padding:10px;background:rgba(0,0,0,.35);}
-
-input{
-flex:1;
-padding:10px;
-border:none;
-border-radius:10px;
-background:#2b2b40;
-color:white;
-}
+body{margin:0;font-family:Segoe UI;background:#0e0e16;color:white;display:flex;height:100vh}
+#left{width:380px;background:#161625;padding:10px;display:flex;flex-direction:column}
+.panel{background:#202035;border-radius:12px;padding:10px;margin-bottom:10px}
+h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
+#queue div,#log div,#outList div,#history div{font-size:12px;margin:2px 0}
+#log{height:140px;overflow:auto}
+.user{padding:5px;background:#2a2a40;border-radius:6px;margin:3px 0}
+.online{border-left:3px solid #00ff88}
+button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white}
+button:disabled{background:#444}
+.red{color:#ff4d4d}
+#main{flex:1;display:flex;flex-direction:column}
+header{background:#141422;padding:12px;text-align:center}
+#chat{flex:1;overflow:auto;padding:12px}
+.msg{background:#222236;margin:5px 0;padding:8px;border-radius:8px}
+footer{display:flex;padding:10px;background:#141422}
+input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color:white}
+.hidden{display:none}
 </style>
 </head>
 
@@ -105,10 +49,10 @@ color:white;
 <button id="bOut" onclick="goOut()">出去</button>
 <button id="bBack" onclick="comeBack()">回來</button>
 
-<h3>🚶 外出</h3>
+<h3>🚶 正在外面</h3>
 <div id="outList"></div>
 
-<h3>📊 紀錄</h3>
+<h3>📊 本時段紀錄</h3>
 <div id="history"></div>
 </div>
 
@@ -130,6 +74,7 @@ color:white;
 <footer>
 <input id="msg">
 <button onclick="send()">送出</button>
+<button id="reloadBtn" class="hidden" onclick="forceReload()">全體刷新</button>
 <button onclick="logout()">登出</button>
 </footer>
 </div>
@@ -137,12 +82,11 @@ color:white;
 <script>
 
 const config={
-apiKey:"YOUR_KEY",
-authDomain:"YOUR_DOMAIN",
-databaseURL:"YOUR_DB",
-projectId:"YOUR_PROJECT"
+apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+authDomain:"smoke-queue.firebaseapp.com",
+databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
+projectId:"smoke-queue"
 };
-
 firebase.initializeApp(config);
 
 const db=firebase.database();
@@ -150,8 +94,8 @@ const auth=firebase.auth();
 const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
-let me,myData;
-let queueData={};
+let me,myData,engineReady=false;
+
 const LIMIT=600;
 
 function format(sec){
@@ -167,14 +111,40 @@ for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
-auth.onAuthStateChanged(async user=>{
+//////////////// 日誌 //////////////////
 
-if(!user){
-location.replace("login.html");
-return;
+function addLog(t){
+logRef.push({text:t,time:Date.now()});
 }
 
-document.body.style.display="flex";
+logRef.limitToLast(100).on("value",snap=>{
+log.innerHTML="";
+snap.forEach(s=>{
+let l=s.val();
+let d=document.createElement("div");
+d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
+log.appendChild(d);
+});
+log.scrollTop=99999;
+});
+
+//////////////// 在線 //////////////////
+
+db.ref("users").on("value",snap=>{
+userList.innerHTML="";
+snap.forEach(s=>{
+let u=s.val();
+let d=document.createElement("div");
+d.className="user "+(u.online?"online":"");
+d.textContent=u.name;
+userList.appendChild(d);
+});
+});
+
+//////////////// 登入 //////////////////
+
+auth.onAuthStateChanged(async user=>{
+if(!user){location.href="login.html";return;}
 
 me=user;
 const ref=db.ref("users/"+user.uid);
@@ -188,35 +158,35 @@ await ref.set({name:name||"訪客",role:"user"});
 ref.on("value",s=>{
 myData=s.val();
 who.textContent="目前登入："+myData.name;
+
+if(myData.role==="admin")
+reloadBtn.classList.remove("hidden");
+
+addLog("🟢 "+myData.name+" 登入");
+engineReady=true;
 });
 
 ref.child("online").set(true);
 ref.child("online").onDisconnect().set(false);
-
-startEngine();
 });
 
 function logout(){
-auth.signOut().then(()=>location.replace("login.html"));
+addLog("🔴 "+myData.name+" 登出");
+auth.signOut().then(()=>location.href="login.html");
 }
 
-queueRef.on("value",snap=>{
-queueData=snap.val()||{};
-});
-
-function startEngine(){
-setInterval(tick,1000);
-}
+//////////////// 主引擎 //////////////////
 
 function tick(){
-if(!myData) return;
+
+if(!engineReady) return;
 
 let now=new Date();
 let h=now.getHours();
 let m=now.getMinutes();
 let s=now.getSeconds();
 
-clock.textContent=`現在時間：${h}:${m}:${s}`;
+clock.textContent=`現在時間：${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
 
 let slot=getSlot(h);
 slotInfo.textContent=`時段：${slot}:00–${slot}:59`;
@@ -224,20 +194,26 @@ slotInfo.textContent=`時段：${slot}:00–${slot}:59`;
 updateState(slot,h);
 }
 
+setInterval(tick,1000);
+
+//////////////// 狀態 //////////////////
+
 function updateState(slot,h){
 
-let d=queueData;
+queueRef.once("value").then(snap=>{
+let d=snap.val()||{};
 let r=d.reserve||{};
 let o=d.out||{};
 let hist=d.history||{};
 let used=d.used||{};
 
 let state="none";
+
 if(o[me.uid]) state="out";
 else if(r[me.uid]) state="reserved";
 
 let alreadyUsed=used[slot]?.[me.uid];
-let canGo=slot===getSlot(h);
+let canGo=(h==slot || (slot==24 && h==0));
 
 status.textContent=
 alreadyUsed?"本時段已抽":
@@ -245,7 +221,7 @@ state=="out"?"外出中":
 state=="reserved"?(canGo?"可出去":"已預約"):
 "未預約";
 
-bReserve.disabled=state!="none"||alreadyUsed;
+bReserve.disabled=state!="none" || alreadyUsed;
 bCancel.disabled=state!="reserved";
 bOut.disabled=!(state=="reserved"&&canGo);
 bBack.disabled=state!="out";
@@ -253,6 +229,7 @@ bBack.disabled=state!="out";
 renderQueue(r);
 renderOut(o,slot);
 renderHistory(hist,slot);
+});
 }
 
 function renderQueue(r){
@@ -260,76 +237,110 @@ queue.innerHTML="";
 Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
 .forEach((u,i)=>{
 let d=document.createElement("div");
-d.textContent=`${i+1}. ${u[1].name}`;
+d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
 queue.appendChild(d);
 });
 }
 
 function renderOut(out,slot){
+
 outList.innerHTML="";
 let now=Date.now();
 
 Object.entries(out).forEach(([uid,u])=>{
 let sec=Math.floor((now-u.time)/1000);
+let div=document.createElement("div");
 
-if(sec>LIMIT && !u.timeoutHandled){
+if(sec>LIMIT){
+
+div.className="red";
+div.textContent=`${u.name} 超時 ${format(sec)}`;
+
 queueRef.child("out/"+uid).remove();
 queueRef.child(`used/${slot}/${uid}`).set(true);
+
 queueRef.child("history").push({
-name:u.name,slot,duration:sec,timeout:true,time:Date.now()
+name:u.name,
+slot,
+duration:sec,
+timeout:true,
+time:Date.now()
 });
-return;
+
+addLog(u.name+" 超時自動回來");
+
+}else{
+div.textContent=`${u.name} 外出 ${format(sec)}`;
 }
 
-let div=document.createElement("div");
-div.textContent=`${u.name} 外出 ${format(sec)}`;
 outList.appendChild(div);
 });
 }
 
 function renderHistory(hist,slot){
+
 history.innerHTML="";
+
 Object.values(hist)
 .filter(h=>h.slot===slot)
 .forEach(h=>{
 let div=document.createElement("div");
-div.className=h.timeout?"red":"";
+if(h.timeout){
+div.className="red";
+div.textContent=`${h.name} 超時 ${format(h.duration)}`;
+}else{
 div.textContent=`${h.name} ${format(h.duration)}`;
+}
 history.appendChild(div);
 });
 }
+
+//////////////// 排隊 //////////////////
 
 function reserve(){
 let slot=getSlot(new Date().getHours());
 queueRef.child("reserve/"+me.uid)
 .set({name:myData.name,time:Date.now(),slot});
+addLog(myData.name+" 預約 "+slot+"點");
 }
 
 function cancelReserve(){
 queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 取消預約");
 }
 
 function goOut(){
 queueRef.child("out/"+me.uid)
 .set({name:myData.name,time:Date.now()});
 queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 出去");
 }
 
 function comeBack(){
+
 queueRef.child("out/"+me.uid).once("value").then(s=>{
 let u=s.val();
 if(!u) return;
+
 let sec=Math.floor((Date.now()-u.time)/1000);
 let slot=getSlot(new Date().getHours());
 
 queueRef.child(`used/${slot}/${me.uid}`).set(true);
 
 queueRef.child("history").push({
-name:u.name,slot,duration:sec,timeout:false,time:Date.now()
+name:u.name,
+slot,
+duration:sec,
+timeout:false,
+time:Date.now()
 });
 });
+
 queueRef.child("out/"+me.uid).remove();
+addLog(myData.name+" 回來");
 }
+
+//////////////// 聊天 //////////////////
 
 msg.addEventListener("keydown",e=>{
 if(e.key==="Enter") send();
@@ -352,6 +363,22 @@ chat.appendChild(d);
 });
 chat.scrollTop=99999;
 });
+
+//////////////// 刷新 //////////////////
+
+db.ref("reload").on("value",s=>{
+let t=s.val();
+if(!t) return;
+let h=sessionStorage.getItem("reload");
+if(h==t) return;
+sessionStorage.setItem("reload",t);
+location.reload();
+});
+
+function forceReload(){
+db.ref("reload").set(Date.now());
+setTimeout(()=>db.ref("reload").remove(),3000);
+}
 
 </script>
 </body>
