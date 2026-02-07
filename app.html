@@ -158,6 +158,28 @@ color:white;
 }
 
 .hidden{display:none}
+
+/* 放大左半邊字體 */
+#left{
+font-size:16px;
+}
+
+#left h3{
+font-size:18px;
+}
+
+#left button{
+font-size:15px;
+}
+
+#queue div,
+#outList div,
+#history div,
+#log div{
+font-size:14px;
+line-height:1.6;
+}
+
 </style>
 </head>
 
@@ -543,6 +565,22 @@ addLog(myData.name+" 回來");
 }
 
 
+const nameColorMap={};
+
+function getColor(name){
+if(nameColorMap[name]) return nameColorMap[name];
+
+let hash=0;
+for(let i=0;i<name.length;i++){
+hash=name.charCodeAt(i)+((hash<<5)-hash);
+}
+
+let hue=hash%360;
+let color=`hsl(${hue},70%,65%)`;
+
+nameColorMap[name]=color;
+return color;
+}
 
 //////////////// 聊天 //////////////////
 
@@ -566,7 +604,9 @@ snap.forEach(s=>{
 let m=s.val();
 let d=document.createElement("div");
 d.className="msg";
-d.textContent=`${m.name}: ${m.text}`;
+let color=getColor(m.name);
+d.innerHTML=`<span style="color:${color};font-weight:600">${m.name}</span>: ${m.text}`;
+
 chat.appendChild(d);
 });
 chat.scrollTop=99999;
@@ -591,6 +631,7 @@ setTimeout(()=>db.ref("reload").remove(),3000);
 </script>
 </body>
 </html>
+
 
 
 
