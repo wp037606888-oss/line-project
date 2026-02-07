@@ -20,7 +20,7 @@ overflow:hidden;
 }
 
 #left{
-width:520px;
+width:620px;
 padding:14px;
 display:flex;
 flex-direction:column;
@@ -42,22 +42,6 @@ font-size:14px;
 color:#9ec3ff;
 }
 
-#queue div,#log div,#outList div,#history div{
-font-size:12px;
-margin:2px 0;
-}
-
-#log{height:140px;overflow:auto}
-
-.user{
-padding:6px;
-background:#2a3c6b;
-border-radius:8px;
-margin:3px 0;
-}
-
-.online{border-left:4px solid #00ff88}
-
 button{
 padding:10px;
 margin:3px;
@@ -72,13 +56,23 @@ font-weight:600;
 button:hover{background:#7aa2ff}
 button:disabled{background:#444;cursor:not-allowed}
 
+.user{
+padding:6px;
+background:#2a3c6b;
+border-radius:8px;
+margin:3px 0;
+}
+
+.online{border-left:4px solid #00ff88}
 .red{color:#ff5b5b}
 
+#log{height:140px;overflow:auto}
+
 #main{
-flex:1;
+width:340px;
 display:flex;
 flex-direction:column;
-background:rgba(0,0,0,0.2);
+background:rgba(0,0,0,0.25);
 }
 
 header{
@@ -158,6 +152,14 @@ color:white;
 <div id="log"></div>
 </div>
 
+<div id="adminPanel" class="panel hidden">
+<h3>👑 管理員控制</h3>
+<button onclick="forceReload()">全體刷新</button>
+<button onclick="clearChat()">清空聊天室</button>
+<button onclick="clearLog()">清空日誌</button>
+<button onclick="resetQueue()">重置排隊列</button>
+</div>
+
 </div>
 
 <div id="main">
@@ -166,14 +168,11 @@ color:white;
 <footer>
 <input id="msg">
 <button onclick="send()">送出</button>
-<button id="reloadBtn" class="hidden" onclick="forceReload()">全體刷新</button>
 <button onclick="logout()">登出</button>
 </footer>
 </div>
 
 <script>
-
-//////////////// Firebase 初始化（原版恢復） //////////////////
 
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
@@ -192,8 +191,6 @@ let me,myData,engineReady=false;
 let cacheQueue={};
 
 const LIMIT=600;
-
-//////////////// 快取 queue（效能優化） //////////////////
 
 queueRef.on("value",snap=>{
 cacheQueue=snap.val()||{};
@@ -229,7 +226,7 @@ userList.appendChild(d);
 });
 });
 
-//////////////// 登入（完全原版） //////////////////
+//////////////// 登入 //////////////////
 
 auth.onAuthStateChanged(async user=>{
 if(!user){location.href="login.html";return;}
@@ -248,7 +245,7 @@ myData=s.val();
 who.textContent="目前登入："+myData.name;
 
 if(myData.role==="admin")
-reloadBtn.classList.remove("hidden");
+adminPanel.classList.remove("hidden");
 
 addLog("🟢 "+myData.name+" 登入");
 engineReady=true;
@@ -261,6 +258,22 @@ ref.child("online").onDisconnect().set(false);
 function logout(){
 addLog("🔴 "+myData.name+" 登出");
 auth.signOut().then(()=>location.href="login.html");
+}
+
+//////////////// 管理員功能 //////////////////
+
+function clearChat(){
+db.ref("chat").remove();
+addLog("管理員清空聊天室");
+}
+
+function clearLog(){
+logRef.remove();
+}
+
+function resetQueue(){
+queueRef.remove();
+addLog("管理員重置排隊");
 }
 
 //////////////// 工具 //////////////////
@@ -278,7 +291,7 @@ for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
-//////////////// 主引擎 //////////////////
+//////////////// 引擎 //////////////////
 
 function tick(){
 
@@ -298,8 +311,6 @@ updateState(slot,h);
 }
 
 setInterval(tick,1000);
-
-//////////////// 狀態 //////////////////
 
 function updateState(slot,h){
 
