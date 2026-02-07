@@ -8,60 +8,72 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <style>
-* { box-sizing:border-box; }
+*{box-sizing:border-box}
 
-body {
+body{
   margin:0;
   height:100vh;
-  font-family:Segoe UI, system-ui;
+  font-family:Segoe UI,system-ui;
   background:#0a0b14;
+  overflow:hidden;
   display:flex;
   justify-content:center;
   align-items:center;
   color:white;
-  overflow:hidden;
 }
 
 /* 粒子畫布 */
-canvas {
+canvas{
   position:fixed;
   inset:0;
   z-index:0;
 }
 
 /* 卡片 */
-.card {
+.card{
   position:relative;
   z-index:2;
-  backdrop-filter:blur(18px);
-  background:rgba(28,28,42,0.75);
-  padding:42px;
-  border-radius:18px;
-  width:340px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.7);
-  text-align:center;
-  border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(22px);
+  background:rgba(28,28,42,0.65);
+  padding:44px;
+  border-radius:20px;
+  width:350px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.8);
+  border:1px solid rgba(255,255,255,0.1);
   animation:fadeUp 0.8s ease;
-  transition:0.4s;
+  overflow:hidden;
+  transition:.4s;
 }
 
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(20px) scale(0.97); }
-  to { opacity:1; transform:translateY(0) scale(1); }
+/* 玻璃流光掃描 */
+.card::before{
+  content:"";
+  position:absolute;
+  top:-100%;
+  left:-40%;
+  width:180%;
+  height:200%;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,0.08),transparent);
+  transform:rotate(25deg);
+  animation:scan 6s linear infinite;
 }
 
-/* 成功淡出 */
-.fadeOut {
+@keyframes scan{
+  to{top:100%}
+}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+.fadeOut{
   opacity:0;
-  transform:scale(0.95);
+  transform:scale(.95);
 }
 
-/* 錯誤震動 */
-.shake {
-  animation:shake 0.4s;
-}
-
-@keyframes shake {
+.shake{animation:shake .4s}
+@keyframes shake{
   0%{transform:translateX(0)}
   20%{transform:translateX(-6px)}
   40%{transform:translateX(6px)}
@@ -70,9 +82,13 @@ canvas {
   100%{transform:translateX(0)}
 }
 
-h1 { margin-bottom:26px; font-weight:600; }
+h1{
+  text-align:center;
+  margin-bottom:28px;
+  font-weight:600;
+}
 
-input {
+input{
   width:100%;
   padding:14px;
   margin:10px 0;
@@ -82,15 +98,15 @@ input {
   color:white;
   font-size:15px;
   outline:none;
-  transition:0.25s;
+  transition:.25s;
 }
 
-input:focus {
+input:focus{
   background:#2d2d48;
   box-shadow:0 0 0 2px #5c7cff;
 }
 
-button {
+button{
   width:100%;
   padding:14px;
   margin-top:18px;
@@ -101,31 +117,31 @@ button {
   font-size:16px;
   cursor:pointer;
   font-weight:600;
-  transition:0.2s;
+  transition:.2s;
 }
 
-button:hover {
+button:hover{
   transform:translateY(-1px);
-  box-shadow:0 6px 18px rgba(92,124,255,0.4);
+  box-shadow:0 6px 18px rgba(92,124,255,.4);
 }
 
-.spinner {
+.spinner{
   width:18px;
   height:18px;
-  border:2px solid rgba(255,255,255,0.4);
+  border:2px solid rgba(255,255,255,.4);
   border-top:2px solid white;
   border-radius:50%;
-  animation:spin 0.8s linear infinite;
+  animation:spin .8s linear infinite;
   margin:auto;
 }
 
-@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 
 <body>
 
-<canvas id="particles"></canvas>
+<canvas id="bg"></canvas>
 
 <div class="card" id="card">
 <h1>抽菸排隊系統</h1>
@@ -133,61 +149,95 @@ button:hover {
 <form id="loginForm">
 <input id="email" placeholder="帳號">
 <input id="password" type="password" placeholder="密碼">
-<button id="loginBtn" type="submit">登入</button>
+<button id="loginBtn">登入</button>
 </form>
 </div>
 
 <script>
-/* ===== 粒子背景 ===== */
-const canvas = document.getElementById("particles");
-const ctx = canvas.getContext("2d");
-let w,h,particles=[];
+/* ===== 粒子連線網格 ===== */
+const canvas=document.getElementById("bg");
+const ctx=canvas.getContext("2d");
+let w,h,mouse={x:null,y:null};
+function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
+onresize=resize;resize();
 
-function resize(){
-  w=canvas.width=window.innerWidth;
-  h=canvas.height=window.innerHeight;
-}
-window.onresize=resize; resize();
-
-for(let i=0;i<70;i++){
+const P=80;
+const particles=[];
+for(let i=0;i<P;i++){
   particles.push({
     x:Math.random()*w,
     y:Math.random()*h,
-    vx:(Math.random()-0.5)*0.5,
-    vy:(Math.random()-0.5)*0.5,
-    r:Math.random()*1.5+0.5
+    vx:(Math.random()-.5)*.6,
+    vy:(Math.random()-.5)*.6
   });
 }
 
+onmousemove=e=>{mouse.x=e.clientX;mouse.y=e.clientY};
+
 function draw(){
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle="rgba(120,140,255,0.7)";
-  particles.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy;
-    if(p.x<0||p.x>w)p.vx*=-1;
-    if(p.y<0||p.y>h)p.vy*=-1;
+
+  for(let i=0;i<P;i++){
+    const a=particles[i];
+    a.x+=a.vx;
+    a.y+=a.vy;
+
+    if(a.x<0||a.x>w)a.vx*=-1;
+    if(a.y<0||a.y>h)a.vy*=-1;
+
+    ctx.fillStyle="#7d8cff";
     ctx.beginPath();
-    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.arc(a.x,a.y,1.5,0,6.28);
     ctx.fill();
-  });
+
+    for(let j=i+1;j<P;j++){
+      const b=particles[j];
+      const dx=a.x-b.x;
+      const dy=a.y-b.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+
+      if(d<120){
+        ctx.strokeStyle="rgba(125,140,255,"+(1-d/120)+")";
+        ctx.lineWidth=.5;
+        ctx.beginPath();
+        ctx.moveTo(a.x,a.y);
+        ctx.lineTo(b.x,b.y);
+        ctx.stroke();
+      }
+    }
+
+    if(mouse.x){
+      const dx=a.x-mouse.x;
+      const dy=a.y-mouse.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<150){
+        ctx.strokeStyle="rgba(255,255,255,"+(1-d/150)+")";
+        ctx.beginPath();
+        ctx.moveTo(a.x,a.y);
+        ctx.lineTo(mouse.x,mouse.y);
+        ctx.stroke();
+      }
+    }
+  }
+
   requestAnimationFrame(draw);
 }
 draw();
 
 /* ===== Firebase ===== */
-const firebaseConfig = {
-  apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
-  authDomain: "smoke-queue.firebaseapp.com",
-  databaseURL: "https://smoke-queue-default-rtdb.firebaseio.com",
-  projectId: "smoke-queue"
+const firebaseConfig={
+  apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+  authDomain:"smoke-queue.firebaseapp.com",
+  databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
+  projectId:"smoke-queue"
 };
 
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+const auth=firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user=>{
-  if(user) location.href="app.html";
+  if(user)location.href="app.html";
 });
 
 /* ===== 登入 ===== */
@@ -205,7 +255,7 @@ form.addEventListener("submit",e=>{
     card.classList.add("fadeOut");
     setTimeout(()=>location.href="app.html",400);
   })
-  .catch(e=>{
+  .catch(()=>{
     btn.disabled=false;
     btn.innerHTML="登入";
     card.classList.add("shake");
