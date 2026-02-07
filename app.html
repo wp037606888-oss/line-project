@@ -50,6 +50,11 @@ button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;c
 <div id="log"></div>
 </div>
 
+<div class="panel">
+<h3>在線</h3>
+<div id="userList"></div>
+</div>
+
 </div>
 
 <div id="main">
@@ -79,16 +84,13 @@ const db=firebase.database();
 const auth=firebase.auth();
 
 let me,myData,ready=false;
-
 const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
-//////////////// 初始化 queue //////////////////
+//////////////// queue 初始化 //////////////////
 
 queueRef.once("value").then(s=>{
-if(!s.exists()){
-queueRef.set({reserve:{},out:{}});
-}
+if(!s.exists()) queueRef.set({reserve:{},out:{}});
 });
 
 //////////////// 日誌 //////////////////
@@ -133,12 +135,29 @@ ready=true;
 ref.child("online").set(true);
 ref.child("online").onDisconnect().set(false);
 
-addLog(myData?.name+" 登入");
+addLog("🟢 "+myData?.name+" 登入");
+
+loadUsers();
 });
 
 function logout(){
-addLog(myData.name+" 登出");
+addLog("🔴 "+myData.name+" 登出");
 auth.signOut().then(()=>location.href="login.html");
+}
+
+//////////////// 在線 //////////////////
+
+function loadUsers(){
+db.ref("users").on("value",snap=>{
+userList.innerHTML="";
+snap.forEach(s=>{
+let u=s.val();
+let d=document.createElement("div");
+d.className="user "+(u.online?"online":"");
+d.textContent=u.name;
+userList.appendChild(d);
+});
+});
 }
 
 //////////////// 排隊 //////////////////
@@ -225,14 +244,25 @@ chat.appendChild(d);
 chat.scrollTop=99999;
 });
 
-//////////////// 刷新 //////////////////
+//////////////// 安全刷新 //////////////////
 
-let lastReload=0;
 db.ref("reload").on("value",s=>{
-let t=s.val();
-if(t && t>lastReload){lastReload=t;location.reload(true);}
+
+const t=s.val();
+if(!t) return;
+
+const handled=sessionStorage.getItem("reload");
+if(handled==t) return;
+
+sessionStorage.setItem("reload",t);
+location.reload();
+
 });
-function forceReload(){db.ref("reload").set(Date.now());}
+
+function forceReload(){
+db.ref("reload").set(Date.now());
+setTimeout(()=>db.ref("reload").remove(),3000);
+}
 
 </script>
 </body>
