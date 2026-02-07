@@ -17,12 +17,12 @@ h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
 #log{height:160px;overflow:auto}
 .user{padding:5px;background:#2a2a40;border-radius:6px;margin:3px 0;font-size:13px}
 .online{border-left:3px solid #00ff88}
-button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white;cursor:pointer}
+button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white}
 button:disabled{background:#444}
 #main{flex:1;display:flex;flex-direction:column}
 header{background:#141422;padding:12px;text-align:center}
 #chat{flex:1;overflow:auto;padding:12px}
-.msg{background:#222236;margin:5px 0;padding:8px;border-radius:8px;font-size:13px}
+.msg{background:#222236;margin:5px 0;padding:8px;border-radius:8px}
 footer{display:flex;padding:10px;background:#141422}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color:white}
 .hidden{display:none}
@@ -84,69 +84,27 @@ firebase.initializeApp(config);
 
 const db=firebase.database();
 const auth=firebase.auth();
-
 const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
-let me,myData;
+let me,myData,engineReady=false;
 
-//////////////// 時間引擎 //////////////////
+//////////////// 日誌 //////////////////
 
-function getSlot(h){
-let slots=[2,4,6,8,10,12];
-for(let s of slots) if(h<=s) return s;
-return 2;
+function addLog(t){
+logRef.push({text:t,time:Date.now()});
 }
 
-function clockTick(){
-
-let now=new Date();
-let h=now.getHours();
-let m=now.getMinutes();
-let s=now.getSeconds();
-
-clock.textContent=`現在時間：${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
-
-let slot=getSlot(h);
-slotInfo.textContent=`當前時段：${slot}:00–${slot}:59`;
-
-updateState(slot,h);
-}
-
-//////////////// 狀態機 //////////////////
-
-function updateState(slot,h){
-
-queueRef.once("value").then(snap=>{
-let d=snap.val()||{};
-let r=d.reserve||{};
-let o=d.out||{};
-
-let state="none";
-
-if(o[me.uid]) state="out";
-else if(r[me.uid]) state="reserved";
-
-let canGo=(h==slot);
-
-status.textContent=`狀態：${state=="out"?"外出中":state=="reserved"?(canGo?"可出去":"已預約"):"未預約"}`;
-
-bReserve.disabled=state!="none";
-bCancel.disabled=state!="reserved";
-bOut.disabled=!(state=="reserved" && canGo);
-bBack.disabled=state!="out";
-
-queue.innerHTML="";
-Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
-.forEach((u,i)=>{
+logRef.limitToLast(100).on("value",snap=>{
+log.innerHTML="";
+snap.forEach(s=>{
+let l=s.val();
 let d=document.createElement("div");
-d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
-queue.appendChild(d);
+d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
+log.appendChild(d);
 });
+log.scrollTop=99999;
 });
-}
-
-setInterval(clockTick,1000);
 
 //////////////// 在線 //////////////////
 
@@ -174,23 +132,128 @@ const ref=db.ref("users/"+user.uid);
 let snap=await ref.once("value");
 if(!snap.exists()){
 let name=prompt("暱稱");
-await ref.set({name:name||"訪客"});
+await ref.set({name:name||"訪客",role:"user"});
 }
 
 ref.on("value",s=>{
 myData=s.val();
 who.textContent="目前登入："+myData.name;
+
+if(myData.role==="admin")
+reloadBtn.classList.remove("hidden");
+
+engineReady=true;
 });
 
 ref.child("online").set(true);
 ref.child("online").onDisconnect().set(false);
 
+addLog("🟢 "+myData?.name+" 登入");
+
 loadUsers();
 });
 
+function logout(){
+addLog("🔴 "+myData.name+" 登出");
+auth.signOut().then(()=>location.href="login.html");
+}
+
+//////////////// 時間引擎 //////////////////
+
+function getSlot(h){
+const slots=[2,4,6,8,10,12];
+for(let s of slots){
+if(h<=s) return s;
+}
+return 2;
+}
+
+function tick(){
+
+if(!engineReady) return;
+
+let now=new Date();
+let h=now.getHours();
+let m=now.getMinutes();
+let s=now.getSeconds();
+
+clock.textContent=`現在時間：${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+
+let slot=getSlot(h);
+slotInfo.textContent=`時段：${slot}:00–${slot}:59`;
+
+updateState(slot,h);
+}
+
+setInterval(tick,1000);
+
+//////////////// 狀態 //////////////////
+
+function updateState(slot,h){
+
+queueRef.once("value").then(snap=>{
+let d=snap.val()||{};
+let r=d.reserve||{};
+let o=d.out||{};
+
+let state="none";
+
+if(o[me.uid]) state="out";
+else if(r[me.uid]) state="reserved";
+
+let canGo=(h==slot);
+
+status.textContent=
+state=="out"?"外出中":
+state=="reserved"?(canGo?"可出去":"已預約"):
+"未預約";
+
+bReserve.disabled=state!="none";
+bCancel.disabled=state!="reserved";
+bOut.disabled=!(state=="reserved"&&canGo);
+bBack.disabled=state!="out";
+
+queue.innerHTML="";
+Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
+.forEach((u,i)=>{
+let d=document.createElement("div");
+d.textContent=`${i+1}. ${u[1].name}`;
+queue.appendChild(d);
+});
+});
+}
+
+//////////////// 排隊 //////////////////
+
+function reserve(){
+let slot=getSlot(new Date().getHours());
+queueRef.child("reserve/"+me.uid)
+.set({name:myData.name,time:Date.now(),slot});
+addLog(myData.name+" 預約 "+slot+"點");
+}
+
+function cancelReserve(){
+queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 取消預約");
+}
+
+function goOut(){
+queueRef.child("out/"+me.uid)
+.set({name:myData.name,time:Date.now()});
+queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 出去");
+}
+
+function comeBack(){
+queueRef.child("out/"+me.uid).remove();
+addLog(myData.name+" 回來");
+}
+
 //////////////// 聊天 //////////////////
 
-msg.addEventListener("keydown",e=>{if(e.key==="Enter")send();});
+msg.addEventListener("keydown",e=>{
+if(e.key==="Enter") send();
+});
 
 function send(){
 if(!msg.value.trim()) return;
