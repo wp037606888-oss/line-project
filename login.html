@@ -8,71 +8,173 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <style>
+* { box-sizing:border-box; }
+
 body {
   margin:0;
   height:100vh;
-  font-family:Segoe UI;
-  background:linear-gradient(135deg,#111,#1e1e2f);
+  font-family:Segoe UI, system-ui;
+  background:#0a0b14;
   display:flex;
   justify-content:center;
   align-items:center;
   color:white;
+  overflow:hidden;
 }
 
+/* 粒子畫布 */
+canvas {
+  position:fixed;
+  inset:0;
+  z-index:0;
+}
+
+/* 卡片 */
 .card {
-  background:#1c1c2a;
-  padding:40px;
-  border-radius:14px;
-  width:320px;
-  box-shadow:0 0 30px rgba(0,0,0,0.6);
+  position:relative;
+  z-index:2;
+  backdrop-filter:blur(18px);
+  background:rgba(28,28,42,0.75);
+  padding:42px;
+  border-radius:18px;
+  width:340px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.7);
   text-align:center;
+  border:1px solid rgba(255,255,255,0.08);
+  animation:fadeUp 0.8s ease;
+  transition:0.4s;
 }
 
-h1 {
-  margin-bottom:30px;
-  font-weight:600;
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px) scale(0.97); }
+  to { opacity:1; transform:translateY(0) scale(1); }
 }
+
+/* 成功淡出 */
+.fadeOut {
+  opacity:0;
+  transform:scale(0.95);
+}
+
+/* 錯誤震動 */
+.shake {
+  animation:shake 0.4s;
+}
+
+@keyframes shake {
+  0%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+  100%{transform:translateX(0)}
+}
+
+h1 { margin-bottom:26px; font-weight:600; }
 
 input {
   width:100%;
-  padding:12px;
-  margin:8px 0;
+  padding:14px;
+  margin:10px 0;
   border:none;
-  border-radius:8px;
-  background:#2b2b3d;
+  border-radius:10px;
+  background:#232334;
   color:white;
+  font-size:15px;
+  outline:none;
+  transition:0.25s;
+}
+
+input:focus {
+  background:#2d2d48;
+  box-shadow:0 0 0 2px #5c7cff;
 }
 
 button {
   width:100%;
-  padding:12px;
-  margin-top:15px;
+  padding:14px;
+  margin-top:18px;
   border:none;
-  border-radius:8px;
-  background:#5c7cff;
+  border-radius:10px;
+  background:linear-gradient(135deg,#5c7cff,#7d5cff);
   color:white;
   font-size:16px;
   cursor:pointer;
+  font-weight:600;
+  transition:0.2s;
 }
 
 button:hover {
-  background:#4a68d6;
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(92,124,255,0.4);
 }
+
+.spinner {
+  width:18px;
+  height:18px;
+  border:2px solid rgba(255,255,255,0.4);
+  border-top:2px solid white;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+  margin:auto;
+}
+
+@keyframes spin { to{transform:rotate(360deg)} }
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<canvas id="particles"></canvas>
+
+<div class="card" id="card">
 <h1>抽菸排隊系統</h1>
 
+<form id="loginForm">
 <input id="email" placeholder="帳號">
 <input id="password" type="password" placeholder="密碼">
-
-<button onclick="login()">登入</button>
+<button id="loginBtn" type="submit">登入</button>
+</form>
 </div>
 
 <script>
+/* ===== 粒子背景 ===== */
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+let w,h,particles=[];
+
+function resize(){
+  w=canvas.width=window.innerWidth;
+  h=canvas.height=window.innerHeight;
+}
+window.onresize=resize; resize();
+
+for(let i=0;i<70;i++){
+  particles.push({
+    x:Math.random()*w,
+    y:Math.random()*h,
+    vx:(Math.random()-0.5)*0.5,
+    vy:(Math.random()-0.5)*0.5,
+    r:Math.random()*1.5+0.5
+  });
+}
+
+function draw(){
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="rgba(120,140,255,0.7)";
+  particles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>w)p.vx*=-1;
+    if(p.y<0||p.y>h)p.vy*=-1;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ===== Firebase ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
   authDomain: "smoke-queue.firebaseapp.com",
@@ -82,16 +184,34 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user=>{
   if(user) location.href="app.html";
 });
 
-function login(){
+/* ===== 登入 ===== */
+const form=document.getElementById("loginForm");
+const btn=document.getElementById("loginBtn");
+const card=document.getElementById("card");
+
+form.addEventListener("submit",e=>{
+  e.preventDefault();
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner"></div>';
+
   auth.signInWithEmailAndPassword(email.value,password.value)
-  .then(()=>location.href="app.html")
-  .catch(e=>alert(e.message));
-}
+  .then(()=>{
+    card.classList.add("fadeOut");
+    setTimeout(()=>location.href="app.html",400);
+  })
+  .catch(e=>{
+    btn.disabled=false;
+    btn.innerHTML="登入";
+    card.classList.add("shake");
+    setTimeout(()=>card.classList.remove("shake"),400);
+  });
+});
 </script>
 
 </body>
