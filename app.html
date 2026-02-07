@@ -517,7 +517,10 @@ let u=s.val();
 if(!u) return;
 
 let sec=Math.floor((Date.now()-u.time)/1000);
-let slot=getSlot(new Date().getHours());
+
+/* 用出去時間算 slot 才不會錯 */
+let outHour=new Date(u.time).getHours();
+let slot=getSlot(outHour);
 
 queueRef.child(`used/${slot}/${me.uid}`).set(true);
 
@@ -538,6 +541,7 @@ queueRef.child("out/"+me.uid)
 
 addLog(myData.name+" 回來");
 }
+
 
 
 //////////////// 聊天 //////////////////
@@ -587,5 +591,6 @@ setTimeout(()=>db.ref("reload").remove(),3000);
 </script>
 </body>
 </html>
+
 
 
