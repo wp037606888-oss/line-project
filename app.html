@@ -9,20 +9,33 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;flex-direction:column;height:100vh}
-header{background:#1f1f2e;padding:15px;text-align:center}
+body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;height:100vh}
+#users{width:220px;background:#1a1a28;padding:10px;overflow:auto}
+#users h3{margin:0 0 10px 0;text-align:center}
+.user{padding:6px;border-radius:6px;margin:4px 0;background:#2a2a3a}
+.online{border-left:4px solid #00ff88}
+.offline{opacity:.5}
+
+#main{flex:1;display:flex;flex-direction:column}
+header{background:#1f1f2e;padding:12px;text-align:center}
 #chat{flex:1;overflow:auto;padding:10px}
 .msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
+.name{font-weight:bold;color:#8ab4ff}
+.admin{color:#ff7070}
 footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
 button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
-.name{font-weight:bold;color:#8ab4ff}
-.admin{color:#ff7070}
 </style>
 </head>
 
 <body>
 
+<div id="users">
+<h3>在線名單</h3>
+<div id="userList"></div>
+</div>
+
+<div id="main">
 <header>抽菸排隊系統 聊天室</header>
 <div id="chat"></div>
 
@@ -31,6 +44,7 @@ button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c
 <button onclick="send()">送出</button>
 <button onclick="logout()">登出</button>
 </footer>
+</div>
 
 <script>
 const config={
@@ -43,38 +57,56 @@ firebase.initializeApp(config);
 
 const auth=firebase.auth();
 const db=firebase.database();
-
 let me=null;
 
+// ===== 登入檢查 =====
 auth.onAuthStateChanged(async user=>{
 if(!user) location.href="login.html";
 me=user;
 
-const snap=await db.ref("users/"+user.uid).once("value");
-
+// 建立使用者資料
+const uRef=db.ref("users/"+user.uid);
+const snap=await uRef.once("value");
 if(!snap.exists()){
-await db.ref("users/"+user.uid).set({
-name:"未命名",
-role:"user"
-});
+await uRef.set({name:"未命名",role:"user",online:false});
 }
+
+// 在線狀態
+const statusRef=db.ref("users/"+user.uid+"/online");
+statusRef.set(true);
+statusRef.onDisconnect().set(false);
+
+loadUsers();
 loadChat();
 });
 
+// ===== 在線名單 =====
+function loadUsers(){
+db.ref("users").on("value",snap=>{
+userList.innerHTML="";
+snap.forEach(s=>{
+const u=s.val();
+const div=document.createElement("div");
+div.className="user "+(u.online?"online":"offline");
+div.textContent=u.name+(u.role==="admin"?" 🔴":"");
+userList.appendChild(div);
+});
+});
+}
+
+// ===== 聊天 =====
 function loadChat(){
 db.ref("chat").limitToLast(100).on("child_added",s=>{
 const m=s.val();
-
 const div=document.createElement("div");
 div.className="msg";
 
-const nameSpan=document.createElement("span");
-nameSpan.className="name";
-nameSpan.textContent=m.name+" ";
+const name=document.createElement("span");
+name.className="name";
+name.textContent=m.name+" ";
+if(m.role==="admin") name.classList.add("admin");
 
-if(m.role==="admin") nameSpan.classList.add("admin");
-
-div.appendChild(nameSpan);
+div.appendChild(name);
 div.append(m.text);
 
 chat.appendChild(div);
@@ -88,11 +120,12 @@ if(msg.value.trim()=="") return;
 const snap=await db.ref("users/"+me.uid).once("value");
 const u=snap.val();
 
-db.ref("chat").push({
+await db.ref("chat").push({
 uid:me.uid,
 name:u.name,
 role:u.role,
-text:msg.value
+text:msg.value,
+time:Date.now()
 });
 
 msg.value="";
