@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Firebase Login Test</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+
+<body>
+
+<h2>Firebase 登入測試</h2>
+
+<input id="email" placeholder="email"><br><br>
+<input id="password" type="password" placeholder="password"><br><br>
+
+<button onclick="login()">登入</button>
+
+<script>
+// Firebase 設定
+const firebaseConfig = {
+  apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
+  authDomain: "smoke-queue.firebaseapp.com",
+  databaseURL: "https://smoke-queue-default-rtdb.firebaseio.com",
+  projectId: "smoke-queue",
+  storageBucket: "smoke-queue.firebasestorage.app",
+  messagingSenderId: "474216861000",
+  appId: "1:474216861000:web:052d21df1bcdb183ebb77d",
+  measurementId: "G-QY5SC9E6XS"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.database();
+
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  auth.signInWithEmailAndPassword(email, password)
+  .then(userCred => {
+    const uid = userCred.user.uid;
+
+    db.ref("users/" + uid).set({
+      email: email,
+      loginTime: new Date().toISOString()
+    });
+
+    alert("登入成功 ✅ UID: " + uid);
+  })
+  .catch(err => alert("登入失敗 ❌ " + err.message));
+}
+</script>
+
+</body>
+</html>
