@@ -10,13 +10,15 @@
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#0e0e16;color:white;display:flex;height:100vh}
-#left{width:340px;background:#161625;padding:10px;display:flex;flex-direction:column}
+#left{width:360px;background:#161625;padding:10px;display:flex;flex-direction:column}
 .panel{background:#202035;border-radius:12px;padding:10px;margin-bottom:10px}
 h3{margin:0 0 6px;font-size:14px;color:#8aaaff}
 #queue div,#log div{font-size:12px;margin:2px 0}
-#log{height:180px;overflow:auto}
+#log{height:160px;overflow:auto}
+.user{padding:5px;background:#2a2a40;border-radius:6px;margin:3px 0;font-size:13px}
+.online{border-left:3px solid #00ff88}
 button{padding:8px;margin:2px;border:none;border-radius:8px;background:#5c7cff;color:white;cursor:pointer}
-button:disabled{background:#444;cursor:not-allowed}
+button:disabled{background:#444}
 #main{flex:1;display:flex;flex-direction:column}
 header{background:#141422;padding:12px;text-align:center}
 #chat{flex:1;overflow:auto;padding:12px}
@@ -33,16 +35,23 @@ input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color
 
 <div class="panel">
 <div id="who"></div>
+<div id="clock"></div>
 <div id="slotInfo"></div>
+<div id="status"></div>
 </div>
 
 <div class="panel">
 <h3>🚬 排隊</h3>
 <div id="queue"></div>
 <button id="bReserve" onclick="reserve()">預約</button>
-<button id="bCancel" onclick="cancelReserve()">取消預約</button>
+<button id="bCancel" onclick="cancelReserve()">取消</button>
 <button id="bOut" onclick="goOut()">出去</button>
 <button id="bBack" onclick="comeBack()">回來</button>
+</div>
+
+<div class="panel">
+<h3>🟢 在線</h3>
+<div id="userList"></div>
 </div>
 
 <div class="panel">
@@ -65,8 +74,6 @@ input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b40;color
 
 <script>
 
-//////////////// Firebase //////////////////
-
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
 authDomain:"smoke-queue.firebaseapp.com",
@@ -81,54 +88,80 @@ const auth=firebase.auth();
 const queueRef=db.ref("queue");
 const logRef=db.ref("log");
 
-let me,myData,ready=false;
+let me,myData;
 
-//////////////// 時段計算 //////////////////
+//////////////// 時間引擎 //////////////////
 
-function getSlot(){
-let h=new Date().getHours();
+function getSlot(h){
 let slots=[2,4,6,8,10,12];
-for(let s of slots){
-if(h<=s) return s;
-}
+for(let s of slots) if(h<=s) return s;
 return 2;
 }
 
-function slotText(s){
-return `${s}:00–${s}:59`;
+function clockTick(){
+
+let now=new Date();
+let h=now.getHours();
+let m=now.getMinutes();
+let s=now.getSeconds();
+
+clock.textContent=`現在時間：${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+
+let slot=getSlot(h);
+slotInfo.textContent=`當前時段：${slot}:00–${slot}:59`;
+
+updateState(slot,h);
 }
 
-//////////////// 按鈕狀態 //////////////////
+//////////////// 狀態機 //////////////////
 
-function setButtons(state){
+function updateState(slot,h){
+
+queueRef.once("value").then(snap=>{
+let d=snap.val()||{};
+let r=d.reserve||{};
+let o=d.out||{};
+
+let state="none";
+
+if(o[me.uid]) state="out";
+else if(r[me.uid]) state="reserved";
+
+let canGo=(h==slot);
+
+status.textContent=`狀態：${state=="out"?"外出中":state=="reserved"?(canGo?"可出去":"已預約"):"未預約"}`;
+
 bReserve.disabled=state!="none";
 bCancel.disabled=state!="reserved";
-bOut.disabled=state!="reserved";
+bOut.disabled=!(state=="reserved" && canGo);
 bBack.disabled=state!="out";
-}
 
-//////////////// 聊天 Enter //////////////////
-
-msg.addEventListener("keydown",e=>{
-if(e.key==="Enter") send();
-});
-
-//////////////// 日誌 //////////////////
-
-function addLog(t){
-logRef.push({text:t,time:Date.now()});
-}
-
-logRef.limitToLast(100).on("value",snap=>{
-log.innerHTML="";
-snap.forEach(s=>{
-let l=s.val();
+queue.innerHTML="";
+Object.entries(r).sort((a,b)=>a[1].time-b[1].time)
+.forEach((u,i)=>{
 let d=document.createElement("div");
-d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
-log.appendChild(d);
+d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
+queue.appendChild(d);
 });
-log.scrollTop=99999;
 });
+}
+
+setInterval(clockTick,1000);
+
+//////////////// 在線 //////////////////
+
+function loadUsers(){
+db.ref("users").on("value",snap=>{
+userList.innerHTML="";
+snap.forEach(s=>{
+let u=s.val();
+let d=document.createElement("div");
+d.className="user "+(u.online?"online":"");
+d.textContent=u.name;
+userList.appendChild(d);
+});
+});
+}
 
 //////////////// 登入 //////////////////
 
@@ -141,100 +174,27 @@ const ref=db.ref("users/"+user.uid);
 let snap=await ref.once("value");
 if(!snap.exists()){
 let name=prompt("暱稱");
-await ref.set({name:name||"訪客",role:"user"});
+await ref.set({name:name||"訪客"});
 }
 
 ref.on("value",s=>{
 myData=s.val();
 who.textContent="目前登入："+myData.name;
-ready=true;
 });
 
-addLog(myData?.name+" 登入");
-updateUI();
+ref.child("online").set(true);
+ref.child("online").onDisconnect().set(false);
+
+loadUsers();
 });
-
-function logout(){
-addLog(myData.name+" 登出");
-auth.signOut().then(()=>location.href="login.html");
-}
-
-//////////////// 排隊 //////////////////
-
-function reserve(){
-let s=getSlot();
-queueRef.child("reserve/"+me.uid).set({
-name:myData.name,
-slot:s,
-time:Date.now()
-});
-addLog(`${myData.name} 預約 ${s}點`);
-updateUI();
-}
-
-function cancelReserve(){
-queueRef.child("reserve/"+me.uid).remove();
-addLog(myData.name+" 取消預約");
-updateUI();
-}
-
-function goOut(){
-queueRef.child("out/"+me.uid).set({
-name:myData.name,
-time:Date.now()
-});
-queueRef.child("reserve/"+me.uid).remove();
-addLog(myData.name+" 出去");
-updateUI();
-}
-
-function comeBack(){
-queueRef.child("out/"+me.uid).remove();
-addLog(myData.name+" 回來");
-updateUI();
-}
-
-//////////////// UI 更新 //////////////////
-
-function updateUI(){
-
-let slot=getSlot();
-slotInfo.textContent=`目前時段：${slotText(slot)}`;
-
-queueRef.once("value").then(snap=>{
-let d=snap.val()||{};
-let r=d.reserve||{};
-let o=d.out||{};
-
-let state="none";
-
-if(o[me.uid]) state="out";
-else if(r[me.uid]) state="reserved";
-
-setButtons(state);
-
-queue.innerHTML="";
-Object.entries(r)
-.sort((a,b)=>a[1].time-b[1].time)
-.forEach((u,i)=>{
-let d=document.createElement("div");
-d.textContent=`${i+1}. ${u[1].name} (${u[1].slot}點)`;
-queue.appendChild(d);
-});
-});
-}
-
-setInterval(updateUI,2000);
 
 //////////////// 聊天 //////////////////
 
+msg.addEventListener("keydown",e=>{if(e.key==="Enter")send();});
+
 function send(){
 if(!msg.value.trim()) return;
-db.ref("chat").push({
-name:myData.name,
-text:msg.value,
-time:Date.now()
-});
+db.ref("chat").push({name:myData.name,text:msg.value,time:Date.now()});
 msg.value="";
 }
 
