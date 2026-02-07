@@ -11,8 +11,7 @@
 <style>
 body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;height:100vh}
 #users{width:220px;background:#1a1a28;padding:10px;overflow:auto}
-#users h3{margin:0 0 10px 0;text-align:center}
-.user{padding:6px;border-radius:6px;margin:4px 0;background:#2a2a3a}
+.user{padding:6px;margin:4px 0;background:#2a2a3a;border-radius:6px;cursor:pointer}
 .online{border-left:4px solid #00ff88}
 .offline{opacity:.4}
 
@@ -20,21 +19,16 @@ body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;h
 header{background:#1f1f2e;padding:12px;text-align:center}
 #chat{flex:1;overflow:auto;padding:10px}
 .msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
-.name{font-weight:bold;color:#8ab4ff}
-.admin{color:#ff7070}
-.time{font-size:11px;opacity:.6;margin-left:6px}
 footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
 button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
+.time{font-size:11px;opacity:.6;margin-left:6px}
 </style>
 </head>
 
 <body>
 
-<div id="users">
-<h3>在線名單</h3>
-<div id="userList"></div>
-</div>
+<div id="users"><h3>在線名單</h3><div id="userList"></div></div>
 
 <div id="main">
 <header>抽菸排隊系統 聊天室</header>
@@ -58,55 +52,76 @@ firebase.initializeApp(config);
 
 const auth=firebase.auth();
 const db=firebase.database();
-let me=null;
+let me=null,myData=null;
 
-// ===== Enter 送出 =====
-msg.addEventListener("keydown",e=>{
-if(e.key==="Enter") send();
-});
+msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 
-// ===== 登入檢查 + Presence =====
 auth.onAuthStateChanged(async user=>{
 if(!user) location.href="login.html";
 me=user;
 
-const uRef=db.ref("users/"+user.uid);
-const snap=await uRef.once("value");
+const ref=db.ref("users/"+user.uid);
+let snap=await ref.once("value");
 
 if(!snap.exists()){
-await uRef.set({name:"未命名",role:"user",online:false});
+await ref.set({
+name:"未命名",
+role:"user",
+color:"#"+Math.floor(Math.random()*16777215).toString(16),
+mute:false,
+online:false
+});
 }
 
-// Firebase Presence 官方寫法
-const connectedRef=db.ref(".info/connected");
-connectedRef.on("value",snap=>{
-if(snap.val()===true){
-uRef.child("online").set(true);
-uRef.child("online").onDisconnect().set(false);
+db.ref(".info/connected").on("value",s=>{
+if(s.val()){
+ref.child("online").set(true);
+ref.child("online").onDisconnect().set(false);
 }
 });
+
+ref.on("value",s=>myData=s.val());
 
 loadUsers();
 loadChat();
 });
 
-// ===== 在線名單 =====
+// 在線名單
 function loadUsers(){
 db.ref("users").on("value",snap=>{
 userList.innerHTML="";
 snap.forEach(s=>{
 const u=s.val();
+const uid=s.key;
 
 const div=document.createElement("div");
 div.className="user "+(u.online?"online":"offline");
 div.textContent=u.name+(u.role==="admin"?" 🔴":"");
+div.style.color=u.color||"#fff";
+
+if(myData?.role==="admin"){
+div.onclick=()=>adminMenu(uid,u);
+}
 
 userList.appendChild(div);
 });
 });
 }
 
-// ===== 聊天 =====
+// 管理員功能
+function adminMenu(uid,u){
+let action=prompt("管理員操作:\n1 改名\n2 禁言/解除");
+
+if(action==="1"){
+let n=prompt("新名字",u.name);
+if(n) db.ref("users/"+uid+"/name").set(n);
+}
+if(action==="2"){
+db.ref("users/"+uid+"/mute").set(!u.mute);
+}
+}
+
+// 聊天
 function loadChat(){
 db.ref("chat").limitToLast(100).on("child_added",s=>{
 const m=s.val();
@@ -115,18 +130,14 @@ const div=document.createElement("div");
 div.className="msg";
 
 const name=document.createElement("span");
-name.className="name";
 name.textContent=m.name;
-if(m.role==="admin") name.classList.add("admin");
+name.style.color=m.color;
 
 const time=document.createElement("span");
 time.className="time";
-const d=new Date(m.time);
-time.textContent=` ${d.toLocaleTimeString()}`;
+time.textContent=" "+new Date(m.time).toLocaleTimeString();
 
-div.appendChild(name);
-div.appendChild(time);
-div.append(" : "+m.text);
+div.append(name,time," : "+m.text);
 
 chat.appendChild(div);
 chat.scrollTop=999999;
@@ -134,15 +145,13 @@ chat.scrollTop=999999;
 }
 
 async function send(){
+if(myData.mute){alert("你被禁言");return}
 if(msg.value.trim()=="") return;
-
-const snap=await db.ref("users/"+me.uid).once("value");
-const u=snap.val();
 
 await db.ref("chat").push({
 uid:me.uid,
-name:u.name,
-role:u.role,
+name:myData.name,
+color:myData.color,
 text:msg.value,
 time:Date.now()
 });
@@ -150,10 +159,7 @@ time:Date.now()
 msg.value="";
 }
 
-function logout(){
-auth.signOut();
-}
+function logout(){auth.signOut()}
 </script>
-
 </body>
 </html>
