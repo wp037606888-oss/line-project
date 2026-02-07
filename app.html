@@ -173,8 +173,10 @@ color:white;
 
 <script>
 
+//////////////// Firebase 初始化（原版恢復） //////////////////
+
 const config={
-apiKey:"AIza...",
+apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
 authDomain:"smoke-queue.firebaseapp.com",
 databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
 projectId:"smoke-queue"
@@ -191,9 +193,77 @@ let cacheQueue={};
 
 const LIMIT=600;
 
+//////////////// 快取 queue（效能優化） //////////////////
+
 queueRef.on("value",snap=>{
 cacheQueue=snap.val()||{};
 });
+
+//////////////// 日誌 //////////////////
+
+function addLog(t){
+logRef.push({text:t,time:Date.now()});
+}
+
+logRef.limitToLast(100).on("value",snap=>{
+log.innerHTML="";
+snap.forEach(s=>{
+let l=s.val();
+let d=document.createElement("div");
+d.textContent=`[${new Date(l.time).toLocaleTimeString()}] ${l.text}`;
+log.appendChild(d);
+});
+log.scrollTop=99999;
+});
+
+//////////////// 在線 //////////////////
+
+db.ref("users").on("value",snap=>{
+userList.innerHTML="";
+snap.forEach(s=>{
+let u=s.val();
+let d=document.createElement("div");
+d.className="user "+(u.online?"online":"");
+d.textContent=u.name;
+userList.appendChild(d);
+});
+});
+
+//////////////// 登入（完全原版） //////////////////
+
+auth.onAuthStateChanged(async user=>{
+if(!user){location.href="login.html";return;}
+
+me=user;
+const ref=db.ref("users/"+user.uid);
+
+let snap=await ref.once("value");
+if(!snap.exists()){
+let name=prompt("暱稱");
+await ref.set({name:name||"訪客",role:"user"});
+}
+
+ref.on("value",s=>{
+myData=s.val();
+who.textContent="目前登入："+myData.name;
+
+if(myData.role==="admin")
+reloadBtn.classList.remove("hidden");
+
+addLog("🟢 "+myData.name+" 登入");
+engineReady=true;
+});
+
+ref.child("online").set(true);
+ref.child("online").onDisconnect().set(false);
+});
+
+function logout(){
+addLog("🔴 "+myData.name+" 登出");
+auth.signOut().then(()=>location.href="login.html");
+}
+
+//////////////// 工具 //////////////////
 
 function format(sec){
 let m=Math.floor(sec/60);
@@ -208,7 +278,10 @@ for(let s of slots) if(h<=s) return s;
 return 14;
 }
 
+//////////////// 主引擎 //////////////////
+
 function tick(){
+
 if(!engineReady) return;
 
 let now=new Date();
@@ -225,6 +298,8 @@ updateState(slot,h);
 }
 
 setInterval(tick,1000);
+
+//////////////// 狀態 //////////////////
 
 function updateState(slot,h){
 
@@ -302,6 +377,91 @@ div.textContent=`${h.name} ${format(h.duration)}`;
 }
 history.appendChild(div);
 });
+}
+
+//////////////// 排隊 //////////////////
+
+function reserve(){
+let slot=getSlot(new Date().getHours());
+queueRef.child("reserve/"+me.uid)
+.set({name:myData.name,time:Date.now(),slot});
+addLog(myData.name+" 預約 "+slot+"點");
+}
+
+function cancelReserve(){
+queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 取消預約");
+}
+
+function goOut(){
+queueRef.child("out/"+me.uid)
+.set({name:myData.name,time:Date.now()});
+queueRef.child("reserve/"+me.uid).remove();
+addLog(myData.name+" 出去");
+}
+
+function comeBack(){
+
+queueRef.child("out/"+me.uid).once("value").then(s=>{
+let u=s.val();
+if(!u) return;
+
+let sec=Math.floor((Date.now()-u.time)/1000);
+let slot=getSlot(new Date().getHours());
+
+queueRef.child(`used/${slot}/${me.uid}`).set(true);
+
+queueRef.child("history").push({
+name:u.name,
+slot,
+duration:sec,
+timeout:false,
+time:Date.now()
+});
+});
+
+queueRef.child("out/"+me.uid).remove();
+addLog(myData.name+" 回來");
+}
+
+//////////////// 聊天 //////////////////
+
+msg.addEventListener("keydown",e=>{
+if(e.key==="Enter") send();
+});
+
+function send(){
+if(!msg.value.trim()) return;
+db.ref("chat").push({name:myData.name,text:msg.value,time:Date.now()});
+msg.value="";
+}
+
+db.ref("chat").limitToLast(200).on("value",snap=>{
+chat.innerHTML="";
+snap.forEach(s=>{
+let m=s.val();
+let d=document.createElement("div");
+d.className="msg";
+d.textContent=`${m.name}: ${m.text}`;
+chat.appendChild(d);
+});
+chat.scrollTop=99999;
+});
+
+//////////////// 刷新 //////////////////
+
+db.ref("reload").on("value",s=>{
+let t=s.val();
+if(!t) return;
+let h=sessionStorage.getItem("reload");
+if(h==t) return;
+sessionStorage.setItem("reload",t);
+location.reload();
+});
+
+function forceReload(){
+db.ref("reload").set(Date.now());
+setTimeout(()=>db.ref("reload").remove(),3000);
 }
 
 </script>
