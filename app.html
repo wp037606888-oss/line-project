@@ -19,11 +19,13 @@ body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;h
 header{background:#1f1f2e;padding:12px;text-align:center}
 #chat{flex:1;overflow:auto;padding:10px}
 .msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
+
 footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
 button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
-.time{font-size:11px;opacity:.6;margin-left:6px}
+
 .adminPanel{background:#300;padding:6px;text-align:center}
+.time{font-size:11px;opacity:.6;margin-left:6px}
 </style>
 </head>
 
@@ -61,10 +63,12 @@ const auth=firebase.auth();
 const db=firebase.database();
 
 let me=null,myData=null;
+let sendLock=false;
+let lastReload=0;
 
 msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 
-// 登入
+// ===== 登入 =====
 auth.onAuthStateChanged(async user=>{
 if(!user) location.href="login.html";
 me=user;
@@ -84,7 +88,7 @@ ref.child("online").onDisconnect().set(false);
 }
 });
 
-// 即時監聽自己狀態（修禁言bug）
+// 即時監聽自己狀態
 ref.on("value",s=>{
 myData=s.val();
 if(myData.role==="admin") adminPanel.style.display="block";
@@ -95,10 +99,14 @@ loadUsers();
 loadChat();
 });
 
-// ===== 全域控制監聽 =====
+// ===== 強制刷新監聽 =====
 function watchSystem(){
 db.ref("system/forceReload").on("value",s=>{
-if(s.exists()) location.reload();
+const v=s.val();
+if(!v) return;
+if(v===lastReload) return;
+lastReload=v;
+location.reload();
 });
 }
 
@@ -140,15 +148,26 @@ db.ref("users/"+uid+"/mute").set(!u.mute);
 function loadChat(){
 db.ref("chat").on("child_added",s=>{
 const m=s.val();
+
 const div=document.createElement("div");
 div.className="msg";
-div.textContent=`${m.name} : ${m.text}`;
+
+const time=new Date(m.time).toLocaleTimeString();
+
+div.textContent=`${m.name} [${time}] : ${m.text}`;
+
 chat.appendChild(div);
 chat.scrollTop=999999;
 });
 }
 
+// ===== 發送 =====
 async function send(){
+
+if(sendLock) return;
+sendLock=true;
+setTimeout(()=>sendLock=false,1000);
+
 if(myData.mute){alert("你被禁言");return}
 if(msg.value.trim()=="") return;
 
