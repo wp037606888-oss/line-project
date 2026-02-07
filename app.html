@@ -23,6 +23,7 @@ footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
 button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
 .time{font-size:11px;opacity:.6;margin-left:6px}
+.adminPanel{background:#300;padding:6px;text-align:center}
 </style>
 </head>
 
@@ -32,6 +33,12 @@ button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c
 
 <div id="main">
 <header>抽菸排隊系統 聊天室</header>
+
+<div id="adminPanel" class="adminPanel" style="display:none">
+<button onclick="clearChat()">清空聊天室</button>
+<button onclick="forceReload()">強制全體刷新</button>
+</div>
+
 <div id="chat"></div>
 
 <footer>
@@ -52,10 +59,12 @@ firebase.initializeApp(config);
 
 const auth=firebase.auth();
 const db=firebase.database();
+
 let me=null,myData=null;
 
 msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 
+// 登入
 auth.onAuthStateChanged(async user=>{
 if(!user) location.href="login.html";
 me=user;
@@ -64,15 +73,10 @@ const ref=db.ref("users/"+user.uid);
 let snap=await ref.once("value");
 
 if(!snap.exists()){
-await ref.set({
-name:"未命名",
-role:"user",
-color:"#"+Math.floor(Math.random()*16777215).toString(16),
-mute:false,
-online:false
-});
+await ref.set({name:"未命名",role:"user",mute:false,online:false});
 }
 
+// Presence
 db.ref(".info/connected").on("value",s=>{
 if(s.val()){
 ref.child("online").set(true);
@@ -80,13 +84,25 @@ ref.child("online").onDisconnect().set(false);
 }
 });
 
-ref.on("value",s=>myData=s.val());
+// 即時監聽自己狀態（修禁言bug）
+ref.on("value",s=>{
+myData=s.val();
+if(myData.role==="admin") adminPanel.style.display="block";
+});
 
+watchSystem();
 loadUsers();
 loadChat();
 });
 
-// 在線名單
+// ===== 全域控制監聽 =====
+function watchSystem(){
+db.ref("system/forceReload").on("value",s=>{
+if(s.exists()) location.reload();
+});
+}
+
+// ===== 在線名單 =====
 function loadUsers(){
 db.ref("users").on("value",snap=>{
 userList.innerHTML="";
@@ -96,8 +112,7 @@ const uid=s.key;
 
 const div=document.createElement("div");
 div.className="user "+(u.online?"online":"offline");
-div.textContent=u.name+(u.role==="admin"?" 🔴":"");
-div.style.color=u.color||"#fff";
+div.textContent=u.name+(u.mute?" 🔇":"");
 
 if(myData?.role==="admin"){
 div.onclick=()=>adminMenu(uid,u);
@@ -108,37 +123,26 @@ userList.appendChild(div);
 });
 }
 
-// 管理員功能
+// ===== 管理員操作 =====
 function adminMenu(uid,u){
-let action=prompt("管理員操作:\n1 改名\n2 禁言/解除");
+let a=prompt("1 改名\n2 禁言/解除");
 
-if(action==="1"){
+if(a==="1"){
 let n=prompt("新名字",u.name);
 if(n) db.ref("users/"+uid+"/name").set(n);
 }
-if(action==="2"){
+if(a==="2"){
 db.ref("users/"+uid+"/mute").set(!u.mute);
 }
 }
 
-// 聊天
+// ===== 聊天 =====
 function loadChat(){
-db.ref("chat").limitToLast(100).on("child_added",s=>{
+db.ref("chat").on("child_added",s=>{
 const m=s.val();
-
 const div=document.createElement("div");
 div.className="msg";
-
-const name=document.createElement("span");
-name.textContent=m.name;
-name.style.color=m.color;
-
-const time=document.createElement("span");
-time.className="time";
-time.textContent=" "+new Date(m.time).toLocaleTimeString();
-
-div.append(name,time," : "+m.text);
-
+div.textContent=`${m.name} : ${m.text}`;
 chat.appendChild(div);
 chat.scrollTop=999999;
 });
@@ -151,12 +155,20 @@ if(msg.value.trim()=="") return;
 await db.ref("chat").push({
 uid:me.uid,
 name:myData.name,
-color:myData.color,
 text:msg.value,
 time:Date.now()
 });
 
 msg.value="";
+}
+
+// ===== 管理員工具 =====
+function clearChat(){
+if(confirm("確定清空?")) db.ref("chat").remove();
+}
+
+function forceReload(){
+db.ref("system/forceReload").set(Date.now());
 }
 
 function logout(){auth.signOut()}
