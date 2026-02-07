@@ -22,12 +22,12 @@ body{
   color:white;
 }
 
-/* 粒子畫布 */
+/* 粒子背景 */
 canvas{
   position:fixed;
   inset:0;
   z-index:0;
-  pointer-events:none; /* 關鍵修正 */
+  pointer-events:none;
 }
 
 /* 卡片 */
@@ -46,20 +46,28 @@ canvas{
   transition:.4s;
 }
 
-/* 流光掃描 */
+/* 流光層（修正：不吃滑鼠） */
 .card::before{
   content:"";
   position:absolute;
-  top:-100%;
-  left:-40%;
-  width:180%;
-  height:200%;
+  inset:0;
+  pointer-events:none;
   background:linear-gradient(120deg,transparent,rgba(255,255,255,.08),transparent);
   transform:rotate(25deg);
   animation:scan 6s linear infinite;
+  z-index:0;
 }
 
-@keyframes scan{to{top:100%}}
+/* 內容層級提高 */
+.card > *{
+  position:relative;
+  z-index:1;
+}
+
+@keyframes scan{
+  from{transform:translateY(-200%) rotate(25deg)}
+  to{transform:translateY(200%) rotate(25deg)}
+}
 
 @keyframes fadeUp{
   from{opacity:0;transform:translateY(20px) scale(.96)}
@@ -168,7 +176,7 @@ function draw(){
   ctx.clearRect(0,0,w,h);
   for(let i=0;i<P;i++){
     const a=particles[i];
-    a.x+=a.vx; a.y+=a.vy;
+    a.x+=a.vx;a.y+=a.vy;
     if(a.x<0||a.x>w)a.vx*=-1;
     if(a.y<0||a.y>h)a.vy*=-1;
 
