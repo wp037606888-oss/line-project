@@ -10,10 +10,13 @@
 
 <style>
 body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;height:100vh}
-#users{width:220px;background:#1a1a28;padding:10px;overflow:auto}
+
+#users{width:240px;background:#1a1a28;padding:10px;overflow:auto}
 .user{padding:6px;margin:4px 0;background:#2a2a3a;border-radius:6px;cursor:pointer}
 .online{border-left:4px solid #00ff88}
 .offline{opacity:.4}
+
+#queueBox{background:#101018;padding:8px;border-radius:8px;margin-bottom:10px}
 
 #main{flex:1;display:flex;flex-direction:column}
 header{background:#1f1f2e;padding:12px;text-align:center}
@@ -25,15 +28,26 @@ header{background:#1f1f2e;padding:12px;text-align:center}
 
 footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
-button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
+button{margin:4px 2px;padding:8px;border:none;border-radius:8px;background:#5c7cff;color:white;cursor:pointer}
 </style>
 </head>
 
 <body>
 
 <div id="users">
+
+<div id="queueBox">
+<h3>🚬 抽菸排隊</h3>
+<div id="queue"></div>
+<button onclick="reserve()">預約</button>
+<button onclick="cancelReserve()">取消</button>
+<button onclick="goOut()">出去</button>
+<button onclick="comeBack()">回來</button>
+</div>
+
 <h3>在線名單</h3>
 <div id="userList"></div>
+
 </div>
 
 <div id="main">
@@ -54,12 +68,14 @@ button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c
 </div>
 
 <script>
+
 const config={
 apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
 authDomain:"smoke-queue.firebaseapp.com",
 databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",
 projectId:"smoke-queue"
 };
+
 firebase.initializeApp(config);
 
 const auth=firebase.auth();
@@ -70,12 +86,25 @@ let sendLock=false;
 
 msg.addEventListener("keydown",e=>{if(e.key==="Enter")send()});
 
-// ===== 強制 reload =====
+/////////////////////////////
+// 強制全體刷新 修正版
+/////////////////////////////
+
+let lastReload=0;
+
 db.ref("system/reload").on("value",s=>{
-if(s.val()) location.reload();
+const t=s.val();
+if(!t) return;
+if(t>lastReload){
+lastReload=t;
+location.reload();
+}
 });
 
-// ===== 登入 =====
+/////////////////////////////
+// 登入流程
+/////////////////////////////
+
 auth.onAuthStateChanged(async user=>{
 if(!user) location.href="login.html";
 me=user;
@@ -95,7 +124,6 @@ online:false
 });
 }
 
-// Presence
 db.ref(".info/connected").on("value",s=>{
 if(s.val()){
 ref.child("online").set(true);
@@ -103,19 +131,22 @@ ref.child("online").onDisconnect().set(false);
 }
 });
 
-// 同步自己資料
 ref.on("value",s=>{
 myData=s.val();
 if(myData.role==="admin"){
-document.getElementById("adminPanel").style.display="block";
+adminPanel.style.display="block";
 }
 });
 
 loadUsers();
 loadChat();
+loadQueue();
 });
 
-// ===== 在線名單 =====
+/////////////////////////////
+// 在線名單
+/////////////////////////////
+
 function loadUsers(){
 db.ref("users").on("value",snap=>{
 userList.innerHTML="";
@@ -136,7 +167,6 @@ userList.appendChild(div);
 });
 }
 
-// ===== 管理員操作 =====
 function adminMenu(uid,u){
 let a=prompt("1 改名\n2 禁言/解除");
 
@@ -149,7 +179,10 @@ db.ref("users/"+uid+"/mute").set(!u.mute);
 }
 }
 
-// ===== 聊天（即時同步 + 清空修正） =====
+/////////////////////////////
+// 聊天
+/////////////////////////////
+
 function loadChat(){
 db.ref("chat").on("value",snap=>{
 chat.innerHTML="";
@@ -167,7 +200,6 @@ chat.scrollTop=999999;
 });
 }
 
-// ===== 發送 =====
 async function send(){
 
 if(sendLock) return;
@@ -187,7 +219,6 @@ time:Date.now()
 msg.value="";
 }
 
-// ===== 管理員工具 =====
 function clearChat(){
 if(confirm("確定清空聊天室?")) db.ref("chat").remove();
 }
@@ -197,6 +228,88 @@ db.ref("system/reload").set(Date.now());
 }
 
 function logout(){auth.signOut()}
+
+/////////////////////////////
+// 抽菸排隊系統
+/////////////////////////////
+
+const queueRef=db.ref("smokeQueue");
+
+function reserve(){
+queueRef.child("reserve/"+me.uid).set({
+name:myData.name,
+time:Date.now()
+});
+}
+
+function cancelReserve(){
+queueRef.child("reserve/"+me.uid).remove();
+}
+
+async function goOut(){
+
+if(!confirm("確定出去抽菸?")) return;
+
+const snap=await queueRef.child("out").once("value");
+let out=snap.val()||{};
+
+if(Object.keys(out).length>=3){
+alert("已滿3人");
+return;
+}
+
+queueRef.child("out/"+me.uid).set({
+name:myData.name,
+time:Date.now()
+});
+
+queueRef.child("reserve/"+me.uid).remove();
+}
+
+function comeBack(){
+if(!confirm("確定回來?")) return;
+queueRef.child("out/"+me.uid).remove();
+}
+
+function loadQueue(){
+
+queueRef.on("value",snap=>{
+const data=snap.val()||{};
+const reserve=data.reserve||{};
+const out=data.out||{};
+
+let arr=Object.entries(reserve)
+.sort((a,b)=>a[1].time-b[1].time);
+
+queue.innerHTML="";
+
+arr.forEach((u,i)=>{
+const div=document.createElement("div");
+div.textContent=`${i+1}. ${u[1].name}`;
+queue.appendChild(div);
+});
+
+Object.entries(out).forEach(([uid,u])=>{
+const t=Math.floor((Date.now()-u.time)/1000);
+const left=600-t;
+
+let status=left>0
+?`剩 ${Math.floor(left/60)}:${(left%60).toString().padStart(2,"0")}`
+:"超時";
+
+const div=document.createElement("div");
+div.textContent=`🚬 ${u.name} ${status}`;
+queue.appendChild(div);
+
+if(left<=0){
+queueRef.child("out/"+uid).remove();
+}
+});
+});
+}
+
+setInterval(()=>{},1000);
+
 </script>
 </body>
 </html>
