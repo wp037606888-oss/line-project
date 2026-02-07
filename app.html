@@ -14,7 +14,7 @@ body{margin:0;font-family:Segoe UI;background:#12121a;color:white;display:flex;h
 #users h3{margin:0 0 10px 0;text-align:center}
 .user{padding:6px;border-radius:6px;margin:4px 0;background:#2a2a3a}
 .online{border-left:4px solid #00ff88}
-.offline{opacity:.5}
+.offline{opacity:.4}
 
 #main{flex:1;display:flex;flex-direction:column}
 header{background:#1f1f2e;padding:12px;text-align:center}
@@ -22,6 +22,7 @@ header{background:#1f1f2e;padding:12px;text-align:center}
 .msg{background:#2a2a3a;margin:6px 0;padding:8px;border-radius:8px}
 .name{font-weight:bold;color:#8ab4ff}
 .admin{color:#ff7070}
+.time{font-size:11px;opacity:.6;margin-left:6px}
 footer{display:flex;padding:10px;background:#1f1f2e}
 input{flex:1;padding:10px;border:none;border-radius:8px;background:#2b2b3d;color:white}
 button{margin-left:8px;padding:10px;border:none;border-radius:8px;background:#5c7cff;color:white}
@@ -59,22 +60,31 @@ const auth=firebase.auth();
 const db=firebase.database();
 let me=null;
 
-// ===== 登入檢查 =====
+// ===== Enter 送出 =====
+msg.addEventListener("keydown",e=>{
+if(e.key==="Enter") send();
+});
+
+// ===== 登入檢查 + Presence =====
 auth.onAuthStateChanged(async user=>{
 if(!user) location.href="login.html";
 me=user;
 
-// 建立使用者資料
 const uRef=db.ref("users/"+user.uid);
 const snap=await uRef.once("value");
+
 if(!snap.exists()){
 await uRef.set({name:"未命名",role:"user",online:false});
 }
 
-// 在線狀態
-const statusRef=db.ref("users/"+user.uid+"/online");
-statusRef.set(true);
-statusRef.onDisconnect().set(false);
+// Firebase Presence 官方寫法
+const connectedRef=db.ref(".info/connected");
+connectedRef.on("value",snap=>{
+if(snap.val()===true){
+uRef.child("online").set(true);
+uRef.child("online").onDisconnect().set(false);
+}
+});
 
 loadUsers();
 loadChat();
@@ -86,9 +96,11 @@ db.ref("users").on("value",snap=>{
 userList.innerHTML="";
 snap.forEach(s=>{
 const u=s.val();
+
 const div=document.createElement("div");
 div.className="user "+(u.online?"online":"offline");
 div.textContent=u.name+(u.role==="admin"?" 🔴":"");
+
 userList.appendChild(div);
 });
 });
@@ -98,16 +110,23 @@ userList.appendChild(div);
 function loadChat(){
 db.ref("chat").limitToLast(100).on("child_added",s=>{
 const m=s.val();
+
 const div=document.createElement("div");
 div.className="msg";
 
 const name=document.createElement("span");
 name.className="name";
-name.textContent=m.name+" ";
+name.textContent=m.name;
 if(m.role==="admin") name.classList.add("admin");
 
+const time=document.createElement("span");
+time.className="time";
+const d=new Date(m.time);
+time.textContent=` ${d.toLocaleTimeString()}`;
+
 div.appendChild(name);
-div.append(m.text);
+div.appendChild(time);
+div.append(" : "+m.text);
 
 chat.appendChild(div);
 chat.scrollTop=999999;
