@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸排隊系統 v3.4 Admin</title>
+<title>尊爵吸菸排隊系統 v3.5 Admin+</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -15,7 +15,7 @@
     --primary: linear-gradient(135deg, #6e8eff, #a277ff);
     --danger: linear-gradient(135deg, #ff5b5b, #ff3e3e);
     --bg-dark: #05060a;
-    --panel-bg: rgba(20, 21, 33, 0.85);
+    --panel-bg: rgba(20, 21, 33, 0.9);
     --text-gold: #ffcc00;
 }
 
@@ -102,31 +102,27 @@ button:disabled { background: #1a1a25; color: #444; cursor: not-allowed; box-sha
 .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); box-shadow: none; padding: 6px 12px; font-size: 12px; }
 .btn-outline:hover { background: rgba(255,255,255,0.1); }
 
-/* 管理員強制召回按鈕樣式 */
+/* 管理員按鈕樣式 */
 .btn-mini-danger {
-    padding: 4px 10px;
-    font-size: 11px;
-    background: rgba(255, 62, 62, 0.15);
-    border: 1px solid rgba(255, 62, 62, 0.4);
-    color: #ff5b5b;
-    border-radius: 8px;
-    margin-left: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: none;
+    padding: 4px 10px; font-size: 11px;
+    background: rgba(255, 62, 62, 0.15); border: 1px solid rgba(255, 62, 62, 0.4);
+    color: #ff5b5b; border-radius: 8px; margin-left: 10px; cursor: pointer;
 }
-.btn-mini-danger:hover {
-    background: #ff3e3e;
-    color: white;
-    transform: scale(1.05);
+.btn-mini-danger:hover { background: #ff3e3e; color: white; }
+
+.btn-mini-green {
+    padding: 4px 10px; font-size: 11px;
+    background: rgba(0, 255, 136, 0.15); border: 1px solid rgba(0, 255, 136, 0.4);
+    color: #00ff88; border-radius: 8px; margin-left: 10px; cursor: pointer;
 }
+.btn-mini-green:hover { background: #00ff88; color: #000; }
 
 .item-row {
     padding: 12px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     justify-content: space-between;
-    align-items: center; /* 讓內容垂直置中 */
+    align-items: center;
     font-size: 16px;
 }
 
@@ -188,7 +184,7 @@ input { flex: 1; background: #0a0b10; border: 1px solid #223; border-radius: 12p
     </div>
 
     <div class="panel">
-        <h3>📊 時段紀錄 (12H)</h3>
+        <h3>📊 近期紀錄 (Last 20)</h3>
         <div id="history" style="max-height: 160px; overflow-y: auto;"></div>
     </div>
 
@@ -219,7 +215,6 @@ input { flex: 1; background: #0a0b10; border: 1px solid #223; border-radius: 12p
 </div>
 
 <script>
-/* --- Firebase 初始化 --- */
 const config={
     apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
     authDomain: "smoke-queue.firebaseapp.com",
@@ -265,7 +260,6 @@ function playBeep(type = 'normal') {
     const gain = audioCtx.createGain();
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-
     if (type === 'urgent') { 
         osc.frequency.value = 880; osc.type = 'square'; osc.start();
         setTimeout(() => { osc.stop(); }, 100);
@@ -283,7 +277,6 @@ function playBeep(type = 'normal') {
         osc.start(); osc.stop(audioCtx.currentTime + 0.5);
     }
 }
-
 function sendNotify(title, body, urgent = false) {
     if (!notifyEnabled) return;
     playBeep(urgent ? 'urgent' : 'normal');
@@ -294,24 +287,20 @@ function sendNotify(title, body, urgent = false) {
 function format12H(date) {
     return date.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
-
 function getSlotStatus(h, m) {
     const slots = [14, 16, 18, 20, 22, 0]; 
     let target = slots.find(s => (s === 0 ? 24 : s) > h) || 14;
     let currentSlot = slots.find(s => s === h);
-    
     if (currentSlot !== undefined) {
         let displayH = currentSlot === 0 ? 12 : (currentSlot > 12 ? currentSlot - 12 : currentSlot);
         return { phase: 'OUT', slot: currentSlot, display: `${displayH}:00 PM 開放中` };
     }
-    
     let nextSlot = target;
     let diff = (nextSlot === 0 ? 24 : nextSlot) * 60 - (h * 60 + m);
     if (diff > 0 && diff <= 30) {
         let nextH = nextSlot === 0 ? 12 : (nextSlot > 12 ? nextSlot - 12 : nextSlot);
         return { phase: 'RESERVE', slot: nextSlot, display: `預約中: ${nextH}:00` };
     }
-
     let nextReserveH = nextSlot === 14 ? 13 : (nextSlot === 0 ? 23 : nextSlot - 1);
     return { phase: 'BREAK', nextSlot, display: '休息中', hint: `請於 ${nextReserveH > 12 ? nextReserveH - 12 : nextReserveH}:30 ${nextReserveH >= 12 ? 'PM' : 'AM'} 預約` };
 }
@@ -322,12 +311,9 @@ setInterval(() => {
     const now = new Date();
     const h = now.getHours(), m = now.getMinutes();
     document.getElementById("clock").textContent = format12H(now);
-
     currentSlotInfo = getSlotStatus(h, m);
     document.getElementById("slotDisplay").textContent = currentSlotInfo.display;
-
     if(h === 1 && m === 0 && now.getSeconds() === 0 && myData.role === "admin") resetQueue();
-
     updateButtonStates();
     updateOutListTimer();
     checkNotifications();
@@ -335,10 +321,7 @@ setInterval(() => {
 
 queueRef.on("value", s => { 
     cacheQueue = s.val() || {}; 
-    if(engineReady) {
-        renderStaticLists();
-        updateButtonStates();
-    }
+    if(engineReady) { renderStaticLists(); updateButtonStates(); }
 });
 
 function checkNotifications() {
@@ -346,10 +329,11 @@ function checkNotifications() {
     let r = cacheQueue.reserve || {}, o = cacheQueue.out || {};
     let sortedQueue = Object.entries(r).sort((a,b)=>a[1].time - b[1].time);
     let outCount = Object.keys(o).length;
-    let isFirst = sortedQueue.length > 0 && sortedQueue[0][0] === me.uid;
-
-    if (currentSlotInfo.phase === 'OUT' && isFirst && outCount < 3) {
-        if (!hasNotifiedReady) { sendNotify("輪到你了！", "有名額了，現在可以出去抽菸。"); hasNotifiedReady = true; }
+    let myRank = sortedQueue.findIndex(x=>x[0]===me.uid);
+    
+    // 通知邏輯：如果是前兩名，且外面有空位
+    if (currentSlotInfo.phase === 'OUT' && myRank >= 0 && myRank <= 1 && outCount < 3) {
+        if (!hasNotifiedReady) { sendNotify("有空位了！", "你是前兩順位，現在可以去抽菸。"); hasNotifiedReady = true; }
     } else {
         hasNotifiedReady = false;
     }
@@ -367,12 +351,16 @@ function updateButtonStates() {
     let r = cacheQueue.reserve || {}, o = cacheQueue.out || {}, used = cacheQueue.used || {};
     let sortedQueue = Object.entries(r).sort((a,b)=>a[1].time - b[1].time);
     let outCount = Object.keys(o).length;
-    let isFirst = sortedQueue.length > 0 && sortedQueue[0][0] === me.uid;
+    let myRank = sortedQueue.findIndex(x=>x[0]===me.uid);
     let alreadyUsed = used[currentSlotInfo.slot]?.[me.uid];
 
     bReserve.disabled = (currentSlotInfo.phase === 'BREAK' || r[me.uid] || o[me.uid] || alreadyUsed);
     bCancel.disabled = !r[me.uid];
-    bOut.disabled = !(currentSlotInfo.phase === 'OUT' && r[me.uid] && isFirst && outCount < 3);
+    
+    // 修改邏輯：允許前兩名 (Rank 0 和 1) 按出去，只要外面小於 3 人
+    let canGoOut = (currentSlotInfo.phase === 'OUT' && r[me.uid] && myRank <= 1 && outCount < 3);
+    bOut.disabled = !canGoOut;
+    
     bBack.disabled = !o[me.uid];
 
     let statusBox = document.getElementById("status");
@@ -380,9 +368,9 @@ function updateButtonStates() {
     else if(o[me.uid]) statusBox.innerHTML = "<span class='green'>享受中...</span>";
     else if(r[me.uid]) {
         if(currentSlotInfo.phase === 'OUT') {
-            if(isFirst && outCount < 3) statusBox.innerHTML = "<span class='green'>輪到你了！請出去</span>";
-            else if(isFirst) statusBox.innerHTML = "<span style='color:#ffaa00'>滿位中，等候位...</span>";
-            else statusBox.innerHTML = `<span>隊列第 ${sortedQueue.findIndex(x=>x[0]===me.uid)+1} 位</span>`;
+            if(myRank <= 1 && outCount < 3) statusBox.innerHTML = "<span class='green'>可以出發了！</span>";
+            else if(outCount >= 3) statusBox.innerHTML = "<span style='color:#ffaa00'>滿位中，等候位...</span>";
+            else statusBox.innerHTML = `<span>隊列第 ${myRank+1} 位</span>`;
         } else {
             statusBox.innerHTML = "<span style='color:var(--text-gold)'>預約成功，待整點開放</span>";
         }
@@ -398,26 +386,39 @@ function renderStaticLists() {
     let d = cacheQueue, r = d.reserve || {};
     let sortedQueue = Object.entries(r).sort((a,b)=>a[1].time - b[1].time);
     
+    // 排隊名單：加入管理員的「強制去抽」按鈕
     const qBox = document.getElementById("queue");
-    const newQHTML = sortedQueue.map((u, i) => `
+    const newQHTML = sortedQueue.map((u, i) => {
+        let forceOutBtn = "";
+        if(myData && myData.role === "admin") {
+            forceOutBtn = `<button onclick="forceGoOut('${u[0]}')" class="btn-mini-green">去抽</button>`;
+        }
+        return `
         <div class="item-row">
             <span>${i+1}. <strong>${u[1].name}</strong></span>
-            <small style='opacity:0.4'>${new Date(u[1].time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})}</small>
-        </div>
-    `).join('') || "<div style='opacity:0.2; padding:10px;'>目前無人排隊</div>";
+            <div style="display:flex; align-items:center;">
+                <small style='opacity:0.4; margin-right:5px;'>${new Date(u[1].time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})}</small>
+                ${forceOutBtn}
+            </div>
+        </div>`;
+    }).join('') || "<div style='opacity:0.2; padding:10px;'>目前無人排隊</div>";
     if(qBox.innerHTML !== newQHTML) qBox.innerHTML = newQHTML;
 
+    // 歷史紀錄：修改為顯示「最近 20 筆」，不再過濾時段，防止紀錄消失
     const hBox = document.getElementById("history");
-    let activeSlot = currentSlotInfo.phase === 'OUT' ? currentSlotInfo.slot : currentSlotInfo.nextSlot;
     let hist = [];
-    if(d.history) Object.values(d.history).forEach(h => { if(h.slot == activeSlot) hist.push({...h, sortT: h.backTime}); });
+    if(d.history) Object.values(d.history).forEach(h => { 
+        // 這裡不再過濾 slot，直接全部抓進來
+        hist.push({...h, sortT: h.backTime}); 
+    });
     
     let outObj = d.out || {};
     Object.entries(outObj).forEach(([uid, u]) => {
         if(Math.floor((Date.now()-u.time)/1000) > 600) hist.push({name: u.name, outTime: u.time, backTime: null, over: true, sortT: Date.now()});
     });
 
-    const newHHTML = hist.sort((a,b)=>b.sortT-a.sortT).slice(0, 10).map(item => `
+    // 排序並只取最後 20 筆
+    const newHHTML = hist.sort((a,b)=>b.sortT-a.sortT).slice(0, 20).map(item => `
         <div class="item-row" style="font-size:14px;">
             <span><strong>${item.name}</strong> ${item.over?'<span class="red">!</span>':''}</span>
             <small style='opacity:0.5'>${new Date(item.outTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})} - ${item.backTime?new Date(item.backTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true}):'OUT'}</small>
@@ -426,21 +427,16 @@ function renderStaticLists() {
     if(hBox.innerHTML !== newHHTML) hBox.innerHTML = newHHTML;
 }
 
-/* --- 修改：外出名單加入管理員按鈕 --- */
 function updateOutListTimer() {
     let outObj = cacheQueue.out || {};
     const oBox = document.getElementById("outList");
-    
     const newOHTML = Object.entries(outObj).map(([uid, u]) => {
         let sec = Math.floor((Date.now() - u.time)/1000);
         let timeString = `${Math.floor(sec/60)}分 ${sec%60}秒`;
-        
-        // 檢查是否為管理員，如果是，加入召回按鈕
         let adminBtn = "";
         if(myData && myData.role === "admin") {
             adminBtn = `<button onclick="forceComeBack('${uid}')" class="btn-mini-danger">召回</button>`;
         }
-
         return `
             <div class="item-row">
                 <span><strong>${u.name}</strong></span>
@@ -451,32 +447,34 @@ function updateOutListTimer() {
             </div>
         `;
     }).join('') || "<div style='opacity:0.2; padding:10px;'>目前無人外出</div>";
-
     if(oBox.innerHTML !== newOHTML) oBox.innerHTML = newOHTML;
 }
 
-/* --- 新增：管理員強制召回功能 --- */
+/* --- 管理員功能 --- */
 function forceComeBack(targetUid) {
-    if(!confirm("確定要強制將此人標記為已回來？")) return;
-    
+    if(!confirm("確定強制召回？")) return;
     queueRef.child("out/"+targetUid).once("value").then(s => {
         let u = s.val(); if(!u) return;
         let now = Date.now(), slot = new Date(u.time).getHours();
-        
         queueRef.child(`used/${slot}/${targetUid}`).set(true);
-        queueRef.child("history").push({ 
-            name: u.name, 
-            slot, 
-            outTime: u.time, 
-            backTime: now, 
-            over: (now-u.time)>600000 
-        });
+        queueRef.child("history").push({ name: u.name, slot, outTime: u.time, backTime: now, over: (now-u.time)>600000 });
         queueRef.child("out/"+targetUid).remove();
-        addLog(`管理員強制召回: ${u.name}`);
+        addLog(`管理員召回: ${u.name}`);
     });
 }
 
-/* --- Firebase 功能組 --- */
+function forceGoOut(targetUid) {
+    if(!confirm("確定強制派出去？")) return;
+    queueRef.child("reserve/"+targetUid).once("value").then(s => {
+        let u = s.val(); if(!u) return;
+        queueRef.child("out/"+targetUid).set({name: u.name, time: Date.now()}).then(()=>{
+            queueRef.child("reserve/"+targetUid).remove();
+            addLog(`管理員派發: ${u.name}`);
+        });
+    });
+}
+
+/* --- 一般功能 --- */
 auth.onAuthStateChanged(user => {
     if(!user) { location.href="login.html"; return; }
     me = user;
@@ -497,13 +495,10 @@ logRef.limitToLast(12).on("value", s => {
     const box = document.getElementById("log"); box.innerHTML = "";
     s.forEach(x => {
         let d = x.val();
-        let div = document.createElement("div");
-        div.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true})}] ${d.t}`;
-        box.appendChild(div);
+        let div = document.createElement("div"); div.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true})}] ${d.t}`; box.appendChild(div);
     });
     box.scrollTop = box.scrollHeight;
 });
-
 function reserve(){
     let h = new Date().getHours();
     let target = currentSlotInfo.phase === 'RESERVE' ? currentSlotInfo.slot : h;
@@ -527,54 +522,19 @@ function comeBack(){
         addLog(`${myData.name} 已歸`);
     });
 }
-
-function send(){
-    let input = document.getElementById("msg"); if(!input.value.trim()) return;
-    chatRef.push({name: myData.name, text: input.value, time: Date.now()});
-    input.value = "";
-}
-chatRef.limitToLast(20).on("value", s => {
-    let box = document.getElementById("chat"); box.innerHTML="";
-    s.forEach(x => {
-        let m = x.val();
-        let div = document.createElement("div"); div.className="msg";
-        div.innerHTML = `<b style="color:var(--text-gold); font-size:12px;">${m.name}</b><br>${m.text}`;
-        box.appendChild(div);
-    });
-    box.scrollTop = box.scrollHeight;
-});
-
+function send(){ let input = document.getElementById("msg"); if(!input.value.trim()) return; chatRef.push({name: myData.name, text: input.value, time: Date.now()}); input.value = ""; }
+chatRef.limitToLast(20).on("value", s => { let box = document.getElementById("chat"); box.innerHTML=""; s.forEach(x => { let m = x.val(); let div = document.createElement("div"); div.className="msg"; div.innerHTML = `<b style="color:var(--text-gold); font-size:12px;">${m.name}</b><br>${m.text}`; box.appendChild(div); }); box.scrollTop = box.scrollHeight; });
 function logout(){ auth.signOut().then(()=>location.reload()); }
-function resetQueue(){ if(confirm("確定重置系統數據？")) { queueRef.remove(); addLog("系統重置數據"); } }
-function clearLog(){ if(confirm("確定清空日誌？")) logRef.remove(); }
-function clearChat(){ if(confirm("確定清空聊天記錄？")) chatRef.remove(); }
+function resetQueue(){ if(confirm("重置數據？")) { queueRef.remove(); addLog("重置數據"); } }
+function clearLog(){ if(confirm("清空日誌？")) logRef.remove(); }
+function clearChat(){ if(confirm("清空聊天？")) chatRef.remove(); }
 
-userRef.on("value", s => {
-    let bar = document.getElementById("onlineBar"); bar.innerHTML="";
-    s.forEach(u => {
-        let d = u.val();
-        let span = document.createElement("span");
-        span.style = `padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight:bold; border: 1px solid ${d.online?'#00ff88':'#333'}; color: ${d.online?'#00ff88':'#555'}`;
-        span.textContent = d.name; bar.appendChild(span);
-    });
-});
+userRef.on("value", s => { let bar = document.getElementById("onlineBar"); bar.innerHTML=""; s.forEach(u => { let d = u.val(); let span = document.createElement("span"); span.style = `padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight:bold; border: 1px solid ${d.online?'#00ff88':'#333'}; color: ${d.online?'#00ff88':'#555'}`; span.textContent = d.name; bar.appendChild(span); }); });
 
 const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
-let w,h, particles=[];
-function resize(){w=canvas.width=innerWidth; h=canvas.height=innerHeight;}
-window.onresize=resize; resize();
+let w,h, particles=[]; function resize(){w=canvas.width=innerWidth; h=canvas.height=innerHeight;} window.onresize=resize; resize();
 for(let i=0;i<40;i++) particles.push({x:Math.random()*w, y:Math.random()*h, r:Math.random()*2+1, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3});
-function draw(){
-    ctx.fillStyle = "rgba(5, 6, 10, 0.3)";
-    ctx.fillRect(0,0,w,h);
-    particles.forEach(p=>{
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.x<0||p.x>w) p.vx*=-1; if(p.y<0||p.y>h) p.vy*=-1;
-        ctx.fillStyle="rgba(110,142,255,0.4)"; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
-    });
-    requestAnimationFrame(draw);
-}
-draw();
+function draw(){ ctx.fillStyle = "rgba(5, 6, 10, 0.3)"; ctx.fillRect(0,0,w,h); particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w) p.vx*=-1; if(p.y<0||p.y>h) p.vy*=-1; ctx.fillStyle="rgba(110,142,255,0.4)"; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }); requestAnimationFrame(draw); } draw();
 </script>
 </body>
 </html>
