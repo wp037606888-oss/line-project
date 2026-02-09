@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v5.2 - 終極版</title>
+<title>尊爵吸菸室 v5.3 - Time Perfected</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Rajdhani:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&display=swap');
 
 :root {
     --gold: #ffd700;
@@ -83,9 +83,9 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
 .user-badge { 
     background: linear-gradient(90deg, rgba(255,215,0,0.1), transparent); 
-    padding: 4px 12px; border-radius: 4px; font-size: 12px; 
-    border-left: 2px solid var(--gold); color: #fff; letter-spacing: 1px;
-    font-family: 'Rajdhani', sans-serif; font-weight: 700;
+    padding: 4px 12px; border-radius: 4px; font-size: 13px; 
+    border-left: 3px solid var(--gold); color: #fff; letter-spacing: 1px;
+    font-weight: 500; display: flex; align-items: center;
 }
 .btn-logout { 
     background: transparent; border: 1px solid #444; color: #888; cursor: pointer; 
@@ -93,12 +93,13 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 }
 .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 
+/* 主時鐘樣式微調 (適應 AM/PM) */
 #clock {
-    font-family: 'Rajdhani', sans-serif; font-size: 48px; line-height: 1;
+    font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1;
     font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15);
-    margin: 10px 0 5px; letter-spacing: 2px;
+    margin: 12px 0 8px; letter-spacing: 2px;
 }
-#slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-weight: 500; opacity: 0.8; }
+#slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-weight: 500; opacity: 0.9; }
 #status { font-size: 18px; font-weight: 700; margin: 5px 0 15px; min-height: 24px; letter-spacing: 1px; }
 
 /* --- 按鈕 --- */
@@ -201,10 +202,10 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 .broadcast-input { width: 100%; background: #222; border: 1px solid #444; padding: 10px; color: #fff; border-radius: 6px; margin-bottom: 8px; }
 .btn-broadcast { width: 100%; background: var(--gold); color: #000; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-/* --- 廣播橫幅 (修復顯示問題) --- */
+/* --- 廣播橫幅 --- */
 #broadcastBanner {
     position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
-    width: 90%; max-width: 600px; z-index: 9999; /* 層級最高 */
+    width: 90%; max-width: 600px; z-index: 9999;
     background: rgba(10, 10, 10, 0.95); border: 2px solid var(--gold);
     border-radius: 12px; padding: 25px; text-align: center;
     box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(255, 215, 0, 0.2);
@@ -291,7 +292,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
                 <div id="slotDisplay">---</div>
             </div>
             
-            <div id="clock">00:00:00</div>
+            <div id="clock">00:00:00 PM</div>
             <div id="status">系統初始化...</div>
 
             <div class="control-grid">
@@ -366,7 +367,7 @@ let hasNotifiedReady=false, hasNotifiedOvertime=false;
 function openAdmin(){ document.getElementById('adminModal').classList.add('show'); }
 function closeAdmin(){ document.getElementById('adminModal').classList.remove('show'); }
 
-/* --- Broadcast (Fix) --- */
+/* --- Broadcast --- */
 function sendBroadcast(){
     const input = document.getElementById('broadcastInput');
     if(!input.value.trim()) return;
@@ -377,17 +378,12 @@ function sendBroadcast(){
 broadcastRef.on("value", s => {
     const val = s.val();
     if(!val) return;
-    // 檢查是否為 10 秒內的新廣播，避免刷頁面時重複跳出
     if(Date.now() - val.t > 10000) return;
     
     const banner = document.getElementById('broadcastBanner');
     document.getElementById('broadcastText').textContent = val.text;
-    
-    // 使用 CSS class 控制顯示，更穩定
     banner.classList.add('active');
     playBeep('urgent');
-    
-    // 5秒後自動收回
     setTimeout(() => { banner.classList.remove('active'); }, 5000);
 });
 
@@ -406,25 +402,49 @@ function playBeep(type='normal'){
 }
 function sendNotify(t,b,u=false){if(notifyEnabled){playBeep(u?'urgent':'normal');new Notification(t,{body:b});}}
 
-/* --- Core Logic --- */
-function format12H(d){return d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+/* --- Core Logic (12H Update) --- */
+function format12H(d){
+    // 強制 12 小時制
+    return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
 function getSlotStatus(h,m){
+    // 定義時段 (下午2點, 4點, 6點, 8點, 10點, 凌晨12點)
     const slots=[14,16,18,20,22,0];
     let currentSlot=slots.find(s=>s===h);
+    
+    // 輔助函數：轉 12 小時字串 (無秒數)
+    const to12HStr = (hr) => {
+        let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM";
+        let dH = (hr % 12) || 12; // 0 或 12 都轉為 12
+        return `${dH}:00 ${suffix}`;
+    };
+    
+    // 輔助函數：轉開放時間字串 (30分)
+    const toOpenStr = (hr) => {
+        let openH = (hr === 0) ? 23 : hr - 1;
+        let suffix = (openH >= 12 && openH < 24) ? "PM" : "AM";
+        let dH = (openH % 12) || 12;
+        return `${dH}:30 ${suffix}`;
+    };
+
     if(currentSlot!==undefined){
-        let dH=currentSlot===0?12:(currentSlot>12?currentSlot-12:currentSlot);
-        return {phase:'OUT',slot:currentSlot,display:`${dH}:00 PM 開放時段`};
+        return {phase:'OUT',slot:currentSlot,display:`${to12HStr(currentSlot)} 開放時段`};
     }
-    let target=slots.find(s=>(s===0?24:s)>h)||14;
+    
+    let target=slots.find(s=>(s===0?24:s)>h)||14; // 下一個時段
     let diff=(target===0?24:target)*60-(h*60+m);
+    
     if(diff>0&&diff<=30){
-        let nH=target===0?12:(target>12?target-12:target);
-        return {phase:'RESERVE',slot:target,display:`預約中 ${nH}:00`};
+        // 預約中
+        return {phase:'RESERVE',slot:target,display:`預約中 ${to12HStr(target)}`};
     }
-    // 智慧提醒：計算開放時間
-    let openH = (target===0?23:target-1); 
-    let openM = "30";
-    return {phase:'BREAK',nextSlot:target,display:`下個時段 ${(target===0?12:(target>12?target-12:target))}:00`, hint:`${openH>12?openH-12:openH}:${openM} 開放預約`};
+    // 休息中
+    return {
+        phase:'BREAK',
+        nextSlot:target,
+        display:`下個時段 ${to12HStr(target)}`, 
+        hint:`${toOpenStr(target)} 開放預約`
+    };
 }
 
 setInterval(()=>{
@@ -433,7 +453,6 @@ setInterval(()=>{
     document.getElementById("clock").textContent=format12H(now);
     currentSlotInfo=getSlotStatus(h,m);
     
-    // 狀態欄顯示優化
     let dText = currentSlotInfo.display;
     if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint})`;
     document.getElementById("slotDisplay").textContent=dText;
@@ -512,13 +531,13 @@ function renderStaticLists(){
     qBox.innerHTML=sorted.map((u,i)=>{
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}')" class="btn-mini success">去抽</button>`:"";
         let rc=i===0?'rank-1':(i===1?'rank-2':'');
-        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false})}</small>${btn}</div></div>`;
+        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
 
     const hBox=document.getElementById("history");
     let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime}));
     let oObj=cacheQueue.out||{}; Object.entries(oObj).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
-    hBox.innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}):'OUT'}</small></div>`).join('');
+    hBox.innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
 }
 
 function updateOutListTimer(){
@@ -539,7 +558,6 @@ function clearChat(){ if(confirm("清空聊天室？")) chatRef.remove(); }
 function clearHistory(){ if(confirm("清空歷史紀錄？")) queueRef.child("history").remove(); }
 function clearLog(){ if(confirm("清空系統日誌？")) logRef.remove(); }
 
-// 登出跳轉至指定 URL
 function logout(){
     auth.signOut().then(() => {
         location.href = "https://wp037606888-oss.github.io/line-project/login.html";
@@ -554,7 +572,8 @@ auth.onAuthStateChanged(user=>{
     me=user;
     userRef.child(user.uid).on("value",s=>{
         myData=s.val()||{};
-        document.getElementById("who").textContent=(myData.name||"GUEST").toUpperCase();
+        // 更新歡迎詞
+        document.getElementById("who").textContent= `歡迎 ${(myData.name||"GUEST").toUpperCase()}`;
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
         engineReady=true;renderStaticLists();updateButtonStates();
     });
@@ -563,7 +582,7 @@ auth.onAuthStateChanged(user=>{
 });
 
 function addLog(t){logRef.push({t,time:Date.now()});}
-logRef.limitToLast(15).on("value",s=>{const b=document.getElementById("log");b.innerHTML="";s.forEach(x=>{let d=x.val();let dv=document.createElement("div");dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:false})}]</span> ${d.t}`;b.appendChild(dv);});b.scrollTop=b.scrollHeight;});
+logRef.limitToLast(15).on("value",s=>{const b=document.getElementById("log");b.innerHTML="";s.forEach(x=>{let d=x.val();let dv=document.createElement("div");dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;b.appendChild(dv);});b.scrollTop=b.scrollHeight;});
 
 function reserve(){let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t});if(Notification.permission!=="granted")enableNotification();addLog(`${myData.name} 預約`);}
 function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`);}
