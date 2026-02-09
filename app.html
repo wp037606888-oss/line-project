@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v5.3 - Time Perfected</title>
+<title>尊爵吸菸室 v5.4 - Button Logic</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -93,7 +93,6 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 }
 .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 
-/* 主時鐘樣式微調 (適應 AM/PM) */
 #clock {
     font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1;
     font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15);
@@ -102,26 +101,50 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 #slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-weight: 500; opacity: 0.9; }
 #status { font-size: 18px; font-weight: 700; margin: 5px 0 15px; min-height: 24px; letter-spacing: 1px; }
 
-/* --- 按鈕 --- */
+/* --- 按鈕系統 (Core Update) --- */
 .control-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 12px; margin-top: 15px; }
 
 button.action-btn {
-    padding: 16px 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
-    background: rgba(0,0,0,0.3); color: #888; font-size: 14px; font-weight: 700;
+    padding: 16px 8px; border-radius: 10px; font-size: 14px; font-weight: 700;
     cursor: pointer; transition: all 0.2s; font-family: "Noto Sans TC", sans-serif;
-    position: relative; overflow: hidden;
+    position: relative; overflow: hidden; border: 1px solid transparent;
 }
-button#bReserve {
+
+/* 1. 金色 (預約 - 閒置狀態) */
+.btn-gold {
     background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
-    color: #000; border: none; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    color: #000 !important; border: none;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
     animation: goldPulse 3s infinite;
 }
 @keyframes goldPulse { 0%{box-shadow: 0 0 10px rgba(255,215,0,0.2);} 50%{box-shadow: 0 0 25px rgba(255,215,0,0.5);} 100%{box-shadow: 0 0 10px rgba(255,215,0,0.2);} }
-button#bReserve:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
-button#bReserve:disabled { background: #1a1a1a; color: #444; animation: none; box-shadow: none; cursor: not-allowed; }
-button#bCancel:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
-button#bOut:hover:not(:disabled) { border-color: var(--success); color: var(--success); }
-button#bBack:hover:not(:disabled) { border-color: #fff; color: #fff; }
+.btn-gold:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+/* 2. 黑色 (停用/等待/已預約) */
+.btn-black {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+    color: #666 !important; cursor: not-allowed;
+}
+
+/* 3. 紅色 (取消/回來 - 強調動作) */
+.btn-red {
+    background: rgba(255, 71, 87, 0.15); border: 1px solid var(--danger);
+    color: var(--danger) !important;
+}
+.btn-red:hover { background: var(--danger); color: #fff !important; box-shadow: 0 0 15px rgba(255, 71, 87, 0.4); }
+
+/* 4. 綠色 (可以出去 - 通行) */
+.btn-green {
+    background: rgba(0, 255, 157, 0.15); border: 1px solid var(--success);
+    color: var(--success) !important;
+}
+.btn-green:hover { background: var(--success); color: #000 !important; box-shadow: 0 0 15px rgba(0, 255, 157, 0.4); }
+
+/* 5. 灰色 (本時段已結束) */
+.btn-grey {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    color: #444 !important; pointer-events: none;
+}
 
 /* --- 列表與標題 --- */
 h3 {
@@ -402,49 +425,19 @@ function playBeep(type='normal'){
 }
 function sendNotify(t,b,u=false){if(notifyEnabled){playBeep(u?'urgent':'normal');new Notification(t,{body:b});}}
 
-/* --- Core Logic (12H Update) --- */
-function format12H(d){
-    // 強制 12 小時制
-    return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
+/* --- Core Logic --- */
+function format12H(d){ return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
 function getSlotStatus(h,m){
-    // 定義時段 (下午2點, 4點, 6點, 8點, 10點, 凌晨12點)
     const slots=[14,16,18,20,22,0];
     let currentSlot=slots.find(s=>s===h);
-    
-    // 輔助函數：轉 12 小時字串 (無秒數)
-    const to12HStr = (hr) => {
-        let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM";
-        let dH = (hr % 12) || 12; // 0 或 12 都轉為 12
-        return `${dH}:00 ${suffix}`;
-    };
-    
-    // 輔助函數：轉開放時間字串 (30分)
-    const toOpenStr = (hr) => {
-        let openH = (hr === 0) ? 23 : hr - 1;
-        let suffix = (openH >= 12 && openH < 24) ? "PM" : "AM";
-        let dH = (openH % 12) || 12;
-        return `${dH}:30 ${suffix}`;
-    };
+    const to12HStr = (hr) => { let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM"; let dH = (hr % 12) || 12; return `${dH}:00 ${suffix}`; };
+    const toOpenStr = (hr) => { let openH = (hr === 0) ? 23 : hr - 1; let suffix = (openH >= 12 && openH < 24) ? "PM" : "AM"; let dH = (openH % 12) || 12; return `${dH}:30 ${suffix}`; };
 
-    if(currentSlot!==undefined){
-        return {phase:'OUT',slot:currentSlot,display:`${to12HStr(currentSlot)} 開放時段`};
-    }
-    
-    let target=slots.find(s=>(s===0?24:s)>h)||14; // 下一個時段
+    if(currentSlot!==undefined){ return {phase:'OUT',slot:currentSlot,display:`${to12HStr(currentSlot)} 開放時段`}; }
+    let target=slots.find(s=>(s===0?24:s)>h)||14;
     let diff=(target===0?24:target)*60-(h*60+m);
-    
-    if(diff>0&&diff<=30){
-        // 預約中
-        return {phase:'RESERVE',slot:target,display:`預約中 ${to12HStr(target)}`};
-    }
-    // 休息中
-    return {
-        phase:'BREAK',
-        nextSlot:target,
-        display:`下個時段 ${to12HStr(target)}`, 
-        hint:`${toOpenStr(target)} 開放預約`
-    };
+    if(diff>0&&diff<=30){ return {phase:'RESERVE',slot:target,display:`預約中 ${to12HStr(target)}`}; }
+    return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)} 開放預約`};
 }
 
 setInterval(()=>{
@@ -452,11 +445,9 @@ setInterval(()=>{
     const now=new Date(), h=now.getHours(), m=now.getMinutes();
     document.getElementById("clock").textContent=format12H(now);
     currentSlotInfo=getSlotStatus(h,m);
-    
     let dText = currentSlotInfo.display;
     if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint})`;
     document.getElementById("slotDisplay").textContent=dText;
-
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue();
     updateButtonStates(); updateOutListTimer(); checkNotifications();
 },1000);
@@ -478,6 +469,7 @@ function checkNotifications(){
     }else{hasNotifiedOvertime=false;}
 }
 
+/* --- Button Logic Update (v5.4) --- */
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
@@ -486,27 +478,48 @@ function updateButtonStates(){
     let myRank=sorted.findIndex(x=>x[0]===me.uid);
     let alreadyUsed = used[currentSlotInfo.slot]?.[me.uid];
 
-    if(alreadyUsed) {
-        bReserve.disabled = true;
-        bReserve.textContent = "本時段已享用";
-        bReserve.style.background = "#222";
-        bReserve.style.color = "#555";
-        bReserve.style.animation = "none";
-        bReserve.style.boxShadow = "none";
-    } else {
-        bReserve.textContent = "預約排隊";
-        bReserve.disabled = (currentSlotInfo.phase==='BREAK'||r[me.uid]||o[me.uid]);
-        if(!bReserve.disabled) {
-            bReserve.style.background = "linear-gradient(135deg, #FFD700 0%, #FDB931 100%)";
-            bReserve.style.color = "#000";
-            bReserve.style.animation = "goldPulse 3s infinite";
-        }
-    }
+    // Helper to set button style
+    const setBtn = (btn, cls, txt, disabled) => {
+        btn.className = `action-btn ${cls}`;
+        if(txt) btn.textContent = txt;
+        btn.disabled = disabled;
+    };
 
-    bCancel.disabled=!r[me.uid];
-    let canGoOut=(currentSlotInfo.phase==='OUT'&&r[me.uid]&&myRank<=1&&outCount<3);
-    bOut.disabled=!canGoOut;
-    bBack.disabled=!o[me.uid];
+    if(alreadyUsed) {
+        // State 4: Used
+        setBtn(bReserve, 'btn-grey', '等待下個時段', true);
+        setBtn(bOut, 'btn-grey', '現在出去', true);
+        setBtn(bBack, 'btn-grey', '我回來了', true);
+        setBtn(bCancel, 'btn-grey', '取消預約', true);
+    } else if(o[me.uid]) {
+        // State 3: Outside
+        setBtn(bReserve, 'btn-black', '預約排隊', true);
+        setBtn(bOut, 'btn-black', '現在出去', true);
+        setBtn(bBack, 'btn-red', '我回來了', false);
+        setBtn(bCancel, 'btn-black', '取消預約', true);
+    } else if(r[me.uid]) {
+        // State 2: Reserved
+        setBtn(bReserve, 'btn-black', '已預約', true);
+        setBtn(bCancel, 'btn-red', '取消預約', false);
+        setBtn(bBack, 'btn-black', '我回來了', true);
+        
+        // Go Out Logic
+        if(currentSlotInfo.phase==='OUT' && myRank<=1 && outCount<3){
+            setBtn(bOut, 'btn-green', '現在出去', false);
+        } else {
+            setBtn(bOut, 'btn-black', '等待中...', true);
+        }
+    } else {
+        // State 1: Idle
+        if(currentSlotInfo.phase==='BREAK'){
+            setBtn(bReserve, 'btn-black', '休息中', true);
+        } else {
+            setBtn(bReserve, 'btn-gold', '預約排隊', false);
+        }
+        setBtn(bOut, 'btn-black', '現在出去', true);
+        setBtn(bBack, 'btn-black', '我回來了', true);
+        setBtn(bCancel, 'btn-black', '取消預約', true);
+    }
 
     let st=document.getElementById("status");
     if(alreadyUsed) st.innerHTML="<span style='color:#666'>本時段已結束</span>";
@@ -572,7 +585,6 @@ auth.onAuthStateChanged(user=>{
     me=user;
     userRef.child(user.uid).on("value",s=>{
         myData=s.val()||{};
-        // 更新歡迎詞
         document.getElementById("who").textContent= `歡迎 ${(myData.name||"GUEST").toUpperCase()}`;
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
         engineReady=true;renderStaticLists();updateButtonStates();
