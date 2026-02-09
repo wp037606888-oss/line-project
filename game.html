@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵遊樂場 v6.1 - Game Suite Fixed</title>
+<title>尊爵遊樂場 v6.3 - Grand Master</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -12,17 +12,19 @@
 
 :root {
     --gold: #ffd700;
+    --gold-dim: rgba(255, 215, 0, 0.2);
     --bg-dark: #05060a;
     --glass: rgba(16, 18, 27, 0.95);
     --border: rgba(255, 255, 255, 0.15);
     --neon-red: #ff3e3e;
     --neon-green: #00ff9d;
+    --board-wood: #2c2c2c;
 }
 
 * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
 body { margin: 0; font-family: "Noto Sans TC", sans-serif; background: var(--bg-dark); color: #e0e0e0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-/* 背景 */
+/* 背景特效 */
 canvas#bg { position: fixed; inset: 0; z-index: -1; }
 .noise { position: fixed; inset: 0; z-index: -1; opacity: 0.05; background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC42IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI24pIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4='); pointer-events: none; }
 
@@ -31,40 +33,39 @@ header {
     padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
     background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); z-index: 10;
 }
-.brand { font-family: 'Cinzel'; font-size: 20px; color: var(--gold); letter-spacing: 2px; }
-.back-btn { background: transparent; border: 1px solid #444; color: #aaa; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: .3s; }
-.back-btn:hover { border-color: #fff; color: #fff; }
+.brand { font-family: 'Cinzel'; font-size: 22px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+.back-btn { background: transparent; border: 1px solid #444; color: #aaa; padding: 8px 20px; border-radius: 20px; cursor: pointer; transition: .3s; font-size: 13px; }
+.back-btn:hover { border-color: var(--gold); color: var(--gold); }
 
 /* 大廳佈局 */
 #lobby { display: flex; flex: 1; overflow: hidden; padding: 30px; gap: 30px; transition: 0.3s; }
 #lobby.hidden { display: none; }
 
 .game-section { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.section-title { font-size: 18px; color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 10px; font-family: 'Cinzel'; display: flex; align-items: center; gap: 10px; }
+.section-title { font-size: 20px; color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 15px; font-family: 'Cinzel'; display: flex; align-items: center; gap: 12px; letter-spacing: 1px; }
 
-.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; overflow-y: auto; padding-right: 5px; height: 100%; }
+.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; overflow-y: auto; padding-right: 5px; height: 100%; }
 
 /* 桌子卡片 */
 .table-card {
-    background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
-    display: flex; flex-direction: column; align-items: center; gap: 12px; transition: .3s; position: relative;
+    background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 25px;
+    display: flex; flex-direction: column; align-items: center; gap: 15px; transition: .3s; position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
-.table-card:hover { border-color: var(--gold); transform: translateY(-5px); }
-.table-id { position: absolute; top: 12px; left: 15px; font-size: 11px; color: #555; font-family: 'Cinzel'; letter-spacing: 1px; }
-.table-status { font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #222; color: #777; position: absolute; top: 10px; right: 15px; }
-.table-status.active { background: rgba(0,255,157,0.1); color: var(--neon-green); }
-.table-status.full { background: rgba(255,215,0,0.1); color: var(--gold); }
+.table-card:hover { border-color: var(--gold); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(255,215,0,0.1); }
+.table-id { position: absolute; top: 15px; left: 20px; font-size: 12px; color: #555; font-family: 'Cinzel'; letter-spacing: 1px; font-weight: bold; }
+.table-status { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: #222; color: #777; position: absolute; top: 12px; right: 20px; }
+.table-status.active { background: rgba(0,255,157,0.1); color: var(--neon-green); border: 1px solid rgba(0,255,157,0.2); }
+.table-status.full { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid rgba(255,215,0,0.2); }
 
-.seat-display { display: flex; gap: 15px; align-items: center; margin: 15px 0 5px; }
-.seat { width: 45px; height: 45px; border-radius: 50%; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; font-size: 20px; position: relative; }
-.seat.taken { border-style: solid; border-color: #555; background: #222; color: #fff; }
-.seat.taken::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 15px rgba(255,255,255,0.05); }
+.seat-display { display: flex; gap: 20px; align-items: center; margin: 20px 0 10px; }
+.seat { width: 50px; height: 50px; border-radius: 50%; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative; transition: .3s; }
+.seat.taken { border-style: solid; border-color: #555; background: #222; color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.05); }
 
-.btn-join { width: 100%; padding: 12px; background: #252525; border: 1px solid #333; color: #aaa; border-radius: 8px; cursor: pointer; transition: .3s; font-weight: bold; }
-.btn-join:hover:not(:disabled) { background: var(--gold); color: #000; border-color: var(--gold); }
+.btn-join { width: 100%; padding: 14px; background: #252525; border: 1px solid #333; color: #aaa; border-radius: 10px; cursor: pointer; transition: .3s; font-weight: bold; font-size: 14px; }
+.btn-join:hover:not(:disabled) { background: var(--gold); color: #000; border-color: var(--gold); box-shadow: 0 0 20px rgba(255,215,0,0.3); }
 .btn-join:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-watch { width: 100%; padding: 12px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 8px; cursor: pointer; }
+.btn-watch { width: 100%; padding: 14px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 10px; cursor: pointer; transition: .3s; }
 .btn-watch:hover { border-color: var(--neon-green); color: var(--neon-green); }
 
 /* --- 遊戲房間 --- */
@@ -73,104 +74,96 @@ header {
 }
 #gameRoom.show { display: flex; }
 
-.room-header { padding: 15px 30px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid #333; align-items: center; }
-.room-info { display: flex; gap: 20px; align-items: center; }
-.turn-indicator { padding: 6px 18px; border-radius: 20px; background: #222; color: #666; border: 1px solid #333; transition: .3s; font-size: 14px; font-weight: bold; }
-.turn-indicator.active { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
-
-.game-area { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: auto; background: #0c0c0c; }
-
-/* 五子棋盤 (修正版) */
-#gomokuBoard {
-    width: 600px; height: 600px; background: #2b2b2b; border: 5px solid #444; position: relative;
-    display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-    box-shadow: 0 30px 80px rgba(0,0,0,0.8); border-radius: 4px; padding: 20px;
-    box-sizing: content-box; /* 關鍵：讓 padding 不影響 grid 大小 */
+.room-header { padding: 15px 40px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid #333; align-items: center; }
+.room-info { display: flex; gap: 30px; align-items: center; }
+.turn-indicator { 
+    padding: 8px 24px; border-radius: 30px; background: #1a1a1a; color: #555; 
+    border: 1px solid #333; transition: .3s; font-size: 15px; font-weight: bold; position: relative;
 }
-/* 五子棋格線 */
+.turn-indicator.active { 
+    border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.05); 
+    box-shadow: 0 0 20px rgba(255,215,0,0.15); 
+}
+/* 思考中動畫 */
+.turn-indicator.active::after {
+    content: 'THINKING...'; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; color: var(--gold); opacity: 0.7; letter-spacing: 1px; animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%{opacity:0.3} 50%{opacity:1} 100%{opacity:0.3} }
+
+.game-area { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: auto; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
+
+/* --- 五子棋盤 --- */
+#gomokuBoard {
+    width: 640px; height: 640px; background: #252525; border: 8px solid #3a3a3a; position: relative;
+    display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8); border-radius: 4px; padding: 22px;
+    box-sizing: content-box; 
+}
 #gomokuBoard::before {
-    content: ''; position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+    content: ''; position: absolute; top: 22px; left: 22px; right: 22px; bottom: 22px;
     background-image: 
-        linear-gradient(#666 1px, transparent 1px),
-        linear-gradient(90deg, #666 1px, transparent 1px);
-    background-size: 42.85px 42.85px; /* 600 / 14格 = 42.85 */
+        linear-gradient(#555 1px, transparent 1px),
+        linear-gradient(90deg, #555 1px, transparent 1px);
+    background-size: 45.71px 45.71px; /* (640 / 14) */
     pointer-events: none;
 }
-.cell { 
-    position: relative; cursor: pointer; z-index: 2; 
-    border-radius: 50%; /* 圓形感應區 */
+/* 天元與星位 */
+#gomokuBoard::after {
+    content: ''; position: absolute; width: 8px; height: 8px; background: #555; border-radius: 50%;
+    top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px #252525;
 }
+.cell { position: relative; cursor: pointer; z-index: 2; border-radius: 50%; }
 .cell:hover::after {
-    content: ''; position: absolute; width: 10px; height: 10px; background: rgba(255,255,255,0.3);
+    content: ''; position: absolute; width: 12px; height: 12px; background: rgba(255,255,255,0.4);
     border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%);
 }
 .stone {
-    width: 36px; height: 36px; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.6); pointer-events: none; z-index: 3;
+    width: 38px; height: 38px; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.6); pointer-events: none; z-index: 3;
 }
 .stone.black { background: radial-gradient(circle at 35% 35%, #555, #000); }
-.stone.white { background: radial-gradient(circle at 35% 35%, #fff, #ddd); }
-.stone.last-move { box-shadow: 0 0 15px var(--neon-red); }
+.stone.white { background: radial-gradient(circle at 35% 35%, #fff, #bbb); }
+.stone.last-move { box-shadow: 0 0 15px var(--neon-red), inset 0 0 10px rgba(255,0,0,0.5); }
 
-/* 象棋盤 (完美修復版) */
+/* --- 象棋盤 (SVG Precision) --- */
 #xiangqiBoard {
     width: 550px; height: 620px; background: #1e1e1e; border: 8px solid #333; position: relative;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.8); border-radius: 8px; user-select: none;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.9); border-radius: 6px; user-select: none;
 }
-/* 棋盤線 (SVG 背景，保證精準) */
-.xq-grid {
-    position: absolute; inset: 25px; pointer-events: none;
-    background-image: 
-        linear-gradient(#444 2px, transparent 2px),
-        linear-gradient(90deg, #444 2px, transparent 2px);
-    background-size: 62.5px 63.33px; /* (550-50)/8, (620-50)/9 */
-    border: 2px solid #444; /* 外框 */
-}
-/* 河界 */
-.river {
-    position: absolute; top: 278px; left: 27px; right: 27px; height: 62px; background: #1e1e1e;
-    display: flex; align-items: center; justify-content: space-around;
-    font-family: 'Ma Shan Zheng', cursive; font-size: 32px; color: #555; z-index: 1; pointer-events: none;
-}
-/* 斜線 (士路) */
-.slash-top { position: absolute; top: 25px; left: 213px; width: 125px; height: 126px; z-index: 0; }
-.slash-top::before, .slash-top::after { content:''; position:absolute; inset:0; border-top:2px solid #444; transform-origin:top left; width:178px; }
-.slash-top::before { transform: rotate(45deg); }
-.slash-top::after { transform: rotate(135deg); left:125px; }
-
-.slash-bottom { position: absolute; bottom: 25px; left: 213px; width: 125px; height: 126px; z-index: 0; }
-.slash-bottom::before, .slash-bottom::after { content:''; position:absolute; inset:0; border-top:2px solid #444; transform-origin:top left; width:178px; }
-.slash-bottom::before { transform: rotate(45deg); }
-.slash-bottom::after { transform: rotate(135deg); left:125px; }
+/* SVG 格線 (絕對精準) */
+.xq-svg-bg { position: absolute; top: 25px; left: 25px; width: 500px; height: 570px; pointer-events: none; z-index: 0; }
+.xq-line { stroke: #444; stroke-width: 2px; }
+.xq-river { font-family: 'Ma Shan Zheng'; font-size: 36px; fill: #444; text-anchor: middle; dominant-baseline: middle; }
 
 /* 棋子 */
 .chess-piece {
-    width: 52px; height: 52px; border-radius: 50%; background: #111; border: 3px solid;
+    width: 48px; height: 48px; border-radius: 50%; background: #151515; border: 2px solid;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Ma Shan Zheng', cursive; font-size: 28px; font-weight: bold;
+    font-family: 'Ma Shan Zheng', cursive; font-size: 26px; font-weight: bold;
     cursor: pointer; position: absolute; transform: translate(-50%, -50%);
     transition: transform 0.2s, box-shadow 0.2s, top 0.2s, left 0.2s; z-index: 10;
 }
-.chess-piece:hover { transform: translate(-50%, -50%) scale(1.1); z-index: 20; }
-.chess-piece.red { color: var(--neon-red); border-color: var(--neon-red); box-shadow: inset 0 0 15px rgba(255,62,62,0.2); text-shadow: 0 0 5px var(--neon-red); }
-.chess-piece.black { color: var(--neon-green); border-color: var(--neon-green); box-shadow: inset 0 0 15px rgba(0,255,157,0.2); text-shadow: 0 0 5px var(--neon-green); }
-.chess-piece.selected { box-shadow: 0 0 30px var(--gold), inset 0 0 20px var(--gold); border-color: var(--gold); z-index: 100; background: #222; }
-
-/* 棋盤點擊熱區 */
-.xq-touch-layer {
-    position: absolute; inset: 0; z-index: 5; display: grid;
-    grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(10, 1fr);
+.chess-piece:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 20; background: #222; }
+.chess-piece.red { color: var(--neon-red); border-color: var(--neon-red); box-shadow: inset 0 0 15px rgba(255,62,62,0.15); text-shadow: 0 0 8px var(--neon-red); }
+.chess-piece.black { color: var(--neon-green); border-color: var(--neon-green); box-shadow: inset 0 0 15px rgba(0,255,157,0.15); text-shadow: 0 0 8px var(--neon-green); }
+.chess-piece.selected { 
+    box-shadow: 0 0 30px var(--gold), inset 0 0 20px var(--gold); border-color: var(--gold); 
+    background: #000; z-index: 100; transform: translate(-50%, -50%) scale(1.1);
 }
-.xq-point { cursor: pointer; }
-/* .xq-point:hover { background: rgba(255,255,255,0.05); border-radius: 50%; } */
+
+/* 點擊熱區 */
+.xq-touch-layer { position: absolute; inset: 0; z-index: 5; }
+.xq-point { position: absolute; width: 40px; height: 40px; transform: translate(-50%, -50%); cursor: pointer; }
+/* .xq-point:hover { background: rgba(255,255,255,0.1); border-radius: 50%; } */
 
 /* 結算視窗 */
 #resultModal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50; display: none; align-items: center; justify-content: center;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; align-items: center; justify-content: center;
 }
 .result-card {
-    background: #111; border: 2px solid var(--gold); padding: 50px; text-align: center; border-radius: 20px; width: 400px;
-    box-shadow: 0 0 80px rgba(255,215,0,0.3); animation: popIn 0.3s;
+    background: #050505; border: 2px solid var(--gold); padding: 50px; text-align: center; border-radius: 20px; width: 450px;
+    box-shadow: 0 0 80px rgba(255,215,0,0.3); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 @keyframes popIn { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
 
@@ -183,9 +176,12 @@ header {
 
 <header>
     <div class="brand">PREMIUM GAMING</div>
-    <div style="display:flex; gap:15px; align-items:center;">
-        <span id="userInfo" style="color:#888; font-size:14px; font-weight:bold;">GUEST</span>
-        <button class="back-btn" onclick="location.href='app.html'">返回大廳</button>
+    <div style="display:flex; gap:20px; align-items:center;">
+        <div style="text-align:right;">
+            <div style="font-size:10px; color:#666; letter-spacing:1px;">PLAYER</div>
+            <div id="userInfo" style="color:#ddd; font-size:14px; font-weight:bold;">CONNECTING...</div>
+        </div>
+        <button class="back-btn" onclick="location.href='app.html'">返回大廳 EXIT</button>
     </div>
 </header>
 
@@ -204,42 +200,49 @@ header {
     <div class="room-header">
         <div class="room-info">
             <button class="back-btn" onclick="leaveTable()">離開房間</button>
-            <div id="roomTitle" style="color:var(--gold); font-weight:bold; font-size:18px;">TABLE</div>
+            <div id="roomTitle" style="color:var(--gold); font-weight:bold; font-size:18px; letter-spacing:2px;">TABLE</div>
         </div>
         <div class="room-info">
             <div id="p1Display" class="turn-indicator">Player 1</div>
-            <span style="color:#444; font-weight:bold;">VS</span>
+            <span style="color:#444; font-weight:bold; font-family:'Cinzel'">VS</span>
             <div id="p2Display" class="turn-indicator">Player 2</div>
         </div>
     </div>
-
     <div class="game-area" id="gameArea"></div>
 </div>
 
 <div id="resultModal">
     <div class="result-card">
-        <h1 id="resultText" style="color:var(--gold); margin:0 0 30px; font-family:'Cinzel'; font-size:36px;">WINNER</h1>
-        <button class="back-btn" onclick="closeResult()" style="width:100%; padding:15px; background:var(--gold); color:black; font-weight:bold; border:none;">確認 CONFIRM</button>
+        <div style="font-size:12px; color:#666; letter-spacing:3px; margin-bottom:10px;">GAME OVER</div>
+        <h1 id="resultText" style="color:var(--gold); margin:0 0 40px; font-family:'Noto Sans TC'; font-size:32px;">獲勝者</h1>
+        <button class="back-btn" onclick="closeResult()" style="width:100%; padding:15px; background:var(--gold); color:black; font-weight:bold; border:none; font-size:16px;">確認 CONFIRM</button>
     </div>
 </div>
 
 <script>
-/* --- Init --- */
+/* --- 1. Init & Config --- */
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 firebase.initializeApp(config);
 const db=firebase.database(), auth=firebase.auth();
 const pgRef=db.ref("playground");
 
-let me, myData, currentTableId=null;
-let gameWatcher = null; // 監聽器
+let me, myData, currentTableId=null, gameWatcher=null, isProcessing=false;
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-/* --- Background --- */
+/* --- 2. Background --- */
 const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
 let w,h,particles=[]; function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window.onresize=resize; resize();
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*2});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.fillStyle="rgba(255,215,0,0.15)";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-/* --- Auth & Init --- */
+function playSound(type){
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination);
+    if(type==='move'){ o.frequency.value=400; o.type='sine'; g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime+0.1); o.start(); o.stop(audioCtx.currentTime+0.1); }
+    else if(type==='win'){ o.frequency.value=600; o.type='triangle'; g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime+0.5); o.start(); o.stop(audioCtx.currentTime+0.5); }
+}
+
+/* --- 3. Auth & Lobby --- */
 auth.onAuthStateChanged(user=>{
     if(!user){location.href="login.html";return;} me=user;
     db.ref("users/"+me.uid).once("value",s=>{
@@ -249,17 +252,14 @@ auth.onAuthStateChanged(user=>{
     });
 });
 
-/* --- Lobby Logic --- */
 function initLobby(){
     pgRef.child("tables").on("value", s=>{
-        // 如果正在遊戲中，不刷新大廳 UI，避免干擾
-        if(currentTableId) return;
-
+        if(currentTableId) return; // 遊戲中不重繪
         const tables = s.val() || {};
         renderTables(tables, 'gomoku', 5);
         renderTables(tables, 'xiangqi', 5);
         
-        // 檢查自己是否已經在某個桌子上 (斷線重連邏輯)
+        // 斷線重連 Check
         Object.keys(tables).forEach(tid => {
             if(tables[tid].p1 === me.uid || tables[tid].p2 === me.uid){
                 enterTable(tid, tables[tid]);
@@ -274,8 +274,6 @@ function renderTables(tables, type, count){
     for(let i=0; i<count; i++){
         const tid = `${type}_${i}`;
         const t = tables[tid] || { p1:null, p2:null };
-        const p1Name = t.p1Name || "空位";
-        const p2Name = t.p2Name || "空位";
         const isFull = t.p1 && t.p2;
         const isMe = (t.p1===me.uid || t.p2===me.uid);
         
@@ -284,95 +282,77 @@ function renderTables(tables, type, count){
 
         let btnHtml = "";
         if(isMe) btnHtml = `<button class="btn-join" onclick="reEnter('${tid}')" style="background:var(--gold);color:#000;">回到座位</button>`;
-        else if(!isFull) {
-            // 防止自己加入自己
-            btnHtml = `<button class="btn-join" onclick="joinTable('${tid}')">加入對戰</button>`;
-        }
+        else if(!isFull) btnHtml = `<button class="btn-join" onclick="joinTable('${tid}')" ${isProcessing?'disabled':''}>加入對戰</button>`;
         else btnHtml = `<button class="btn-watch" style="display:block" onclick="watchTable('${tid}')">觀戰</button>`;
 
         const div = document.createElement("div");
         div.className = "table-card";
         div.innerHTML = `
-            <div class="table-id">TABLE ${i+1}</div>
-            ${statusHtml}
+            <div class="table-id">TABLE ${i+1}</div>${statusHtml}
             <div class="seat-display">
                 <div class="seat ${t.p1?'taken':''}">${t.p1?'👤':'+'}</div>
                 <span style="font-size:12px; color:#555">VS</span>
                 <div class="seat ${t.p2?'taken':''}">${t.p2?'👤':'+'}</div>
             </div>
-            <div style="font-size:12px; color:#666; margin-bottom:5px;">${p1Name} vs ${p2Name}</div>
+            <div style="font-size:12px; color:#666; margin-bottom:5px;">${t.p1Name||'空位'} vs ${t.p2Name||'空位'}</div>
             ${btnHtml}
         `;
         list.appendChild(div);
     }
 }
 
-// 核心加入邏輯 (修復秒退問題)
+/* --- 4. Join & Enter Logic (Transaction) --- */
 function joinTable(tid){
+    if(isProcessing) return; isProcessing = true;
     pgRef.child("tables/"+tid).transaction(t => {
         if(!t) t = { p1:null, p2:null, board:null, turn:null };
-        if(t.p1 === me.uid || t.p2 === me.uid) return; // 已經在裡面了
-        if(t.p1 && t.p2) return; // 滿了
+        if(t.p1 === me.uid || t.p2 === me.uid) return; 
+        if(t.p1 && t.p2) return; 
         
         if(!t.p1) { t.p1 = me.uid; t.p1Name = myData.name; }
         else { t.p2 = me.uid; t.p2Name = myData.name; }
         
-        // Reset game if new match started
+        // 新開局初始化
         if(t.p1 && t.p2 && !t.board) {
-            t.turn = t.p1; // p1 先手
-            t.board = tid.startsWith('gomoku') ? Array(225).fill(0) : initXiangqi(); 
+            t.turn = t.p1; 
+            t.board = tid.startsWith('gomoku') ? Array(225).fill(0) : initXiangqiData(); 
             t.winner = null;
         }
         return t;
     }, (err, committed, s) => {
-        if(committed) {
-            // 成功寫入後，手動觸發進入房間，不依賴大廳監聽器
-            enterTable(tid, s.val());
-        }
+        isProcessing = false;
+        if(committed) enterTable(tid, s.val());
+        else if(err) alert("加入失敗 (請檢查權限): " + err.message);
     });
 }
 
-// 斷線重連或觀戰
-function reEnter(tid) {
-    pgRef.child("tables/"+tid).once("value", s => enterTable(tid, s.val()));
-}
-function watchTable(tid) {
-    pgRef.child("tables/"+tid).once("value", s => enterTable(tid, s.val(), true));
-}
+function reEnter(tid) { pgRef.child("tables/"+tid).once("value", s=>enterTable(tid, s.val())); }
+function watchTable(tid) { pgRef.child("tables/"+tid).once("value", s=>enterTable(tid, s.val(), true)); }
 
-// 進入房間 (UI 切換 + 綁定監聽)
-function enterTable(tid, tableData, isSpectator = false){
-    if(currentTableId === tid) return; // 已經在裡面
+function enterTable(tid, tableData, isSpectator=false){
+    if(currentTableId === tid) return;
     currentTableId = tid;
 
-    // UI 切換
     document.getElementById("lobby").classList.add("hidden");
     document.getElementById("gameRoom").classList.add("show");
     document.getElementById("roomTitle").textContent = (tid.includes('gomoku')?"五子棋":"象棋") + " - " + tid.split('_')[1];
     
-    // 渲染棋盤結構
+    // 初始化棋盤 DOM
     const area = document.getElementById("gameArea");
+    area.innerHTML = "";
     if(tid.includes('gomoku')) {
         area.innerHTML = `<div id="gomokuBoard">${Array(225).fill('<div class="cell"></div>').join('')}</div>`;
         if(!isSpectator) bindGomokuEvents();
     } else {
-        area.innerHTML = `
-            <div id="xiangqiBoard">
-                <div class="xq-grid"></div>
-                <div class="river">楚河　漢界</div>
-                <div class="slash-top"></div><div class="slash-bottom"></div>
-                <div class="xq-touch-layer">${Array(90).fill('<div class="xq-point"></div>').join('')}</div>
-                <div id="piecesLayer"></div>
-            </div>`;
+        createXiangqiBoard(area); // 繪製 SVG 棋盤
         if(!isSpectator) bindXiangqiEvents();
     }
 
-    // 開始監聽房間數據
+    // 啟動房間監聽
     if(gameWatcher) pgRef.child("tables/"+tid).off("value", gameWatcher);
-    
     gameWatcher = pgRef.child("tables/"+tid).on("value", s => {
         const t = s.val();
-        if(!t) { leaveTable(); return; } // 桌子被清空
+        if(!t) { leaveTable(); return; } // 桌子被重置
         updateGameRoom(t);
     });
 }
@@ -380,50 +360,42 @@ function enterTable(tid, tableData, isSpectator = false){
 function leaveTable(){
     if(!currentTableId) return;
     
-    // 如果我是玩家，離開時清空座位
+    // 玩家離開清理
     pgRef.child(`tables/${currentTableId}`).transaction(t => {
         if(!t) return t;
-        if(t.p1 === me.uid) { t.p1 = null; t.p1Name = null; }
-        if(t.p2 === me.uid) { t.p2 = null; t.p2Name = null; }
-        // 只要有人離開，重置棋盤
-        t.board = null; t.turn = null; t.winner = null;
+        if(t.p1===me.uid) { t.p1=null; t.p1Name=null; }
+        if(t.p2===me.uid) { t.p2=null; t.p2Name=null; }
+        // 只要有人離開，遊戲重置
+        t.board=null; t.turn=null; t.winner=null;
         return t;
     });
 
-    // 清除監聽
     pgRef.child("tables/"+currentTableId).off("value", gameWatcher);
-    gameWatcher = null;
-    currentTableId = null;
-
-    // UI 還原
+    gameWatcher=null; currentTableId=null;
     document.getElementById("gameRoom").classList.remove("show");
     document.getElementById("lobby").classList.remove("hidden");
-    document.getElementById("resultModal").style.display = "none";
+    document.getElementById("resultModal").style.display="none";
+    initLobby(); 
 }
 
-/* --- Game Loop --- */
+/* --- 5. Game Loop & Render --- */
 function updateGameRoom(t){
-    // Update Header
     const p1d = document.getElementById("p1Display");
     const p2d = document.getElementById("p2Display");
     p1d.textContent = t.p1Name || "等待中...";
     p2d.textContent = t.p2Name || "等待中...";
     
-    p1d.className = `turn-indicator ${t.turn && t.turn === t.p1 ? 'active' : ''}`;
-    p2d.className = `turn-indicator ${t.turn && t.turn === t.p2 ? 'active' : ''}`;
+    p1d.className = `turn-indicator ${t.turn===t.p1 ? 'active' : ''}`;
+    p2d.className = `turn-indicator ${t.turn===t.p2 ? 'active' : ''}`;
 
-    // Sync Board
-    if(currentTableId.includes('gomoku')){
-        drawGomoku(t.board);
-    } else {
-        drawXiangqi(t.board);
-    }
+    if(currentTableId.includes('gomoku')) drawGomoku(t.board);
+    else drawXiangqi(t.board);
     
-    // Check Winner
     if(t.winner){
-        const winnerName = t.winner === t.p1 ? t.p1Name : t.p2Name;
-        document.getElementById("resultText").innerHTML = `<span style="color:#fff">${winnerName}</span> 獲勝!`;
+        const winnerName = t.winner===t.p1 ? t.p1Name : t.p2Name;
+        document.getElementById("resultText").textContent = `${winnerName} 獲勝!`;
         document.getElementById("resultModal").style.display = "flex";
+        playSound('win');
     }
 }
 
@@ -432,7 +404,7 @@ function closeResult(){
     if(currentTableId) pgRef.child(`tables/${currentTableId}/winner`).remove();
 }
 
-/* --- 五子棋 (Logic) --- */
+/* --- 6. Gomoku Logic --- */
 function bindGomokuEvents(){
     const cells = document.querySelectorAll("#gomokuBoard .cell");
     cells.forEach((cell, idx) => {
@@ -445,12 +417,14 @@ function bindGomokuEvents(){
 
                 const color = (me.uid === t.p1) ? 1 : 2; // 1=黑, 2=白
                 t.board[idx] = color;
+                t.lastMove = idx;
                 
                 if(checkWin(t.board, idx, color)) t.winner = me.uid;
                 else t.turn = (t.turn === t.p1) ? t.p2 : t.p1; 
                 
                 return t;
             });
+            playSound('move');
         };
     });
 }
@@ -481,22 +455,47 @@ function checkWin(board, idx, color){
     return false;
 }
 
-/* --- 象棋 (Logic) --- */
-// 座標系: 9列(x:0-8) x 10行(y:0-9)
-// 初始佈局 (紅在下 p1，黑在上 p2)
-const XQ_INIT = [
-    // 黑方 (上)
-    {id:'b_c1',t:'車',c:'black',x:0,y:0}, {id:'b_m1',t:'馬',c:'black',x:1,y:0}, {id:'b_x1',t:'象',c:'black',x:2,y:0}, {id:'b_s1',t:'士',c:'black',x:3,y:0}, {id:'b_k',t:'將',c:'black',x:4,y:0}, {id:'b_s2',t:'士',c:'black',x:5,y:0}, {id:'b_x2',t:'象',c:'black',x:6,y:0}, {id:'b_m2',t:'馬',c:'black',x:7,y:0}, {id:'b_c2',t:'車',c:'black',x:8,y:0},
-    {id:'b_p1',t:'包',c:'black',x:1,y:2}, {id:'b_p2',t:'包',c:'black',x:7,y:2},
-    {id:'b_z1',t:'卒',c:'black',x:0,y:3}, {id:'b_z2',t:'卒',c:'black',x:2,y:3}, {id:'b_z3',t:'卒',c:'black',x:4,y:3}, {id:'b_z4',t:'卒',c:'black',x:6,y:3}, {id:'b_z5',t:'卒',c:'black',x:8,y:3},
-    
-    // 紅方 (下)
-    {id:'r_c1',t:'車',c:'red',x:0,y:9}, {id:'r_m1',t:'馬',c:'red',x:1,y:9}, {id:'r_x1',t:'相',c:'red',x:2,y:9}, {id:'r_s1',t:'仕',c:'red',x:3,y:9}, {id:'r_k',t:'帥',c:'red',x:4,y:9}, {id:'r_s2',t:'仕',c:'red',x:5,y:9}, {id:'r_x2',t:'相',c:'red',x:6,y:9}, {id:'r_m2',t:'馬',c:'red',x:7,y:9}, {id:'r_c2',t:'車',c:'red',x:8,y:9},
-    {id:'r_p1',t:'炮',c:'red',x:1,y:7}, {id:'r_p2',t:'炮',c:'red',x:7,y:7},
-    {id:'r_z1',t:'兵',c:'red',x:0,y:6}, {id:'r_z2',t:'兵',c:'red',x:2,y:6}, {id:'r_z3',t:'兵',c:'red',x:4,y:6}, {id:'r_z4',t:'兵',c:'red',x:6,y:6}, {id:'r_z5',t:'兵',c:'red',x:8,y:6}
-];
+/* --- 7. Xiangqi Logic (SVG Board) --- */
+function createXiangqiBoard(container){
+    // 繪製 SVG 棋盤線
+    const svgGrid = `
+    <svg class="xq-svg-bg" width="500" height="570" viewBox="0 0 500 570" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="grid" width="56.25" height="57" patternUnits="userSpaceOnUse"><path d="M 56.25 0 L 0 0 0 57" fill="none" stroke="#444" stroke-width="1.5"/></pattern></defs>
+        <rect x="0" y="0" width="450" height="570" fill="none" stroke="#444" stroke-width="4" transform="translate(25, 0)"/>
+        ${Array.from({length:10}).map((_,i)=>`<line x1="25" y1="${i*63.3+2}" x2="475" y2="${i*63.3+2}" stroke="#444" stroke-width="1.5" />`).join('')}
+        ${Array.from({length:9}).map((_,i)=>{
+            let x = 25 + i * 56.25;
+            if(i==0 || i==8) return `<line x1="${x}" y1="0" x2="${x}" y2="570" stroke="#444" stroke-width="1.5" />`;
+            return `<line x1="${x}" y1="0" x2="${x}" y2="253.2" stroke="#444" stroke-width="1.5" /><line x1="${x}" y1="316.5" x2="${x}" y2="570" stroke="#444" stroke-width="1.5" />`;
+        }).join('')}
+        <line x1="250" y1="0" x2="362.5" y2="126.6" stroke="#444" stroke-width="1.5" transform="translate(-112.5,0)" />
+        <line x1="362.5" y1="0" x2="250" y2="126.6" stroke="#444" stroke-width="1.5" transform="translate(-112.5,0)" />
+        <line x1="250" y1="443.1" x2="362.5" y2="569.7" stroke="#444" stroke-width="1.5" transform="translate(-112.5,0)" />
+        <line x1="362.5" y1="443.1" x2="250" y2="569.7" stroke="#444" stroke-width="1.5" transform="translate(-112.5,0)" />
+        <text x="120" y="295" class="xq-river">楚 河</text>
+        <text x="380" y="295" class="xq-river">漢 界</text>
+    </svg>`;
 
-function initXiangqi(){ return JSON.parse(JSON.stringify(XQ_INIT)); }
+    container.innerHTML = `
+        <div id="xiangqiBoard">
+            ${svgGrid}
+            <div class="xq-touch-layer">${Array(90).fill('<div class="xq-point"></div>').join('')}</div>
+            <div id="piecesLayer"></div>
+        </div>`;
+}
+
+// 象棋初始資料
+function initXiangqiData(){
+    return [
+        {id:'b_c1',t:'車',c:'black',x:0,y:0}, {id:'b_m1',t:'馬',c:'black',x:1,y:0}, {id:'b_x1',t:'象',c:'black',x:2,y:0}, {id:'b_s1',t:'士',c:'black',x:3,y:0}, {id:'b_k',t:'將',c:'black',x:4,y:0}, {id:'b_s2',t:'士',c:'black',x:5,y:0}, {id:'b_x2',t:'象',c:'black',x:6,y:0}, {id:'b_m2',t:'馬',c:'black',x:7,y:0}, {id:'b_c2',t:'車',c:'black',x:8,y:0},
+        {id:'b_p1',t:'包',c:'black',x:1,y:2}, {id:'b_p2',t:'包',c:'black',x:7,y:2},
+        {id:'b_z1',t:'卒',c:'black',x:0,y:3}, {id:'b_z2',t:'卒',c:'black',x:2,y:3}, {id:'b_z3',t:'卒',c:'black',x:4,y:3}, {id:'b_z4',t:'卒',c:'black',x:6,y:3}, {id:'b_z5',t:'卒',c:'black',x:8,y:3},
+        
+        {id:'r_c1',t:'車',c:'red',x:0,y:9}, {id:'r_m1',t:'馬',c:'red',x:1,y:9}, {id:'r_x1',t:'相',c:'red',x:2,y:9}, {id:'r_s1',t:'仕',c:'red',x:3,y:9}, {id:'r_k',t:'帥',c:'red',x:4,y:9}, {id:'r_s2',t:'仕',c:'red',x:5,y:9}, {id:'r_x2',t:'相',c:'red',x:6,y:9}, {id:'r_m2',t:'馬',c:'red',x:7,y:9}, {id:'r_c2',t:'車',c:'red',x:8,y:9},
+        {id:'r_p1',t:'炮',c:'red',x:1,y:7}, {id:'r_p2',t:'炮',c:'red',x:7,y:7},
+        {id:'r_z1',t:'兵',c:'red',x:0,y:6}, {id:'r_z2',t:'兵',c:'red',x:2,y:6}, {id:'r_z3',t:'兵',c:'red',x:4,y:6}, {id:'r_z4',t:'兵',c:'red',x:6,y:6}, {id:'r_z5',t:'兵',c:'red',x:8,y:6}
+    ];
+}
 
 let selectedPieceId = null;
 
@@ -513,22 +512,18 @@ function bindXiangqiEvents(){
 
 function drawXiangqi(pieces){
     const layer = document.getElementById("piecesLayer");
-    layer.innerHTML = ""; // 清空重繪
+    layer.innerHTML = "";
     if(!pieces) return;
 
     pieces.forEach(p => {
         const el = document.createElement("div");
         el.className = `chess-piece ${p.c} ${selectedPieceId===p.id ? 'selected' : ''}`;
         el.textContent = p.t;
-        
-        // 座標轉換 (x: 0-8, y: 0-9) -> CSS Left/Top
-        // Board width 550, height 620. 
-        // Grid size approx 550/9 ~ 61px, 620/10 ~ 62px
-        // Padding offset: ~27px
-        // Precise calc: 25px(padding) + x * 62.5
-        
-        el.style.left = (25 + p.x * 62.5) + "px";
-        el.style.top = (25 + p.y * 63.3) + "px";
+        // 座標轉換: Board 550x620. Grid 500x570 centered.
+        // Step X: 56.25, Step Y: 63.3
+        // Offset: 25 + 2 (stroke) -> ~25
+        el.style.left = (25 + p.x * 56.25) + "px";
+        el.style.top = (27 + p.y * 63.3) + "px"; // +2 fine tune
 
         el.onclick = (e) => {
             e.stopPropagation(); 
@@ -536,15 +531,12 @@ function drawXiangqi(pieces){
                 const t = s.val();
                 if(t.turn !== me.uid) return;
                 
-                // P1執紅, P2執黑
                 const myColor = (me.uid === t.p1) ? 'red' : 'black';
                 
                 if(p.c === myColor) {
-                    // 選自己
                     selectedPieceId = p.id;
-                    drawXiangqi(t.board); // 重繪以顯示選取效果
+                    drawXiangqi(t.board); // 重繪顯示選取
                 } else {
-                    // 點敵人 -> 吃子
                     if(selectedPieceId !== null) movePiece(selectedPieceId, p.x, p.y);
                 }
             });
@@ -557,11 +549,10 @@ function movePiece(pid, tx, ty){
     pgRef.child(`tables/${currentTableId}`).transaction(t => {
         if(!t) return;
         
-        // 驗證棋子存在
         const pIndex = t.board.findIndex(x => x.id === pid);
         if(pIndex === -1) return;
 
-        // 吃子邏輯
+        // 吃子
         const targetIndex = t.board.findIndex(x => x.x === tx && x.y === ty);
         let captured = null;
         if(targetIndex !== -1) {
@@ -569,24 +560,21 @@ function movePiece(pid, tx, ty){
             t.board.splice(targetIndex, 1);
         }
 
-        // 更新位置 (重抓 index 因為可能有變動)
+        // 移動
         const newPIndex = t.board.findIndex(x => x.id === pid);
         t.board[newPIndex].x = tx;
         t.board[newPIndex].y = ty;
         
-        // 換手
         t.turn = (t.turn === t.p1) ? t.p2 : t.p1;
         
-        // 勝負
         if(captured && (captured.t === '帥' || captured.t === '將')) {
             t.winner = me.uid;
         }
-
         return t;
     });
+    playSound('move');
     selectedPieceId = null;
 }
-
 </script>
 </body>
 </html>
