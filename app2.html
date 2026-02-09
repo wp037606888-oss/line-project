@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v7.0 - Social Upgrade</title>
+<title>尊爵吸菸室 v7.1 - Admin Control</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -103,7 +103,7 @@ h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--gold); text-transform: up
 .btn-mini.success { color: var(--success); border-color: var(--success); }
 .btn-mini.success:hover { background: var(--success); color: #000; }
 
-/* --- 聊天室升級 (Social Upgrade) --- */
+/* --- 聊天室 --- */
 #chat-header { padding: 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--glass-border); font-size: 12px; letter-spacing: 2px; display: flex; flex-direction: column; gap: 10px; }
 #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; word-break: break-all; }
@@ -112,7 +112,7 @@ h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name { font-size: 10px; margin-bottom: 2px; opacity: 0.7; font-weight: 700; }
 .msg-img { max-width: 100%; border-radius: 8px; cursor: pointer; margin-top: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
-/* 輸入區工具列 */
+/* 輸入區 */
 .input-area { padding: 10px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; position: relative; }
 input#msg { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 16px; color: #fff; transition: .3s; }
 input#msg:focus { border-color: var(--gold); background: rgba(0,0,0,0.5); }
@@ -131,13 +131,22 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 .emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 6px; }
 .emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.2); }
 
-/* Admin UI */
+/* Admin & Floating UI */
 #btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; backdrop-filter: blur(10px); }
 #btnAdminFloat:hover { background: var(--gold); color: #000; transform: rotate(90deg); box-shadow: 0 0 20px rgba(255,215,0,0.5); }
-#btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; backdrop-filter: blur(10px); }
+
+/* 遊樂場按鈕 (預設隱藏) */
+#btnGame { 
+    position: fixed; bottom: 20px; left: 20px; z-index: 100; 
+    width: 45px; height: 45px; border-radius: 50%; 
+    background: rgba(0,0,0,0.6); border: 1px solid var(--success); 
+    color: var(--success); font-size: 20px; cursor: pointer; 
+    display: none; /* 預設隱藏 */
+    align-items: center; justify-content: center; transition: 0.3s; backdrop-filter: blur(10px); 
+}
 #btnGame:hover { background: var(--success); color: #000; box-shadow: 0 0 20px var(--success); transform: scale(1.1); }
 
-/* Admin Modal & Broadcast */
+/* Admin Modal */
 #adminModal { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
 #adminModal.show { display: flex; opacity: 1; }
 .admin-card { width: 420px; background: #111; border: 1px solid var(--gold); border-radius: 20px; padding: 30px; box-shadow: 0 0 50px rgba(255, 215, 0, 0.15); transform: translateY(20px); transition: transform 0.3s; }
@@ -147,6 +156,9 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 .btn-admin-action { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; transition: 0.2s; font-size: 13px; }
 .btn-admin-action:hover { border-color: #fff; color: #fff; background: #222; }
 .btn-admin-action.danger:hover { background: var(--danger); color: #fff; }
+.btn-toggle { width:100%; border:1px solid var(--success); color:var(--success); font-weight:bold; }
+.btn-toggle.off { border-color:var(--danger); color:var(--danger); }
+
 #broadcastBanner { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 9999; background: rgba(10, 10, 10, 0.95); border: 2px solid var(--gold); border-radius: 12px; padding: 25px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 #broadcastBanner.active { top: 30px; }
 
@@ -197,6 +209,12 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Cinzel'">Admin Console</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
+        
+        <div class="admin-section">
+            <h4>Global Switch 全域開關</h4>
+            <button id="btnTogglePg" class="btn-admin-action btn-toggle" onclick="togglePlayground()">遊樂場狀態: 讀取中...</button>
+        </div>
+
         <div class="admin-section">
             <h4>Broadcast 廣播系統</h4>
             <input id="broadcastInput" class="broadcast-input" style="width:100%;background:#222;border:1px solid #444;padding:10px;color:#fff;border-radius:6px;margin-bottom:8px;" placeholder="輸入公告內容...">
@@ -257,7 +275,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 
         <div class="glass-panel" style="flex-shrink: 0;">
             <h3>系統日誌</h3>
-            <div id="log" class="list-container" style="font-family: 'Rajdhani', monospace; font-size: 12px; color:#666; max-height:100px;"></div>
+            <div id="log" class="list-container" style="font-family: 'Rajdhani', monospace; font-size: 12px; color:#aaa; max-height:100px;"></div>
         </div>
     </div>
 
@@ -268,8 +286,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
         </div>
         <div id="chat-box"></div>
         
-        <div id="emojiPicker">
-            </div>
+        <div id="emojiPicker"></div>
 
         <div class="input-area">
             <input type="file" id="imgInput" hidden accept="image/*" onchange="handleFile(event)">
@@ -286,11 +303,11 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 firebase.initializeApp(config);
 const db=firebase.database(), auth=firebase.auth();
-const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast");
+const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast"), configRef=db.ref("config");
 
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0};
 let audioCtx=null, notifyEnabled=false;
-let hasNotifiedReady=false, hasNotifiedOvertime=false;
+let playgroundEnabled = false;
 
 /* --- Background --- */
 const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
@@ -312,6 +329,29 @@ auth.onAuthStateChanged(user=>{
 });
 function logout(){auth.signOut().then(()=>{location.href="https://wp037606888-oss.github.io/line-project/login.html";});}
 
+/* --- Playground Control (New) --- */
+configRef.child("playground_status").on("value", s => {
+    playgroundEnabled = s.val() || false;
+    const btn = document.getElementById("btnGame");
+    if(playgroundEnabled) {
+        btn.style.display = "flex";
+        playBeep(); // 提示音
+    } else {
+        btn.style.display = "none";
+    }
+    
+    // 更新 Admin UI
+    const toggleBtn = document.getElementById("btnTogglePg");
+    if(toggleBtn) {
+        toggleBtn.textContent = playgroundEnabled ? "遊樂場狀態: 開啟 (OPEN)" : "遊樂場狀態: 關閉 (CLOSED)";
+        toggleBtn.className = playgroundEnabled ? "btn-admin-action btn-toggle" : "btn-admin-action btn-toggle off";
+    }
+});
+
+function togglePlayground() {
+    configRef.child("playground_status").set(!playgroundEnabled);
+}
+
 /* --- Admin --- */
 function openAdmin(){document.getElementById('adminModal').classList.add('show');}
 function closeAdmin(){document.getElementById('adminModal').classList.remove('show');}
@@ -324,106 +364,50 @@ broadcastRef.on("value",s=>{
     setTimeout(()=>b.classList.remove('active'),5000);
 });
 
-/* --- Chat System Upgrade --- */
+/* --- Chat System --- */
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
-// Init Emojis
 emojis.forEach(e => {
-    const btn = document.createElement("button");
-    btn.className = "emoji-btn";
-    btn.textContent = e;
+    const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e;
     btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); };
     emojiPicker.appendChild(btn);
 });
-
-function toggleEmoji() {
-    emojiPicker.classList.toggle("show");
-}
-
-// 圖片壓縮與傳送
+function toggleEmoji() { emojiPicker.classList.toggle("show"); }
 function handleFile(e) {
-    const file = e.target.files[0];
-    if(!file) return;
-    
-    // 限制檔案大小 (前端檢查)
-    if(file.size > 2 * 1024 * 1024) { alert("圖片太大了，請選小一點的 (Max 2MB)"); return; }
-
+    const file = e.target.files[0]; if(!file) return;
+    if(file.size > 2 * 1024 * 1024) { alert("圖片太大了 (Max 2MB)"); return; }
     const reader = new FileReader();
     reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            
-            // 壓縮邏輯：最大寬度 400px
-            const MAX_WIDTH = 400;
-            if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // 轉成 Base64 (JPEG 70% 品質)
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            
-            chatRef.push({
-                name: myData.name,
-                uid: me.uid,
-                text: dataUrl, // 存 Base64
-                type: 'image', // 標記為圖片
-                time: Date.now()
-            });
+            let width = img.width, height = img.height;
+            if (width > 400) { height *= 400 / width; width = 400; }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            chatRef.push({ name: myData.name, uid: me.uid, text: canvas.toDataURL('image/jpeg', 0.7), type: 'image', time: Date.now() });
         }
         img.src = event.target.result;
     }
-    reader.readAsDataURL(file);
-    e.target.value = ''; // 重置 input
+    reader.readAsDataURL(file); e.target.value = '';
 }
-
 function send(){
-    let i=document.getElementById("msg");
-    if(!i.value.trim())return;
-    chatRef.push({
-        name:myData.name,
-        uid:me.uid,
-        text:i.value,
-        type: 'text',
-        time:Date.now()
-    });
-    i.value="";
-    emojiPicker.classList.remove("show");
+    let i=document.getElementById("msg"); if(!i.value.trim())return;
+    chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time:Date.now() });
+    i.value=""; emojiPicker.classList.remove("show");
 }
-
 chatRef.limitToLast(30).on("value",s=>{
     let b=document.getElementById("chat-box"); b.innerHTML="";
     s.forEach(x=>{
         let m=x.val(), meMsg=m.uid===me.uid;
-        let div=document.createElement("div");
-        div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-        
-        let content = "";
-        if(m.type === 'image') {
-            content = `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">`;
-        } else {
-            // 相容舊版資料 (沒有 type 欄位)
-            content = m.text.startsWith('data:image') ? `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">` : m.text;
-        }
-
+        let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
+        let content = m.type === 'image' ? `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">` : m.text;
         div.innerHTML=`<div class="msg-name">${m.name}</div>${content}`;
         b.appendChild(div);
     });
     b.scrollTop=b.scrollHeight;
 });
-
-function showImg(src) {
-    document.getElementById("imgModalSrc").src = src;
-    document.getElementById("imgModal").style.display = "flex";
-}
+function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
 /* --- Core Logic --- */
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
@@ -448,12 +432,11 @@ setInterval(()=>{
     if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint} 開放預約)`;
     document.getElementById("slotDisplay").textContent=dText;
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue();
-    updateButtonStates(); updateOutListTimer(); checkNotifications();
+    updateButtonStates(); updateOutListTimer(); 
 },1000);
 
 queueRef.on("value",s=>{cacheQueue=s.val()||{};if(engineReady){renderStaticLists();updateButtonStates();}});
 
-/* --- Button States --- */
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
@@ -502,7 +485,6 @@ function renderStaticLists(){
     let o=cacheQueue.out||{}; 
     Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
     document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
-    
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}')" class="btn-mini danger">召回</button>`:"";
@@ -514,16 +496,6 @@ function renderStaticLists(){
 function enableNotification(){if(!("Notification" in window))return;Notification.requestPermission().then(p=>{if(p==="granted"){notifyEnabled=true;playBeep();document.getElementById("btnNotify").style.display="none";}});}
 if(Notification.permission!=="granted") document.getElementById("btnNotify").style.display="inline-block";
 function playBeep(t='normal'){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);if(t==='urgent'){o.frequency.value=880;o.type='square';o.start();setTimeout(()=>o.stop(),100);setTimeout(()=>{const o2=audioCtx.createOscillator(),g2=audioCtx.createGain();o2.connect(g2);g2.connect(audioCtx.destination);o2.frequency.value=880;o2.type='square';o2.start();setTimeout(()=>o2.stop(),100);},150);}else{o.frequency.value=523.25;o.type='sine';g.gain.setValueAtTime(0.05,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.00001,audioCtx.currentTime+0.5);o.start();o.stop(audioCtx.currentTime+0.5);}}
-function sendNotify(t,b,u=false){if(notifyEnabled){playBeep(u?'urgent':'normal');new Notification(t,{body:b});}}
-function checkNotifications(){
-    if(!me||!cacheQueue)return;
-    let r=cacheQueue.reserve||{},o=cacheQueue.out||{},sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-    let myRank=sorted.findIndex(x=>x[0]===me.uid), outCount=Object.keys(o).length;
-    if(currentSlotInfo.phase==='OUT'&&myRank>=0&&myRank<=1&&outCount<3){if(!hasNotifiedReady){sendNotify("VIP 通行","您可前往吸菸區",false);hasNotifiedReady=true;}}else{hasNotifiedReady=false;}
-    if(o[me.uid]){let s=Math.floor((Date.now()-o[me.uid].time)/1000);if(s>600&&!hasNotifiedOvertime){sendNotify("超時警告","外出超過10分鐘",true);hasNotifiedOvertime=true;}}else{hasNotifiedOvertime=false;}
-}
-
-/* --- Actions --- */
 function forceComeBack(uid){if(confirm("強制召回？"))queueRef.child("out/"+uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+uid).remove();addLog(`ADMIN 召回: ${u.name}`);}});}
 function forceGoOut(uid){if(confirm("強制派發？"))queueRef.child("reserve/"+uid).once("value").then(s=>{let u=s.val();if(u){queueRef.child("out/"+uid).set({name:u.name,time:Date.now()}).then(()=>{queueRef.child("reserve/"+uid).remove();addLog(`ADMIN 派發: ${u.name}`);});}});}
 function forceReload(){db.ref("reload").set(Date.now());}
@@ -532,6 +504,7 @@ function clearChat(){ if(confirm("清空聊天室？")) chatRef.remove(); }
 function clearHistory(){ if(confirm("清空歷史紀錄？")) queueRef.child("history").remove(); }
 function clearLog(){ if(confirm("清空系統日誌？")) logRef.remove(); }
 function addLog(t){logRef.push({t,time:Date.now()});}
+logRef.limitToLast(15).on("value",s=>{const b=document.getElementById("log");b.innerHTML="";s.forEach(x=>{let d=x.val();let dv=document.createElement("div");dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;b.appendChild(dv);});b.scrollTop=b.scrollHeight;});
 function reserve(){
     if(currentSlotInfo.phase === 'BREAK'){ alert(`尚未開放預約！\n請於 ${currentSlotInfo.hint} 再試。`); return; }
     let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
@@ -541,7 +514,6 @@ function reserve(){
 function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`);}
 function goOut(){queueRef.child("out/"+me.uid).set({name:myData.name,time:Date.now()}).then(()=>{queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 出發`);});}
 function comeBack(){queueRef.child("out/"+me.uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${me.uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+me.uid).remove();addLog(`${myData.name} 返回`);}});}
-
 userRef.on("value",s=>{
     const list=document.getElementById("onlineUserList"); list.innerHTML="";
     s.forEach(u=>{ let d=u.val(); if(d.online){ let isAdmin = d.role === 'admin'; let pill = document.createElement("div"); pill.className = `online-pill online ${isAdmin ? 'admin' : ''}`; pill.innerHTML = `<div class="online-dot"></div>${d.name}`; list.appendChild(pill); }});
