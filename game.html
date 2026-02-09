@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵遊樂場 - Premium Game Lounge</title>
+<title>尊爵遊樂場 v6.1 - Game Suite Fixed</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -12,10 +12,9 @@
 
 :root {
     --gold: #ffd700;
-    --gold-glow: rgba(255, 215, 0, 0.4);
     --bg-dark: #05060a;
-    --glass: rgba(16, 18, 27, 0.9);
-    --border: rgba(255, 255, 255, 0.1);
+    --glass: rgba(16, 18, 27, 0.95);
+    --border: rgba(255, 255, 255, 0.15);
     --neon-red: #ff3e3e;
     --neon-green: #00ff9d;
 }
@@ -30,124 +29,148 @@ canvas#bg { position: fixed; inset: 0; z-index: -1; }
 /* 頂部導航 */
 header {
     padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
-    background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); z-index: 10;
+    background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); z-index: 10;
 }
 .brand { font-family: 'Cinzel'; font-size: 20px; color: var(--gold); letter-spacing: 2px; }
 .back-btn { background: transparent; border: 1px solid #444; color: #aaa; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: .3s; }
 .back-btn:hover { border-color: #fff; color: #fff; }
 
 /* 大廳佈局 */
-#lobby { display: flex; flex: 1; overflow: hidden; padding: 30px; gap: 30px; transition: 0.5s; }
-#lobby.hidden { transform: scale(0.9); opacity: 0; pointer-events: none; position: absolute; inset: 0; }
+#lobby { display: flex; flex: 1; overflow: hidden; padding: 30px; gap: 30px; transition: 0.3s; }
+#lobby.hidden { display: none; }
 
-.game-section { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.game-section { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .section-title { font-size: 18px; color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 10px; font-family: 'Cinzel'; display: flex; align-items: center; gap: 10px; }
 
-.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; overflow-y: auto; padding-right: 5px; }
+.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; overflow-y: auto; padding-right: 5px; height: 100%; }
 
 /* 桌子卡片 */
 .table-card {
-    background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
-    display: flex; flex-direction: column; align-items: center; gap: 10px; transition: .3s; position: relative; overflow: hidden;
+    background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px; transition: .3s; position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
-.table-card:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(255,215,0,0.1); }
-.table-id { position: absolute; top: 10px; left: 15px; font-size: 12px; color: #555; font-family: 'Cinzel'; }
-.table-status { font-size: 12px; padding: 4px 10px; border-radius: 4px; background: #222; color: #777; }
+.table-card:hover { border-color: var(--gold); transform: translateY(-5px); }
+.table-id { position: absolute; top: 12px; left: 15px; font-size: 11px; color: #555; font-family: 'Cinzel'; letter-spacing: 1px; }
+.table-status { font-size: 11px; padding: 4px 8px; border-radius: 4px; background: #222; color: #777; position: absolute; top: 10px; right: 15px; }
 .table-status.active { background: rgba(0,255,157,0.1); color: var(--neon-green); }
 .table-status.full { background: rgba(255,215,0,0.1); color: var(--gold); }
 
-.seat-display { display: flex; gap: 15px; align-items: center; margin: 10px 0; }
-.seat { width: 40px; height: 40px; border-radius: 50%; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; font-size: 20px; position: relative; }
+.seat-display { display: flex; gap: 15px; align-items: center; margin: 15px 0 5px; }
+.seat { width: 45px; height: 45px; border-radius: 50%; background: #111; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; font-size: 20px; position: relative; }
 .seat.taken { border-style: solid; border-color: #555; background: #222; color: #fff; }
-.seat.taken::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+.seat.taken::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 15px rgba(255,255,255,0.05); }
 
-.btn-join { width: 100%; padding: 10px; background: #333; border: none; color: #aaa; border-radius: 6px; cursor: pointer; transition: .3s; }
-.btn-join:hover { background: var(--gold); color: #000; font-weight: bold; }
-.btn-watch { width: 100%; padding: 10px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 6px; cursor: pointer; display: none; }
+.btn-join { width: 100%; padding: 12px; background: #252525; border: 1px solid #333; color: #aaa; border-radius: 8px; cursor: pointer; transition: .3s; font-weight: bold; }
+.btn-join:hover:not(:disabled) { background: var(--gold); color: #000; border-color: var(--gold); }
+.btn-join:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-watch { width: 100%; padding: 12px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 8px; cursor: pointer; }
 .btn-watch:hover { border-color: var(--neon-green); color: var(--neon-green); }
 
 /* --- 遊戲房間 --- */
 #gameRoom {
     position: fixed; inset: 0; background: #080808; z-index: 20; display: none; flex-direction: column;
-    opacity: 0; transition: opacity 0.5s;
 }
-#gameRoom.show { display: flex; opacity: 1; }
+#gameRoom.show { display: flex; }
 
-.room-header { padding: 15px 30px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid #333; }
+.room-header { padding: 15px 30px; display: flex; justify-content: space-between; background: #111; border-bottom: 1px solid #333; align-items: center; }
 .room-info { display: flex; gap: 20px; align-items: center; }
-.turn-indicator { padding: 5px 15px; border-radius: 20px; background: #222; color: #aaa; border: 1px solid #333; transition: .3s; }
-.turn-indicator.active { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+.turn-indicator { padding: 6px 18px; border-radius: 20px; background: #222; color: #666; border: 1px solid #333; transition: .3s; font-size: 14px; font-weight: bold; }
+.turn-indicator.active { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
 
-.game-area { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: auto; }
+.game-area { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: auto; background: #0c0c0c; }
 
-/* 五子棋盤 */
+/* 五子棋盤 (修正版) */
 #gomokuBoard {
-    width: 600px; height: 600px; background: #252525; border: 2px solid #444; position: relative;
+    width: 600px; height: 600px; background: #2b2b2b; border: 5px solid #444; position: relative;
     display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8); border-radius: 4px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8); border-radius: 4px; padding: 20px;
+    box-sizing: content-box; /* 關鍵：讓 padding 不影響 grid 大小 */
 }
-.cell { border: 1px solid #333; position: relative; cursor: pointer; }
-.cell::after { /* Cross lines */
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: 
-        linear-gradient(#555 1px, transparent 1px) center/100% 40px,
-        linear-gradient(90deg, #555 1px, transparent 1px) center/40px 100%;
-    opacity: 0.3;
+/* 五子棋格線 */
+#gomokuBoard::before {
+    content: ''; position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+    background-image: 
+        linear-gradient(#666 1px, transparent 1px),
+        linear-gradient(90deg, #666 1px, transparent 1px);
+    background-size: 42.85px 42.85px; /* 600 / 14格 = 42.85 */
+    pointer-events: none;
+}
+.cell { 
+    position: relative; cursor: pointer; z-index: 2; 
+    border-radius: 50%; /* 圓形感應區 */
+}
+.cell:hover::after {
+    content: ''; position: absolute; width: 10px; height: 10px; background: rgba(255,255,255,0.3);
+    border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%);
 }
 .stone {
-    width: 80%; height: 80%; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    width: 36px; height: 36px; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.6); pointer-events: none; z-index: 3;
 }
-.stone.black { background: radial-gradient(circle at 30% 30%, #444, #000); }
-.stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc); }
-.stone.last-move::before { content: ''; position: absolute; width: 6px; height: 6px; background: var(--neon-red); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+.stone.black { background: radial-gradient(circle at 35% 35%, #555, #000); }
+.stone.white { background: radial-gradient(circle at 35% 35%, #fff, #ddd); }
+.stone.last-move { box-shadow: 0 0 15px var(--neon-red); }
 
-/* 象棋盤 */
+/* 象棋盤 (完美修復版) */
 #xiangqiBoard {
-    width: 500px; height: 550px; background: #1a1a1a; border: 5px solid #333; position: relative;
-    display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(10, 1fr);
+    width: 550px; height: 620px; background: #1e1e1e; border: 8px solid #333; position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8); border-radius: 8px; user-select: none;
+}
+/* 棋盤線 (SVG 背景，保證精準) */
+.xq-grid {
+    position: absolute; inset: 25px; pointer-events: none;
     background-image: 
-        linear-gradient(#333 1px, transparent 1px),
-        linear-gradient(90deg, #333 1px, transparent 1px);
-    background-size: 11.11% 10%;
-    background-position: 27px 27px; /* Offset adjustment */
+        linear-gradient(#444 2px, transparent 2px),
+        linear-gradient(90deg, #444 2px, transparent 2px);
+    background-size: 62.5px 63.33px; /* (550-50)/8, (620-50)/9 */
+    border: 2px solid #444; /* 外框 */
 }
 /* 河界 */
 .river {
-    position: absolute; top: 40%; left: 0; width: 100%; height: 20%;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Ma Shan Zheng', cursive; font-size: 40px; color: #333; letter-spacing: 50px; pointer-events: none;
+    position: absolute; top: 278px; left: 27px; right: 27px; height: 62px; background: #1e1e1e;
+    display: flex; align-items: center; justify-content: space-around;
+    font-family: 'Ma Shan Zheng', cursive; font-size: 32px; color: #555; z-index: 1; pointer-events: none;
 }
+/* 斜線 (士路) */
+.slash-top { position: absolute; top: 25px; left: 213px; width: 125px; height: 126px; z-index: 0; }
+.slash-top::before, .slash-top::after { content:''; position:absolute; inset:0; border-top:2px solid #444; transform-origin:top left; width:178px; }
+.slash-top::before { transform: rotate(45deg); }
+.slash-top::after { transform: rotate(135deg); left:125px; }
+
+.slash-bottom { position: absolute; bottom: 25px; left: 213px; width: 125px; height: 126px; z-index: 0; }
+.slash-bottom::before, .slash-bottom::after { content:''; position:absolute; inset:0; border-top:2px solid #444; transform-origin:top left; width:178px; }
+.slash-bottom::before { transform: rotate(45deg); }
+.slash-bottom::after { transform: rotate(135deg); left:125px; }
 
 /* 棋子 */
 .chess-piece {
-    width: 46px; height: 46px; border-radius: 50%; background: #000; border: 2px solid;
+    width: 52px; height: 52px; border-radius: 50%; background: #111; border: 3px solid;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Ma Shan Zheng', cursive; font-size: 24px; font-weight: bold;
-    cursor: grab; position: absolute; transform: translate(-50%, -50%);
-    transition: transform 0.2s, box-shadow 0.2s; z-index: 2;
+    font-family: 'Ma Shan Zheng', cursive; font-size: 28px; font-weight: bold;
+    cursor: pointer; position: absolute; transform: translate(-50%, -50%);
+    transition: transform 0.2s, box-shadow 0.2s, top 0.2s, left 0.2s; z-index: 10;
 }
-.chess-piece:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.1); }
-.chess-piece.red { color: var(--neon-red); border-color: var(--neon-red); box-shadow: 0 0 10px rgba(255, 62, 62, 0.2), inset 0 0 10px rgba(255, 62, 62, 0.1); }
-.chess-piece.black { color: var(--neon-green); border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0, 255, 157, 0.2), inset 0 0 10px rgba(0, 255, 157, 0.1); }
-.chess-piece.selected { box-shadow: 0 0 20px var(--gold), inset 0 0 10px var(--gold); border-color: var(--gold); z-index: 3; }
+.chess-piece:hover { transform: translate(-50%, -50%) scale(1.1); z-index: 20; }
+.chess-piece.red { color: var(--neon-red); border-color: var(--neon-red); box-shadow: inset 0 0 15px rgba(255,62,62,0.2); text-shadow: 0 0 5px var(--neon-red); }
+.chess-piece.black { color: var(--neon-green); border-color: var(--neon-green); box-shadow: inset 0 0 15px rgba(0,255,157,0.2); text-shadow: 0 0 5px var(--neon-green); }
+.chess-piece.selected { box-shadow: 0 0 30px var(--gold), inset 0 0 20px var(--gold); border-color: var(--gold); z-index: 100; background: #222; }
 
-/* 點擊熱區 */
-.xq-point {
-    width: 100%; height: 100%; position: relative; z-index: 1;
+/* 棋盤點擊熱區 */
+.xq-touch-layer {
+    position: absolute; inset: 0; z-index: 5; display: grid;
+    grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(10, 1fr);
 }
-.xq-point.highlight::after {
-    content: ''; position: absolute; width: 10px; height: 10px; background: rgba(255,215,0,0.5);
-    border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%);
-}
+.xq-point { cursor: pointer; }
+/* .xq-point:hover { background: rgba(255,255,255,0.05); border-radius: 50%; } */
 
 /* 結算視窗 */
 #resultModal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 50; display: none; align-items: center; justify-content: center;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50; display: none; align-items: center; justify-content: center;
 }
 .result-card {
-    background: #111; border: 2px solid var(--gold); padding: 40px; text-align: center; border-radius: 20px;
-    box-shadow: 0 0 50px rgba(255,215,0,0.2); animation: popIn 0.3s;
+    background: #111; border: 2px solid var(--gold); padding: 50px; text-align: center; border-radius: 20px; width: 400px;
+    box-shadow: 0 0 80px rgba(255,215,0,0.3); animation: popIn 0.3s;
 }
 @keyframes popIn { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
 
@@ -159,9 +182,9 @@ header {
 <div class="noise"></div>
 
 <header>
-    <div class="brand">PREMIUM LOUNGE</div>
+    <div class="brand">PREMIUM GAMING</div>
     <div style="display:flex; gap:15px; align-items:center;">
-        <span id="userInfo" style="color:#888; font-size:14px;">GUEST</span>
+        <span id="userInfo" style="color:#888; font-size:14px; font-weight:bold;">GUEST</span>
         <button class="back-btn" onclick="location.href='app.html'">返回大廳</button>
     </div>
 </header>
@@ -180,24 +203,23 @@ header {
 <div id="gameRoom">
     <div class="room-header">
         <div class="room-info">
-            <button class="back-btn" onclick="leaveTable()">退出座位</button>
-            <div id="roomTitle" style="color:var(--gold); font-weight:bold;">TABLE 1</div>
+            <button class="back-btn" onclick="leaveTable()">離開房間</button>
+            <div id="roomTitle" style="color:var(--gold); font-weight:bold; font-size:18px;">TABLE</div>
         </div>
         <div class="room-info">
             <div id="p1Display" class="turn-indicator">Player 1</div>
-            <span style="color:#444">VS</span>
+            <span style="color:#444; font-weight:bold;">VS</span>
             <div id="p2Display" class="turn-indicator">Player 2</div>
         </div>
     </div>
 
-    <div class="game-area" id="gameArea">
-        </div>
+    <div class="game-area" id="gameArea"></div>
 </div>
 
 <div id="resultModal">
     <div class="result-card">
-        <h1 id="resultText" style="color:var(--gold); margin:0 0 20px;">WINNER</h1>
-        <button class="back-btn" onclick="document.getElementById('resultModal').style.display='none'">關閉</button>
+        <h1 id="resultText" style="color:var(--gold); margin:0 0 30px; font-family:'Cinzel'; font-size:36px;">WINNER</h1>
+        <button class="back-btn" onclick="closeResult()" style="width:100%; padding:15px; background:var(--gold); color:black; font-weight:bold; border:none;">確認 CONFIRM</button>
     </div>
 </div>
 
@@ -209,6 +231,7 @@ const db=firebase.database(), auth=firebase.auth();
 const pgRef=db.ref("playground");
 
 let me, myData, currentTableId=null;
+let gameWatcher = null; // 監聽器
 
 /* --- Background --- */
 const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
@@ -216,28 +239,32 @@ let w,h,particles=[]; function resize(){w=canvas.width=innerWidth;h=canvas.heigh
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*2});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.fillStyle="rgba(255,215,0,0.15)";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-/* --- Auth --- */
+/* --- Auth & Init --- */
 auth.onAuthStateChanged(user=>{
     if(!user){location.href="login.html";return;} me=user;
     db.ref("users/"+me.uid).once("value",s=>{
         myData=s.val()||{name:"Unknown"};
-        document.getElementById("userInfo").textContent = myData.name;
+        document.getElementById("userInfo").textContent = myData.name.toUpperCase();
         initLobby();
     });
 });
 
 /* --- Lobby Logic --- */
 function initLobby(){
-    pgRef.on("value", s=>{
-        const data = s.val() || {};
-        const tables = data.tables || {};
+    pgRef.child("tables").on("value", s=>{
+        // 如果正在遊戲中，不刷新大廳 UI，避免干擾
+        if(currentTableId) return;
+
+        const tables = s.val() || {};
         renderTables(tables, 'gomoku', 5);
         renderTables(tables, 'xiangqi', 5);
         
-        // 如果我在桌子上，自動進入房間
-        if(currentTableId && tables[currentTableId]){
-            updateGameRoom(tables[currentTableId]);
-        }
+        // 檢查自己是否已經在某個桌子上 (斷線重連邏輯)
+        Object.keys(tables).forEach(tid => {
+            if(tables[tid].p1 === me.uid || tables[tid].p2 === me.uid){
+                enterTable(tid, tables[tid]);
+            }
+        });
     });
 }
 
@@ -256,9 +283,12 @@ function renderTables(tables, type, count){
         if(!t.p1 && !t.p2) statusHtml = `<span class="table-status">空閒</span>`;
 
         let btnHtml = "";
-        if(isMe) btnHtml = `<button class="btn-join" onclick="enterTable('${tid}')" style="background:var(--gold);color:#000;">回到座位</button>`;
-        else if(!isFull) btnHtml = `<button class="btn-join" onclick="joinTable('${tid}')">加入對戰</button>`;
-        else btnHtml = `<button class="btn-watch" style="display:block" onclick="enterTable('${tid}')">觀戰</button>`;
+        if(isMe) btnHtml = `<button class="btn-join" onclick="reEnter('${tid}')" style="background:var(--gold);color:#000;">回到座位</button>`;
+        else if(!isFull) {
+            // 防止自己加入自己
+            btnHtml = `<button class="btn-join" onclick="joinTable('${tid}')">加入對戰</button>`;
+        }
+        else btnHtml = `<button class="btn-watch" style="display:block" onclick="watchTable('${tid}')">觀戰</button>`;
 
         const div = document.createElement("div");
         div.className = "table-card";
@@ -277,58 +307,101 @@ function renderTables(tables, type, count){
     }
 }
 
+// 核心加入邏輯 (修復秒退問題)
 function joinTable(tid){
     pgRef.child("tables/"+tid).transaction(t => {
         if(!t) t = { p1:null, p2:null, board:null, turn:null };
+        if(t.p1 === me.uid || t.p2 === me.uid) return; // 已經在裡面了
         if(t.p1 && t.p2) return; // 滿了
         
         if(!t.p1) { t.p1 = me.uid; t.p1Name = myData.name; }
         else { t.p2 = me.uid; t.p2Name = myData.name; }
         
-        // Reset game if new match
+        // Reset game if new match started
         if(t.p1 && t.p2 && !t.board) {
             t.turn = t.p1; // p1 先手
             t.board = tid.startsWith('gomoku') ? Array(225).fill(0) : initXiangqi(); 
+            t.winner = null;
         }
         return t;
     }, (err, committed, s) => {
-        if(committed) enterTable(tid);
+        if(committed) {
+            // 成功寫入後，手動觸發進入房間，不依賴大廳監聽器
+            enterTable(tid, s.val());
+        }
     });
 }
 
-function enterTable(tid){
+// 斷線重連或觀戰
+function reEnter(tid) {
+    pgRef.child("tables/"+tid).once("value", s => enterTable(tid, s.val()));
+}
+function watchTable(tid) {
+    pgRef.child("tables/"+tid).once("value", s => enterTable(tid, s.val(), true));
+}
+
+// 進入房間 (UI 切換 + 綁定監聽)
+function enterTable(tid, tableData, isSpectator = false){
+    if(currentTableId === tid) return; // 已經在裡面
     currentTableId = tid;
+
+    // UI 切換
     document.getElementById("lobby").classList.add("hidden");
     document.getElementById("gameRoom").classList.add("show");
     document.getElementById("roomTitle").textContent = (tid.includes('gomoku')?"五子棋":"象棋") + " - " + tid.split('_')[1];
     
-    // 渲染對應棋盤
+    // 渲染棋盤結構
     const area = document.getElementById("gameArea");
-    area.innerHTML = tid.includes('gomoku') 
-        ? `<div id="gomokuBoard">${Array(225).fill('<div class="cell"></div>').join('')}</div>`
-        : `<div id="xiangqiBoard"><div class="river">楚河　漢界</div>${Array(90).fill('<div class="xq-point"></div>').join('')}</div>`;
+    if(tid.includes('gomoku')) {
+        area.innerHTML = `<div id="gomokuBoard">${Array(225).fill('<div class="cell"></div>').join('')}</div>`;
+        if(!isSpectator) bindGomokuEvents();
+    } else {
+        area.innerHTML = `
+            <div id="xiangqiBoard">
+                <div class="xq-grid"></div>
+                <div class="river">楚河　漢界</div>
+                <div class="slash-top"></div><div class="slash-bottom"></div>
+                <div class="xq-touch-layer">${Array(90).fill('<div class="xq-point"></div>').join('')}</div>
+                <div id="piecesLayer"></div>
+            </div>`;
+        if(!isSpectator) bindXiangqiEvents();
+    }
+
+    // 開始監聽房間數據
+    if(gameWatcher) pgRef.child("tables/"+tid).off("value", gameWatcher);
     
-    // 綁定點擊事件
-    if(tid.includes('gomoku')) bindGomokuEvents();
-    else bindXiangqiEvents();
+    gameWatcher = pgRef.child("tables/"+tid).on("value", s => {
+        const t = s.val();
+        if(!t) { leaveTable(); return; } // 桌子被清空
+        updateGameRoom(t);
+    });
 }
 
 function leaveTable(){
     if(!currentTableId) return;
+    
+    // 如果我是玩家，離開時清空座位
     pgRef.child(`tables/${currentTableId}`).transaction(t => {
         if(!t) return t;
         if(t.p1 === me.uid) { t.p1 = null; t.p1Name = null; }
         if(t.p2 === me.uid) { t.p2 = null; t.p2Name = null; }
         // 只要有人離開，重置棋盤
-        t.board = null; t.turn = null; 
+        t.board = null; t.turn = null; t.winner = null;
         return t;
     });
+
+    // 清除監聽
+    pgRef.child("tables/"+currentTableId).off("value", gameWatcher);
+    gameWatcher = null;
     currentTableId = null;
+
+    // UI 還原
     document.getElementById("gameRoom").classList.remove("show");
     document.getElementById("lobby").classList.remove("hidden");
+    document.getElementById("resultModal").style.display = "none";
 }
 
-/* --- Game Loop & Sync --- */
+/* --- Game Loop --- */
 function updateGameRoom(t){
     // Update Header
     const p1d = document.getElementById("p1Display");
@@ -336,8 +409,8 @@ function updateGameRoom(t){
     p1d.textContent = t.p1Name || "等待中...";
     p2d.textContent = t.p2Name || "等待中...";
     
-    p1d.className = `turn-indicator ${t.turn === t.p1 ? 'active' : ''}`;
-    p2d.className = `turn-indicator ${t.turn === t.p2 ? 'active' : ''}`;
+    p1d.className = `turn-indicator ${t.turn && t.turn === t.p1 ? 'active' : ''}`;
+    p2d.className = `turn-indicator ${t.turn && t.turn === t.p2 ? 'active' : ''}`;
 
     // Sync Board
     if(currentTableId.includes('gomoku')){
@@ -348,30 +421,33 @@ function updateGameRoom(t){
     
     // Check Winner
     if(t.winner){
-        document.getElementById("resultText").textContent = (t.winner === t.p1 ? t.p1Name : t.p2Name) + " 獲勝！";
+        const winnerName = t.winner === t.p1 ? t.p1Name : t.p2Name;
+        document.getElementById("resultText").innerHTML = `<span style="color:#fff">${winnerName}</span> 獲勝!`;
         document.getElementById("resultModal").style.display = "flex";
-        // 5秒後重置
-        if(t.p1===me.uid) setTimeout(()=> pgRef.child(`tables/${currentTableId}/winner`).remove(), 5000); // 簡單處理
     }
 }
 
-/* --- 五子棋邏輯 --- */
+function closeResult(){
+    document.getElementById("resultModal").style.display = "none";
+    if(currentTableId) pgRef.child(`tables/${currentTableId}/winner`).remove();
+}
+
+/* --- 五子棋 (Logic) --- */
 function bindGomokuEvents(){
     const cells = document.querySelectorAll("#gomokuBoard .cell");
     cells.forEach((cell, idx) => {
         cell.onclick = () => {
             pgRef.child(`tables/${currentTableId}`).transaction(t => {
-                if(!t || !t.p1 || !t.p2 || t.winner) return; // 沒人或結束
-                if(t.turn !== me.uid) return; // 不是你的回合
-                if(t.board[idx] !== 0) return; // 有子了
+                if(!t || !t.p1 || !t.p2 || t.winner) return; 
+                if(t.turn !== me.uid) return; 
+                if(!t.board) t.board = Array(225).fill(0);
+                if(t.board[idx] !== 0) return; 
 
                 const color = (me.uid === t.p1) ? 1 : 2; // 1=黑, 2=白
                 t.board[idx] = color;
-                t.lastMove = idx;
                 
-                // 判斷勝負
                 if(checkWin(t.board, idx, color)) t.winner = me.uid;
-                else t.turn = (t.turn === t.p1) ? t.p2 : t.p1; // 換手
+                else t.turn = (t.turn === t.p1) ? t.p2 : t.p1; 
                 
                 return t;
             });
@@ -389,119 +465,126 @@ function drawGomoku(board){
 
 function checkWin(board, idx, color){
     const r = Math.floor(idx/15), c = idx%15;
-    const dirs = [[1,0], [0,1], [1,1], [1,-1]]; // 橫, 直, 斜, 反斜
+    const dirs = [[1,0], [0,1], [1,1], [1,-1]]; 
     for(let d of dirs){
         let count = 1;
-        for(let k=1; k<5; k++){ // 正向
-            let nr = r + d[0]*k, nc = c + d[1]*k;
-            if(nr<0||nr>=15||nc<0||nc>=15 || board[nr*15+nc]!==color) break;
-            count++;
+        for(let k=1; k<5; k++){ 
+            let nr=r+d[0]*k, nc=c+d[1]*k;
+            if(nr<0||nr>=15||nc<0||nc>=15 || board[nr*15+nc]!==color) break; count++;
         }
-        for(let k=1; k<5; k++){ // 反向
-            let nr = r - d[0]*k, nc = c - d[1]*k;
-            if(nr<0||nr>=15||nc<0||nc>=15 || board[nr*15+nc]!==color) break;
-            count++;
+        for(let k=1; k<5; k++){ 
+            let nr=r-d[0]*k, nc=c-d[1]*k;
+            if(nr<0||nr>=15||nc<0||nc>=15 || board[nr*15+nc]!==color) break; count++;
         }
         if(count >= 5) return true;
     }
     return false;
 }
 
-/* --- 象棋邏輯 (自由對弈) --- */
-const XQ_START = [
-    {id:'r_c1',t:'車',c:'red',p:0}, {id:'r_m1',t:'馬',c:'red',p:1}, {id:'r_x1',t:'相',c:'red',p:2}, {id:'r_s1',t:'仕',c:'red',p:3}, {id:'r_k',t:'帥',c:'red',p:4}, {id:'r_s2',t:'仕',c:'red',p:5}, {id:'r_x2',t:'相',c:'red',p:6}, {id:'r_m2',t:'馬',c:'red',p:7}, {id:'r_c2',t:'車',c:'red',p:8}, {id:'r_p1',t:'炮',c:'red',p:19}, {id:'r_p2',t:'炮',c:'red',p:25}, {id:'r_z1',t:'兵',c:'red',p:27}, {id:'r_z2',t:'兵',c:'red',p:29}, {id:'r_z3',t:'兵',c:'red',p:31}, {id:'r_z4',t:'兵',c:'red',p:33}, {id:'r_z5',t:'兵',c:'red',p:35},
-    {id:'b_c1',t:'車',c:'black',p:89}, {id:'b_m1',t:'馬',c:'black',p:88}, {id:'b_x1',t:'象',c:'black',p:87}, {id:'b_s1',t:'士',c:'black',p:86}, {id:'b_k',t:'將',c:'black',p:85}, {id:'b_s2',t:'士',c:'black',p:84}, {id:'b_x2',t:'象',c:'black',p:83}, {id:'b_m2',t:'馬',c:'black',p:82}, {id:'b_c2',t:'車',c:'black',p:81}, {id:'b_p1',t:'包',c:'black',p:70}, {id:'b_p2',t:'包',c:'black',p:64}, {id:'b_z1',t:'卒',c:'black',p:62}, {id:'b_z2',t:'卒',c:'black',p:60}, {id:'b_z3',t:'卒',c:'black',p:58}, {id:'b_z4',t:'卒',c:'black',p:56}, {id:'b_z5',t:'卒',c:'black',p:54}
+/* --- 象棋 (Logic) --- */
+// 座標系: 9列(x:0-8) x 10行(y:0-9)
+// 初始佈局 (紅在下 p1，黑在上 p2)
+const XQ_INIT = [
+    // 黑方 (上)
+    {id:'b_c1',t:'車',c:'black',x:0,y:0}, {id:'b_m1',t:'馬',c:'black',x:1,y:0}, {id:'b_x1',t:'象',c:'black',x:2,y:0}, {id:'b_s1',t:'士',c:'black',x:3,y:0}, {id:'b_k',t:'將',c:'black',x:4,y:0}, {id:'b_s2',t:'士',c:'black',x:5,y:0}, {id:'b_x2',t:'象',c:'black',x:6,y:0}, {id:'b_m2',t:'馬',c:'black',x:7,y:0}, {id:'b_c2',t:'車',c:'black',x:8,y:0},
+    {id:'b_p1',t:'包',c:'black',x:1,y:2}, {id:'b_p2',t:'包',c:'black',x:7,y:2},
+    {id:'b_z1',t:'卒',c:'black',x:0,y:3}, {id:'b_z2',t:'卒',c:'black',x:2,y:3}, {id:'b_z3',t:'卒',c:'black',x:4,y:3}, {id:'b_z4',t:'卒',c:'black',x:6,y:3}, {id:'b_z5',t:'卒',c:'black',x:8,y:3},
+    
+    // 紅方 (下)
+    {id:'r_c1',t:'車',c:'red',x:0,y:9}, {id:'r_m1',t:'馬',c:'red',x:1,y:9}, {id:'r_x1',t:'相',c:'red',x:2,y:9}, {id:'r_s1',t:'仕',c:'red',x:3,y:9}, {id:'r_k',t:'帥',c:'red',x:4,y:9}, {id:'r_s2',t:'仕',c:'red',x:5,y:9}, {id:'r_x2',t:'相',c:'red',x:6,y:9}, {id:'r_m2',t:'馬',c:'red',x:7,y:9}, {id:'r_c2',t:'車',c:'red',x:8,y:9},
+    {id:'r_p1',t:'炮',c:'red',x:1,y:7}, {id:'r_p2',t:'炮',c:'red',x:7,y:7},
+    {id:'r_z1',t:'兵',c:'red',x:0,y:6}, {id:'r_z2',t:'兵',c:'red',x:2,y:6}, {id:'r_z3',t:'兵',c:'red',x:4,y:6}, {id:'r_z4',t:'兵',c:'red',x:6,y:6}, {id:'r_z5',t:'兵',c:'red',x:8,y:6}
 ];
-function initXiangqi(){ return XQ_START; }
 
-let selectedPiece = null;
+function initXiangqi(){ return JSON.parse(JSON.stringify(XQ_INIT)); }
+
+let selectedPieceId = null;
 
 function bindXiangqiEvents(){
-    // 綁定格子點擊 (移動)
     const points = document.querySelectorAll(".xq-point");
     points.forEach((pt, idx) => {
         pt.onclick = () => {
-            if(selectedPiece !== null) movePiece(selectedPiece, idx);
+            const x = idx % 9;
+            const y = Math.floor(idx / 9);
+            if(selectedPieceId !== null) movePiece(selectedPieceId, x, y);
         };
     });
 }
 
 function drawXiangqi(pieces){
-    const board = document.getElementById("xiangqiBoard");
-    // 清除舊棋子
-    document.querySelectorAll(".chess-piece").forEach(e=>e.remove());
+    const layer = document.getElementById("piecesLayer");
+    layer.innerHTML = ""; // 清空重繪
     if(!pieces) return;
 
     pieces.forEach(p => {
         const el = document.createElement("div");
-        el.className = `chess-piece ${p.c}`;
+        el.className = `chess-piece ${p.c} ${selectedPieceId===p.id ? 'selected' : ''}`;
         el.textContent = p.t;
-        // 計算位置 (9x10 Grid)
-        const row = Math.floor(p.p / 9);
-        const col = p.p % 9;
-        // Grid 座標是 1-based, 且從左上開始
-        // CSS Grid: grid-column: col+1, grid-row: row+1
-        // 但這裡我用 absolute 定位配合格子的中心
-        el.style.left = `calc(${col * 11.11}% + 5.55%)`; // 5.55 is half of 11.11
-        el.style.top = `calc(${row * 10}% + 5%)`; // 5 is half of 10
+        
+        // 座標轉換 (x: 0-8, y: 0-9) -> CSS Left/Top
+        // Board width 550, height 620. 
+        // Grid size approx 550/9 ~ 61px, 620/10 ~ 62px
+        // Padding offset: ~27px
+        // Precise calc: 25px(padding) + x * 62.5
+        
+        el.style.left = (25 + p.x * 62.5) + "px";
+        el.style.top = (25 + p.y * 63.3) + "px";
 
         el.onclick = (e) => {
-            e.stopPropagation(); // 防止觸發格子點擊
-            // 選取邏輯
+            e.stopPropagation(); 
             pgRef.child(`tables/${currentTableId}`).once("value", s=>{
                 const t = s.val();
-                if(t.turn !== me.uid) return; // 不是你的回合
+                if(t.turn !== me.uid) return;
                 
-                // 只能選自己的子
+                // P1執紅, P2執黑
                 const myColor = (me.uid === t.p1) ? 'red' : 'black';
-                if(p.c !== myColor) {
-                    // 如果已選取，且點到敵方 -> 吃子
-                    if(selectedPiece !== null) movePiece(selectedPiece, p.p); 
-                    return;
+                
+                if(p.c === myColor) {
+                    // 選自己
+                    selectedPieceId = p.id;
+                    drawXiangqi(t.board); // 重繪以顯示選取效果
+                } else {
+                    // 點敵人 -> 吃子
+                    if(selectedPieceId !== null) movePiece(selectedPieceId, p.x, p.y);
                 }
-
-                // 選取自己
-                selectedPiece = p.id;
-                document.querySelectorAll(".chess-piece").forEach(c=>c.classList.remove("selected"));
-                el.classList.add("selected");
             });
         };
-        board.appendChild(el);
+        layer.appendChild(el);
     });
 }
 
-function movePiece(pieceId, targetPos){
+function movePiece(pid, tx, ty){
     pgRef.child(`tables/${currentTableId}`).transaction(t => {
         if(!t) return;
         
-        // 找到棋子
-        const pIndex = t.board.findIndex(x => x.id === pieceId);
+        // 驗證棋子存在
+        const pIndex = t.board.findIndex(x => x.id === pid);
         if(pIndex === -1) return;
 
-        // 吃子邏輯: 移除目標位置上的任何棋子
-        const targetIndex = t.board.findIndex(x => x.p === targetPos);
+        // 吃子邏輯
+        const targetIndex = t.board.findIndex(x => x.x === tx && x.y === ty);
         let captured = null;
         if(targetIndex !== -1) {
             captured = t.board[targetIndex];
             t.board.splice(targetIndex, 1);
         }
 
-        // 移動
-        const newPIndex = t.board.findIndex(x => x.id === pieceId); // 重新找 index 因為可能有變動
-        t.board[newPIndex].p = targetPos;
+        // 更新位置 (重抓 index 因為可能有變動)
+        const newPIndex = t.board.findIndex(x => x.id === pid);
+        t.board[newPIndex].x = tx;
+        t.board[newPIndex].y = ty;
         
         // 換手
         t.turn = (t.turn === t.p1) ? t.p2 : t.p1;
         
-        // 判斷勝負 (如果吃掉的是帥/將)
+        // 勝負
         if(captured && (captured.t === '帥' || captured.t === '將')) {
             t.winner = me.uid;
         }
 
         return t;
     });
-    selectedPiece = null;
-    document.querySelectorAll(".chess-piece").forEach(c=>c.classList.remove("selected"));
+    selectedPieceId = null;
 }
 
 </script>
