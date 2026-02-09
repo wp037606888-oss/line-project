@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>高級煙霧排隊系統 v2.0</title>
+<title>高級煙霧排隊系統 v2.1</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -16,7 +16,7 @@
     --success: #00ff88;
     --bg-dark: #0a0b14;
     --panel-bg: rgba(28, 28, 42, 0.7);
-    --text-main: #e0e0e0;
+    --text-main: #f0f0f0;
     --text-dim: #9ec3ff;
 }
 
@@ -30,26 +30,18 @@ body {
     display: flex;
     height: 100vh;
     overflow: hidden;
-    font-size: 18px; /* 全體字體放大 */
+    font-size: 20px; /* 全體字體再次放大 */
 }
 
-/* 粒子背景 */
-canvas {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-}
+canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
 
-/* 滾動條美化 */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb { background: #445; border-radius: 10px; }
 
 /* --- 佈局 --- */
 #left {
-    width: 680px;
-    padding: 20px;
+    width: 65%;
+    padding: 25px;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -57,24 +49,23 @@ canvas {
 }
 
 #main {
-    width: 420px;
+    width: 35%;
     display: flex;
     flex-direction: column;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(25px);
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 1;
 }
 
-/* --- 精緻面板 --- */
 .panel {
     background: var(--panel-bg);
-    backdrop-filter: blur(25px);
-    border-radius: 20px;
-    padding: 24px;
-    margin-bottom: 20px;
+    backdrop-filter: blur(30px);
+    border-radius: 24px;
+    padding: 30px;
+    margin-bottom: 25px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
     animation: fadeUp 0.8s ease;
 }
 
@@ -84,78 +75,64 @@ canvas {
 }
 
 h3 { 
-    margin: 0 0 15px; 
-    font-size: 20px; 
+    margin: 0 0 20px; 
+    font-size: 22px; 
     color: var(--text-dim); 
-    letter-spacing: 2px;
-    border-left: 4px solid #7d5cff;
-    padding-left: 12px;
+    border-left: 5px solid #7d5cff;
+    padding-left: 15px;
 }
 
-/* --- 文字顯示 --- */
 #status {
-    font-size: 24px;
-    font-weight: 800;
-    margin: 10px 0;
-    text-shadow: 0 0 15px rgba(110, 142, 255, 0.5);
+    font-size: 28px;
+    font-weight: 900;
+    margin: 15px 0;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(110, 142, 255, 0.6);
 }
 
-#clock { font-size: 16px; opacity: 0.7; font-family: monospace; }
-#who { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 5px; }
+#clock { font-size: 18px; opacity: 0.6; font-family: monospace; }
+#who { font-size: 22px; font-weight: 600; color: #fff; }
 
-/* --- 按鈕設計 --- */
-.btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+/* --- 按鈕 --- */
+.btn-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
 
 button {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--primary);
     color: white;
     cursor: pointer;
     font-weight: 700;
-    font-size: 16px;
+    font-size: 18px;
     box-shadow: 0 5px 15px rgba(92, 124, 255, 0.3);
 }
 
-button:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(92, 124, 255, 0.5);
-    filter: brightness(1.1);
-}
-
-button:active { transform: translateY(-1px); }
-
-button:disabled {
-    background: #333;
-    color: #666;
-    box-shadow: none;
-    cursor: not-allowed;
-    transform: none;
-}
-
+button:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(92, 124, 255, 0.5); }
+button:disabled { background: #333; color: #666; cursor: not-allowed; opacity: 0.6; }
 .btn-danger { background: linear-gradient(135deg, #ff5b5b, #ff3e3e); }
 
-/* --- 列表樣式 --- */
+/* --- 列表項目 --- */
 .item-row {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 17px;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 19px;
 }
 
 .red { color: var(--danger); font-weight: bold; }
-.green { color: var(--success); }
+.green { color: var(--success); font-weight: bold; }
 
 /* --- 聊天室 --- */
-header { padding: 20px; text-align: center; font-weight: bold; background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.05); }
-#chat { flex: 1; overflow-y: auto; padding: 15px; }
-.msg { background: rgba(255,255,255,0.05); margin: 8px 0; padding: 12px; border-radius: 12px; font-size: 16px; line-height: 1.5; }
-footer { padding: 15px; display: flex; gap: 10px; }
-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid #445; border-radius: 10px; padding: 12px; color: #fff; font-size: 16px; }
-.hidden { display: none; }
+#chat { flex: 1; overflow-y: auto; padding: 20px; }
+.msg { background: rgba(255,255,255,0.06); margin-bottom: 10px; padding: 15px; border-radius: 15px; font-size: 18px; }
+footer { padding: 20px; display: flex; gap: 10px; background: rgba(0,0,0,0.3); }
+input { flex: 1; background: #1a1b26; border: 1px solid #445; border-radius: 12px; padding: 15px; color: #fff; font-size: 18px; }
+
+/* 初始隱藏管理員面板 */
+#adminPanel { display: none; border: 2px solid rgba(255, 187, 0, 0.3); }
 </style>
 </head>
 
@@ -164,10 +141,10 @@ input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid #445; border-rad
 
 <div id="left">
     <div class="panel">
-        <div id="who">載入中...</div>
+        <div id="who">連線中...</div>
         <div id="clock">00:00:00</div>
-        <div id="slotInfo" style="margin-top: 5px; opacity: 0.8;">時段：--:--</div>
-        <div id="status">系統就緒中</div>
+        <div id="slotInfo" style="font-size: 16px; margin-top: 5px; color: var(--text-dim);">時段：載入中</div>
+        <div id="status">系統初始化...</div>
         
         <div class="btn-group">
             <button id="bReserve" onclick="reserve()">預約排隊</button>
@@ -188,56 +165,30 @@ input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid #445; border-rad
     </div>
 
     <div class="panel">
-        <h3>📊 本時段紀錄 (含超時監控)</h3>
+        <h3>📊 本時段紀錄</h3>
         <div id="history"></div>
     </div>
 
-    <div class="panel" style="font-size: 14px; opacity: 0.6;">
-        <h3>📜 系統日誌</h3>
-        <div id="log" style="height: 100px; overflow-y: auto;"></div>
-    </div>
-
-    <div id="adminPanel" class="panel hidden">
-        <h3>👑 管理員權限</h3>
+    <div id="adminPanel" class="panel">
+        <h3 style="color: #ffbb00;">👑 管理員控制台</h3>
         <button onclick="forceReload()">全體強制刷新</button>
-        <button onclick="resetQueue()" class="btn-danger">重置所有排隊</button>
+        <button onclick="resetQueue()" class="btn-danger">重置排隊數據</button>
+        <button onclick="clearChat()" style="background: #555;">清空聊天室</button>
     </div>
 </div>
 
 <div id="main">
-    <header>交流空間</header>
-    <div id="onlineBar" style="padding: 10px; display: flex; flex-wrap: wrap; gap: 5px; background: rgba(0,0,0,0.2);"></div>
+    <header style="padding: 20px; text-align: center; font-weight: bold; font-size: 22px; border-bottom: 1px solid rgba(255,255,255,0.1);">交流空間</header>
+    <div id="onlineBar" style="padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; background: rgba(0,0,0,0.2);"></div>
     <div id="chat"></div>
     <footer>
-        <input id="msg" placeholder="輸入訊息...">
+        <input id="msg" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter')send()">
         <button onclick="send()">送出</button>
-        <button onclick="logout()" style="background:#444">登出</button>
     </footer>
 </div>
 
 <script>
-/* --- 背景粒子動畫 --- */
-const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
-let w,h, particles=[];
-function resize(){w=canvas.width=innerWidth; h=canvas.height=innerHeight;}
-window.onresize=resize; resize();
-for(let i=0;i<70;i++) particles.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4});
-function draw(){
-    ctx.clearRect(0,0,w,h);
-    particles.forEach((p,i)=>{
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.x<0||p.x>w) p.vx*=-1; if(p.y<0||p.y>h) p.vy*=-1;
-        ctx.fillStyle="rgba(110, 142, 255, 0.5)"; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill();
-        for(let j=i+1;j<particles.length;j++){
-            let p2=particles[j], dx=p.x-p2.x, dy=p.y-p2.y, d=Math.sqrt(dx*dx+dy*dy);
-            if(d<120){ ctx.strokeStyle=`rgba(110,142,255,${1-d/120})`; ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
-        }
-    });
-    requestAnimationFrame(draw);
-}
-draw();
-
-/* --- Firebase 設定 --- */
+/* --- Firebase 初始化 (使用你的設定) --- */
 const config={
     apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
     authDomain: "smoke-queue.firebaseapp.com",
@@ -246,11 +197,48 @@ const config={
 };
 firebase.initializeApp(config);
 const db=firebase.database(), auth=firebase.auth();
-const queueRef=db.ref("queue"), logRef=db.ref("log"), userRef=db.ref("users");
+const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat");
 
 let me, myData, engineReady=false, cacheQueue={};
 
-/* --- 核心邏輯 --- */
+/* --- 核心修復：解決重新整理循環 --- */
+db.ref("reload").on("value", s => {
+    let t = s.val();
+    if(!t) return;
+    let lastReload = sessionStorage.getItem("lastReload");
+    // 只有當遠端時間戳記大於本地紀錄時，才執行刷新
+    if(lastReload != t) {
+        sessionStorage.setItem("lastReload", t);
+        location.reload();
+    }
+});
+
+function forceReload(){
+    db.ref("reload").set(Date.now());
+}
+
+/* --- 核心權限：管理員判斷 --- */
+auth.onAuthStateChanged(async user => {
+    if(!user){ location.href="login.html"; return; }
+    me = user;
+    userRef.child(user.uid).on("value", s => {
+        myData = s.val() || {};
+        who.textContent = "Hi, " + (myData.name || "訪客");
+        
+        // 嚴格權限檢查
+        if(myData.role === "admin") {
+            document.getElementById("adminPanel").style.display = "block";
+        } else {
+            document.getElementById("adminPanel").style.display = "none";
+        }
+        engineReady = true;
+    });
+    // 在線狀態
+    userRef.child(user.uid + "/online").set(true);
+    userRef.child(user.uid + "/online").onDisconnect().set(false);
+});
+
+/* --- 排隊邏輯引擎 --- */
 function getSlot(h){
     const slots=[14,16,18,20,22,24];
     if(h===0) return 24;
@@ -258,40 +246,8 @@ function getSlot(h){
     return 14;
 }
 
-function formatT(sec){
-    let m=Math.floor(sec/60), s=sec%60;
-    return `${m}分${s.toString().padStart(2,"0")}秒`;
-}
+queueRef.on("value", s => { cacheQueue = s.val() || {}; });
 
-function formatClock(ts){
-    if(!ts) return "--:--";
-    let d = new Date(ts);
-    return d.getHours().toString().padStart(2,'0') + ":" + d.getMinutes().toString().padStart(2,'0') + ":" + d.getSeconds().toString().padStart(2,'0');
-}
-
-// 監聽數據
-queueRef.on("value", snap => { cacheQueue = snap.val() || {}; });
-
-auth.onAuthStateChanged(async user => {
-    if(!user){ location.href="login.html"; return; }
-    me = user;
-    const ref = userRef.child(user.uid);
-    let snap = await ref.once("value");
-    if(!snap.exists()){
-        let name = prompt("請輸入您的尊稱");
-        await ref.set({name: name||"匿名使用者", role:"user"});
-    }
-    ref.on("value", s => {
-        myData = s.val();
-        who.textContent = "歡迎回來，" + myData.name;
-        if(myData.role==="admin") adminPanel.classList.remove("hidden");
-        engineReady = true;
-    });
-    ref.child("online").set(true);
-    ref.child("online").onDisconnect().set(false);
-});
-
-/* --- 時鐘與排隊引擎 --- */
 setInterval(() => {
     if(!engineReady) return;
     let now = new Date(), h = now.getHours();
@@ -299,160 +255,135 @@ setInterval(() => {
     let slot = getSlot(h);
     slotInfo.textContent = `當前時段：${slot}:00 ~ ${slot}:59`;
     
-    updateEngine(slot, h);
-}, 1000);
-
-function updateEngine(slot, h) {
-    let d = cacheQueue;
-    let r = d.reserve || {}, o = d.out || {}, used = d.used || {};
-
+    let d = cacheQueue, r = d.reserve || {}, o = d.out || {}, used = d.used || {};
     let sortedQueue = Object.entries(r).sort((a,b)=>a[1].time - b[1].time);
     let outCount = Object.keys(o).length;
     let isFirst = sortedQueue.length > 0 && sortedQueue[0][0] === me.uid;
-    let myPos = sortedQueue.findIndex(x => x[0] === me.uid) + 1;
-
     let alreadyUsed = used[slot]?.[me.uid];
-    let isOut = !!o[me.uid];
-    let isRes = !!r[me.uid];
-    let canGoTime = (h == slot || (slot == 24 && h == 0));
+
+    // 按鈕狀態控制
+    bReserve.disabled = (r[me.uid] || o[me.uid] || alreadyUsed);
+    bCancel.disabled = !r[me.uid];
+    bOut.disabled = !(r[me.uid] && (h==slot || (slot==24&&h==0)) && isFirst && outCount < 3);
+    bBack.disabled = !o[me.uid];
 
     // 狀態大字顯示
-    if(alreadyUsed) { status.innerHTML = `<span style="color:#888">本時段已結束</span>`; }
-    else if(isOut) { status.innerHTML = `<span class="green">正在享受菸時中...</span>`; }
-    else if(isRes) {
-        if(!canGoTime) status.innerHTML = `<span style="color:#ffcc00">已預約，等待時段開啟</span>`;
-        else if(!isFirst) status.innerHTML = `<span style="color:#6e8eff">排隊中 (第 ${myPos} 位)</span>`;
-        else if(outCount >= 3) status.innerHTML = `<span style="color:#ffcc00">輪到你了，等候位釋出 (${outCount}/3)</span>`;
-        else status.innerHTML = `<span class="green">★ 輪到你了，請出發 ★</span>`;
-    } else {
-        status.innerHTML = "尚未預約";
-    }
+    if(alreadyUsed) status.innerHTML = "<span style='color:#666'>本時段已結束</span>";
+    else if(o[me.uid]) status.innerHTML = "<span class='green'>Enjoy! 正在外面</span>";
+    else if(r[me.uid]) {
+        if(isFirst && outCount < 3) status.innerHTML = "<span class='green'>★ 輪到你了，請出去 ★</span>";
+        else if(isFirst) status.innerHTML = "<span style='color:#ffcc00'>排第一順位，等候位釋出</span>";
+        else status.innerHTML = `<span>排隊中，前面還有 ${sortedQueue.findIndex(x=>x[0]===me.uid)} 人</span>`;
+    } else status.innerHTML = "尚未預約";
 
-    // 按鈕邏輯
-    bReserve.disabled = (isRes || isOut || alreadyUsed);
-    bCancel.disabled = !isRes;
-    bOut.disabled = !(isRes && canGoTime && isFirst && outCount < 3);
-    bBack.disabled = !isOut;
     outCountNum.textContent = outCount;
+    renderAll(sortedQueue, o, d.history, slot);
+}, 1000);
 
-    renderQueue(sortedQueue);
-    renderOut(o);
-    renderHistory(d.history, o, slot);
-}
-
-function renderQueue(sorted) {
-    queue.innerHTML = sorted.length ? "" : "<div style='opacity:0.5'>目前無人排隊</div>";
-    sorted.forEach((u, i) => {
-        let div = document.createElement("div");
-        div.className = "item-row";
-        div.innerHTML = `<span>${i+1}. <strong>${u[1].name}</strong></span> <span style='font-size:14px; opacity:0.6'>時段: ${u[1].slot}點</span>`;
+/* --- 精緻渲染 --- */
+function renderAll(queueArr, outObj, historyObj, slot) {
+    // 渲染隊列
+    queue.innerHTML = queueArr.length ? "" : "<div style='opacity:0.4'>目前沒有人排隊</div>";
+    queueArr.forEach((u, i) => {
+        let div = document.createElement("div"); div.className="item-row";
+        div.innerHTML = `<span>${i+1}. <strong>${u[1].name}</strong></span> <small style='opacity:0.5'>${new Date(u[1].time).toLocaleTimeString()}</small>`;
         queue.appendChild(div);
     });
-}
 
-function renderOut(out) {
-    outList.innerHTML = Object.keys(out).length ? "" : "<div style='opacity:0.5'>目前外面沒人</div>";
-    let now = Date.now();
-    Object.entries(out).forEach(([uid, u]) => {
-        let sec = Math.floor((now - u.time)/1000);
-        let div = document.createElement("div");
-        div.className = "item-row";
-        div.innerHTML = `<span><strong>${u.name}</strong></span> <span class="${sec>600?'red':''}">已外出 ${formatT(sec)}</span>`;
+    // 渲染外面
+    outList.innerHTML = Object.keys(outObj).length ? "" : "<div style='opacity:0.4'>目前外面沒有人</div>";
+    Object.entries(outObj).forEach(([uid, u]) => {
+        let sec = Math.floor((Date.now() - u.time)/1000);
+        let div = document.createElement("div"); div.className="item-row";
+        div.innerHTML = `<span><strong>${u.name}</strong></span> <span class="${sec>600?'red':''}">已待 ${Math.floor(sec/60)}分${sec%60}秒</span>`;
         outList.appendChild(div);
     });
-}
 
-function renderHistory(hist, out, slot) {
+    // 渲染紀錄 (含超時自動偵測)
     history.innerHTML = "";
     let list = [];
-    if(hist) Object.values(hist).forEach(h => { if(h.slot === slot) list.push({...h, isOut: false, sortT: h.backTime}); });
-    
-    // 自動抓取外面超過 10 分鐘的人
-    if(out) Object.values(out).forEach(u => {
+    if(historyObj) Object.values(historyObj).forEach(h => { if(h.slot === slot) list.push({...h, isOut: false, sortT: h.backTime}); });
+    if(outObj) Object.values(outObj).forEach(u => {
         let sec = Math.floor((Date.now() - u.time)/1000);
-        if(sec > 600) list.push({name: u.name, outTime: u.time, backTime: null, duration: sec, over: true, isOut: true, sortT: Date.now()});
+        if(sec > 600) list.push({name: u.name, outTime: u.time, backTime: null, over: true, sortT: Date.now()});
     });
-
     list.sort((a,b)=>b.sortT - a.sortT);
     list.forEach(item => {
-        let div = document.createElement("div");
-        div.className = "item-row";
-        let timeInfo = `<small style='opacity:0.6'>${formatClock(item.outTime)} ~ ${item.backTime?formatClock(item.backTime):'<span class="red">未歸</span>'}</small>`;
-        div.innerHTML = `<div><strong>${item.name}</strong> ${item.over?'<span class="red">[超時]</span>':''}</div> <div>${timeInfo}</div>`;
+        let div = document.createElement("div"); div.className="item-row";
+        let outT = new Date(item.outTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        let backT = item.backTime ? new Date(item.backTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "<span class='red'>未歸</span>";
+        div.innerHTML = `<span><strong>${item.name}</strong> ${item.over?'<span class="red">[超時]</span>':''}</span> <small style='opacity:0.7'>${outT} ~ ${backT}</small>`;
         history.appendChild(div);
     });
 }
 
-/* --- 操作函數 --- */
+/* --- 按鈕動作 --- */
 function reserve(){
     let slot = getSlot(new Date().getHours());
     queueRef.child("reserve/"+me.uid).set({name: myData.name, time: Date.now(), slot});
-    addLog(myData.name + " 預約了 " + slot + "點時段");
 }
-
-function cancelReserve(){
-    queueRef.child("reserve/"+me.uid).remove();
-    addLog(myData.name + " 取消了預約");
-}
-
+function cancelReserve(){ queueRef.child("reserve/"+me.uid).remove(); }
 function goOut(){
-    queueRef.child("out/"+me.uid).set({name: myData.name, time: Date.now()}).then(()=>{
-        queueRef.child("reserve/"+me.uid).remove();
-    });
-    addLog(myData.name + " 出去了");
+    queueRef.child("out/"+me.uid).set({name: myData.name, time: Date.now()}).then(()=>queueRef.child("reserve/"+me.uid).remove());
 }
-
 function comeBack(){
     queueRef.child("out/"+me.uid).once("value").then(s => {
         let u = s.val(); if(!u) return;
         let now = Date.now(), sec = Math.floor((now - u.time)/1000);
         let slot = getSlot(new Date(u.time).getHours());
-        
         queueRef.child(`used/${slot}/${me.uid}`).set(true);
-        queueRef.child("history").push({ name: u.name, slot, duration: sec, over: sec>600, outTime: u.time, backTime: now });
+        queueRef.child("history").push({ name: u.name, slot, outTime: u.time, backTime: now, over: sec > 600 });
         queueRef.child("out/"+me.uid).remove();
-        addLog(myData.name + " 回來了，耗時 " + Math.floor(sec/60) + " 分鐘");
     });
 }
 
-/* --- 聊天與日誌 --- */
+/* --- 聊天功能 --- */
 function send(){
-    let m = document.getElementById("msg");
-    if(!m.value.trim()) return;
-    db.ref("chat").push({name: myData.name, text: m.value, time: Date.now()});
-    m.value="";
+    let input = document.getElementById("msg");
+    if(!input.value.trim()) return;
+    chatRef.push({name: myData.name, text: input.value, time: Date.now()});
+    input.value = "";
 }
-db.ref("chat").limitToLast(50).on("value", s => {
-    let c = document.getElementById("chat"); c.innerHTML="";
+chatRef.limitToLast(30).on("value", s => {
+    let box = document.getElementById("chat"); box.innerHTML="";
     s.forEach(x => {
-        let m = x.val(), div = document.createElement("div");
-        div.className="msg"; div.innerHTML=`<b style="color:#7d5cff">${m.name}:</b> ${m.text}`;
-        c.appendChild(div);
+        let m = x.val(), div = document.createElement("div"); div.className="msg";
+        div.innerHTML = `<b style="color:#a277ff">${m.name}:</b> ${m.text}`;
+        box.appendChild(div);
     });
-    c.scrollTop = c.scrollHeight;
+    box.scrollTop = box.scrollHeight;
 });
 
-function addLog(t){ logRef.push({text:t, time: Date.now()}); }
-logRef.limitToLast(20).on("value", s => {
-    let l = document.getElementById("log"); l.innerHTML="";
-    s.forEach(x => { let d=x.val(), v=document.createElement("div"); v.textContent=`[${new Date(d.time).toLocaleTimeString()}] ${d.text}`; l.appendChild(v); });
-    l.scrollTop = l.scrollHeight;
-});
+/* --- 管理員功能實作 --- */
+function resetQueue() { if(confirm("確定要清除所有排隊與時段紀錄嗎？")) queueRef.remove(); }
+function clearChat() { if(confirm("確定要清空聊天室嗎？")) chatRef.remove(); }
 
-function logout(){ auth.signOut().then(()=>location.reload()); }
-function forceReload(){ db.ref("reload").set(Date.now()); }
-db.ref("reload").on("value", s => { if(s.val()) location.reload(); });
-function resetQueue(){ if(confirm("確定要重置所有排隊資料嗎？")){ queueRef.remove(); addLog("管理員重置了排隊系統"); }}
-
-// 在線人員
+/* --- 在線名單 --- */
 userRef.on("value", s => {
-    let b = document.getElementById("onlineBar"); b.innerHTML="";
+    let bar = document.getElementById("onlineBar"); bar.innerHTML="";
     s.forEach(u => {
         let d = u.val(), span = document.createElement("span");
-        span.style = `padding: 4px 10px; border-radius: 20px; font-size: 12px; background: ${d.online?'#153f2b':'#333'}; color: ${d.online?'#00ff88':'#888'}; border: 1px solid ${d.online?'#00ff88':'#444'}`;
-        span.textContent = d.name; b.appendChild(span);
+        span.style = `padding: 5px 12px; border-radius: 20px; font-size: 14px; border: 1px solid ${d.online?'#00ff88':'#444'}; color: ${d.online?'#00ff88':'#888'}`;
+        span.textContent = d.name; bar.appendChild(span);
     });
 });
+
+/* --- 背景動畫 --- */
+const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
+let w,h, particles=[];
+function resize(){w=canvas.width=innerWidth; h=canvas.height=innerHeight;}
+window.onresize=resize; resize();
+for(let i=0;i<50;i++) particles.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3});
+function draw(){
+    ctx.clearRect(0,0,w,h);
+    particles.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0||p.x>w) p.vx*=-1; if(p.y<0||p.y>h) p.vy*=-1;
+        ctx.fillStyle="rgba(110,142,255,0.3)"; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,7); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+}
+draw();
 </script>
 </body>
 </html>
