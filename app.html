@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v5.1 - 旗艦佈局</title>
+<title>尊爵吸菸室 v5.2 - 終極版</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -57,37 +57,12 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
     min-width: 320px; height: 100%; overflow: hidden;
 }
 
-/* --- 監控網格系統 (新佈局核心) --- */
-.monitor-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* 左右各半 */
-    gap: 16px;
-    /* 讓這個網格區域在垂直方向上盡量佔滿，但不要撐破 */
-}
-
-.monitor-left {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.monitor-right {
-    display: flex;
-    flex-direction: column;
-}
-
-/* 讓右側排隊名單填滿高度 */
-.monitor-right .glass-panel {
-    flex: 1; /* 填滿 monitor-right 的高度 */
-    display: flex;
-    flex-direction: column;
-}
-
-/* 讓排隊列表容器填滿面板 */
-.monitor-right .list-container {
-    flex: 1;
-    max-height: none; /* 移除高度限制 */
-}
+/* --- 監控網格 --- */
+.monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.monitor-left { display: flex; flex-direction: column; gap: 16px; }
+.monitor-right { display: flex; flex-direction: column; }
+.monitor-right .glass-panel { flex: 1; display: flex; flex-direction: column; }
+.monitor-right .list-container { flex: 1; max-height: none; }
 
 /* --- 玻璃卡片 --- */
 .glass-panel {
@@ -104,7 +79,7 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
     -webkit-mask-composite: xor; pointer-events: none;
 }
 
-/* --- 頂部狀態列 --- */
+/* --- 狀態列 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
 .user-badge { 
     background: linear-gradient(90deg, rgba(255,215,0,0.1), transparent); 
@@ -126,7 +101,7 @@ canvas#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 #slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-weight: 500; opacity: 0.8; }
 #status { font-size: 18px; font-weight: 700; margin: 5px 0 15px; min-height: 24px; letter-spacing: 1px; }
 
-/* --- 按鈕群組 --- */
+/* --- 按鈕 --- */
 .control-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 12px; margin-top: 15px; }
 
 button.action-btn {
@@ -141,7 +116,6 @@ button#bReserve {
     animation: goldPulse 3s infinite;
 }
 @keyframes goldPulse { 0%{box-shadow: 0 0 10px rgba(255,215,0,0.2);} 50%{box-shadow: 0 0 25px rgba(255,215,0,0.5);} 100%{box-shadow: 0 0 10px rgba(255,215,0,0.2);} }
-
 button#bReserve:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
 button#bReserve:disabled { background: #1a1a1a; color: #444; animation: none; box-shadow: none; cursor: not-allowed; }
 button#bCancel:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
@@ -154,9 +128,7 @@ h3 {
     letter-spacing: 2px; display: flex; align-items: center; gap: 8px;
     font-family: 'Cinzel', serif; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;
 }
-/* 一般列表高度限制 (左側用) */
 .list-container { max-height: 150px; overflow-y: auto; padding-right: 4px; }
-
 .item-card {
     background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
     margin-bottom: 6px; padding: 10px 14px; border-radius: 8px; 
@@ -187,7 +159,7 @@ input#msg { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255
 input#msg:focus { border-color: var(--gold); }
 button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-weight: bold; }
 
-/* --- Admin Floating Button & Modal --- */
+/* --- Admin UI --- */
 #btnAdminFloat {
     position: fixed; bottom: 20px; left: 20px; z-index: 100;
     width: 45px; height: 45px; border-radius: 50%;
@@ -207,7 +179,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 #adminModal.show { display: flex; opacity: 1; }
 
 .admin-card {
-    width: 400px; background: #111; border: 1px solid var(--gold);
+    width: 420px; background: #111; border: 1px solid var(--gold);
     border-radius: 20px; padding: 30px;
     box-shadow: 0 0 50px rgba(255, 215, 0, 0.15);
     transform: translateY(20px); transition: transform 0.3s;
@@ -229,23 +201,21 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 .broadcast-input { width: 100%; background: #222; border: 1px solid #444; padding: 10px; color: #fff; border-radius: 6px; margin-bottom: 8px; }
 .btn-broadcast { width: 100%; background: var(--gold); color: #000; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-/* --- 廣播通知橫幅 --- */
+/* --- 廣播橫幅 (修復顯示問題) --- */
 #broadcastBanner {
-    position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-    width: 90%; max-width: 600px; z-index: 300;
-    background: rgba(0,0,0,0.95); border: 2px solid var(--gold);
-    border-radius: 12px; padding: 20px; text-align: center;
-    box-shadow: 0 10px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255, 215, 0, 0.3);
-    transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 600px; z-index: 9999; /* 層級最高 */
+    background: rgba(10, 10, 10, 0.95); border: 2px solid var(--gold);
+    border-radius: 12px; padding: 25px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(255, 215, 0, 0.2);
+    transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-#broadcastBanner h3 { color: var(--gold); justify-content: center; font-size: 16px; margin-bottom: 10px; }
-#broadcastBanner p { font-size: 18px; color: #fff; margin: 0; font-weight: 500; }
+#broadcastBanner.active { top: 30px; }
+#broadcastBanner h3 { color: var(--gold); justify-content: center; font-size: 16px; margin-bottom: 10px; border:none; }
+#broadcastBanner p { font-size: 20px; color: #fff; margin: 0; font-weight: 700; line-height: 1.4; }
 
-/* --- Online List Styles (Wrap & Visible) --- */
-#onlineUserList { 
-    display: flex; gap: 6px; flex-wrap: wrap; /* 自動換行 */
-    width: 100%;
-}
+/* --- Online List --- */
+#onlineUserList { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
 .online-pill {
     padding: 4px 10px; border-radius: 20px; font-size: 11px;
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -277,7 +247,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 <div class="noise"></div>
 
 <div id="broadcastBanner">
-    <h3><i class="icon">📢</i> 系統公告 SYSTEM BROADCAST</h3>
+    <h3><i class="icon">📢</i> 系統公告 BROADCAST</h3>
     <p id="broadcastText">---</p>
 </div>
 
@@ -302,7 +272,8 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
                 <button onclick="resetQueue()" class="btn-admin-action danger">重置系統 (含排隊)</button>
                 <button onclick="clearChat()" class="btn-admin-action">清空聊天室</button>
                 <button onclick="clearHistory()" class="btn-admin-action">清空歷史紀錄</button>
-                <button onclick="forceReload()" class="btn-admin-action">全體強制刷新</button>
+                <button onclick="clearLog()" class="btn-admin-action">清空系統日誌</button>
+                <button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button>
             </div>
         </div>
     </div>
@@ -395,7 +366,7 @@ let hasNotifiedReady=false, hasNotifiedOvertime=false;
 function openAdmin(){ document.getElementById('adminModal').classList.add('show'); }
 function closeAdmin(){ document.getElementById('adminModal').classList.remove('show'); }
 
-/* --- Broadcast --- */
+/* --- Broadcast (Fix) --- */
 function sendBroadcast(){
     const input = document.getElementById('broadcastInput');
     if(!input.value.trim()) return;
@@ -406,13 +377,18 @@ function sendBroadcast(){
 broadcastRef.on("value", s => {
     const val = s.val();
     if(!val) return;
+    // 檢查是否為 10 秒內的新廣播，避免刷頁面時重複跳出
     if(Date.now() - val.t > 10000) return;
     
     const banner = document.getElementById('broadcastBanner');
     document.getElementById('broadcastText').textContent = val.text;
-    banner.style.top = "20px";
+    
+    // 使用 CSS class 控制顯示，更穩定
+    banner.classList.add('active');
     playBeep('urgent');
-    setTimeout(() => { banner.style.top = "-200px"; }, 5000);
+    
+    // 5秒後自動收回
+    setTimeout(() => { banner.classList.remove('active'); }, 5000);
 });
 
 /* --- Notifications --- */
@@ -445,7 +421,10 @@ function getSlotStatus(h,m){
         let nH=target===0?12:(target>12?target-12:target);
         return {phase:'RESERVE',slot:target,display:`預約中 ${nH}:00`};
     }
-    return {phase:'BREAK',nextSlot:target,display:'吸菸區休息中',hint:'非開放時段'};
+    // 智慧提醒：計算開放時間
+    let openH = (target===0?23:target-1); 
+    let openM = "30";
+    return {phase:'BREAK',nextSlot:target,display:`下個時段 ${(target===0?12:(target>12?target-12:target))}:00`, hint:`${openH>12?openH-12:openH}:${openM} 開放預約`};
 }
 
 setInterval(()=>{
@@ -453,7 +432,12 @@ setInterval(()=>{
     const now=new Date(), h=now.getHours(), m=now.getMinutes();
     document.getElementById("clock").textContent=format12H(now);
     currentSlotInfo=getSlotStatus(h,m);
-    document.getElementById("slotDisplay").textContent=currentSlotInfo.display;
+    
+    // 狀態欄顯示優化
+    let dText = currentSlotInfo.display;
+    if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint})`;
+    document.getElementById("slotDisplay").textContent=dText;
+
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue();
     updateButtonStates(); updateOutListTimer(); checkNotifications();
 },1000);
@@ -553,8 +537,9 @@ function forceReload(){db.ref("reload").set(Date.now());}
 function resetQueue(){ if(confirm("確定清空【排隊、外出、已抽過】狀態？")) { queueRef.child("reserve").remove(); queueRef.child("out").remove(); queueRef.child("used").remove(); addLog("ADMIN 重置系統"); } }
 function clearChat(){ if(confirm("清空聊天室？")) chatRef.remove(); }
 function clearHistory(){ if(confirm("清空歷史紀錄？")) queueRef.child("history").remove(); }
+function clearLog(){ if(confirm("清空系統日誌？")) logRef.remove(); }
 
-// 登出跳轉修復
+// 登出跳轉至指定 URL
 function logout(){
     auth.signOut().then(() => {
         location.href = "https://wp037606888-oss.github.io/line-project/login.html";
