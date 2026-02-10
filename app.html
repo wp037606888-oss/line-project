@@ -333,7 +333,7 @@ function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy
 
 /* --- Auth --- */
 auth.onAuthStateChanged(user=>{
-    if(!user){location.href="index.html";return;} me=user;
+    if(!user){location.href="login.html";return;} me=user;
     userRef.child(user.uid).on("value",s=>{
         myData=s.val()||{};
         document.getElementById("who").textContent=`歡迎 ${(myData.name||"GUEST").toUpperCase()}`;
@@ -355,7 +355,7 @@ auth.onAuthStateChanged(user=>{
     userRef.child(user.uid+"/online").set(true);
     userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
-function logout(){auth.signOut().then(()=>{location.href="index.html";});}
+function logout(){auth.signOut().then(()=>{location.href="login.html";});}
 
 /* --- 🟢 Admin Feature: Populate User Select --- */
 function updateAdminUserSelect() {
@@ -636,3 +636,4 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;}location.rel
 </script>
 </body>
 </html>
+
