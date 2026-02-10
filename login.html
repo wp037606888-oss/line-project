@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 - 身分驗證 v7.6</title>
+<title>尊爵吸菸室 - 身分驗證 v8.3</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -133,7 +133,7 @@ button:hover::after { left: 100%; }
 </div>
 
 <script>
-/* --- 粒子系統 (保留原汁原味) --- */
+/* --- 粒子系統 --- */
 const canvas = document.getElementById("bg");
 const ctx = canvas.getContext("2d");
 let w, h;
@@ -172,18 +172,20 @@ function draw() {
 }
 draw();
 
-/* --- 3D 視差 --- */
+/* --- 3D 視差 (🟢 已修復方向：卡片會面對滑鼠) --- */
 const wrapper = document.getElementById('cardWrapper');
 const card = document.getElementById('card');
 document.addEventListener('mousemove', (e) => {
-    const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+    // 🟢 修正：原本是 (Center - Mouse)，現在改為 (Mouse - Center)
+    // 這樣滑鼠在右邊時，數值為正，rotateY(正) 會讓右邊轉過來 (面對滑鼠)
+    const xAxis = (e.pageX - window.innerWidth / 2) / 25; 
     const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
     wrapper.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
 });
 wrapper.addEventListener('mouseenter', () => { card.style.transition = 'none'; });
 wrapper.addEventListener('mouseleave', () => { card.style.transition = 'all 0.5s ease'; wrapper.style.transform = `rotateY(0deg) rotateX(0deg)`; });
 
-/* --- Firebase 邏輯 (安全性增強版) --- */
+/* --- Firebase 邏輯 --- */
 const firebaseConfig={
   apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
   authDomain: "smoke-queue.firebaseapp.com",
@@ -193,7 +195,7 @@ const firebaseConfig={
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.database(); // 引入 database
+const db = firebase.database(); 
 
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
@@ -214,59 +216,40 @@ form.addEventListener("submit", e => {
     e.preventDefault();
     if(!emailInput.value || !passInput.value) return;
 
-    // UI 變更：鎖定按鈕、顯示 Loading
     btn.disabled = true;
     const originalText = btn.innerHTML;
     btn.innerHTML = '<div class="spinner"></div>';
 
-    // 嘗試登入 (不進行註冊)
     auth.signInWithEmailAndPassword(emailInput.value, passInput.value)
     .then((userCredential) => {
         const user = userCredential.user;
-        
-        // 🛡️ 安全檢查：登入成功後，檢查資料庫是否有該使用者資料
-        // 因為是後台手動建帳號，可能只有 Auth 但沒有 Database 資料
-        // 我們必須在這裡寫入初始資料，才能符合 v7.5 規則 (必須有 name 和 online)
         return db.ref('users/' + user.uid).transaction((currentData) => {
             if (currentData === null) {
-                // 如果是第一次登入 (DB沒資料)，自動補齊
                 return {
-                    // 如果後台沒設定 displayName，就用 email 前綴當名字 (例: kid@test.com -> kid)
                     name: user.displayName || user.email.split('@')[0], 
                     email: user.email,
                     role: 'user', 
-                    online: false // ⚠️ 關鍵：寫入此欄位以通過防火牆
+                    online: false 
                 };
             } else {
-                // 如果已有資料，不修改，直接通過
                 return; 
             }
         });
     })
     .then(() => {
-        // 資料庫檢查/寫入完成，顯示成功
         btn.style.background = "#00ff88";
         btn.innerHTML = "驗證通過";
-        // AuthStateChanged 會處理跳轉
     })
     .catch((error) => {
         console.error("登入錯誤:", error);
-        
-        // 恢復按鈕狀態
         btn.disabled = false;
         btn.innerHTML = originalText;
-        btn.style.background = "#ff3e3e"; // 紅色錯誤提示
+        btn.style.background = "#ff3e3e"; 
         setTimeout(() => btn.style.background = "", 1000);
         
-        // 錯誤震動特效
         wrapper.classList.remove("shake");
         void wrapper.offsetWidth;
         wrapper.classList.add("shake");
-
-        // 提示訊息 (可選)
-        if(error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            // alert("帳號或密碼錯誤"); // 覺得一直跳窗很煩可以註解掉
-        }
     });
 });
 </script>
