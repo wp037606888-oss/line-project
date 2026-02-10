@@ -3,217 +3,249 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 - 旗艦登入 v9.0</title>
+<title>尊爵吸菸室 v10.0</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+/* 引入更多樣的字體以展現層次 */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&family=Italianno&display=swap');
 
 :root {
-    --gold: #FFD700;
-    --gold-dim: rgba(255, 215, 0, 0.2);
-    --gold-glow: rgba(255, 215, 0, 0.6);
-    --bg-dark: #050505;
-    --card-bg: rgba(20, 20, 20, 0.65);
-    --text-main: #ffffff;
-    --text-muted: #888888;
+    /* 熔岩金配色系統 */
+    --gold-rich: #ffd700;
+    --gold-dark: #bf9b30;
+    --gold-glow: rgba(255, 215, 0, 0.5);
+    --gold-gradient: linear-gradient(135deg, var(--gold-rich), var(--gold-dark));
+    
+    --bg-void: #020204;
+    /* 黑曜石玻璃背景 */
+    --card-glass: linear-gradient(145deg, rgba(20, 20, 25, 0.8), rgba(10, 10, 12, 0.9));
+    --text-light: #f0f0f0;
+    --text-dim: #888888;
 }
 
 * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 
 body {
-    margin: 0; height: 100vh; font-family: "Noto Sans TC", "Inter", sans-serif;
-    background: var(--bg-dark); display: flex; justify-content: center; align-items: center;
-    overflow: hidden; color: var(--text-main); perspective: 1500px;
+    margin: 0; height: 100vh; 
+    font-family: "Noto Sans TC", sans-serif;
+    background: var(--bg-void); display: flex; justify-content: center; align-items: center;
+    overflow: hidden; color: var(--text-light); perspective: 1800px; /* 加深透視感 */
 }
 
-/* --- 背景層次 --- */
-/* 1. 噪點質感 (Film Grain) */
-.noise {
-    position: fixed; inset: 0; z-index: 0; opacity: 0.04; pointer-events: none;
-    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC42IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI24pIiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=');
+/* --- 環境氛圍 --- */
+.noise-overlay {
+    position: fixed; inset: 0; z-index: 2; opacity: 0.05; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+.ambient-glow {
+    position: fixed; top: 50%; left: 50%; width: 120vmax; height: 120vmax;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.08) 0%, transparent 60%);
+    transform: translate(-50%, -50%); pointer-events: none; z-index: 0;
+    animation: breathe 10s ease-in-out infinite alternate;
 }
 
-/* 2. 背景流動極光 (Ambient Aurora) */
-.aurora {
-    position: absolute; width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 0; filter: blur(60px); animation: pulseLight 8s ease-in-out infinite alternate;
-}
+canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
 
-/* 3. 粒子畫布 */
-canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
-
-/* --- 3D 卡片容器 --- */
+/* --- 3D 容器 --- */
 .card-wrapper {
     position: relative; z-index: 10;
     transform-style: preserve-3d;
-    transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* 更平滑沉穩的旋轉阻尼 */
+    transition: transform 0.2s cubic-bezier(0.2, 0.6, 0.35, 1);
 }
 
-/* --- 主卡片設計 --- */
+/* --- 黑曜石卡片主體 --- */
 .card {
-    position: relative;
-    width: 400px; padding: 60px 45px;
-    background: var(--card-bg);
-    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.03);
+    position: relative; width: 420px; padding: 70px 50px 90px; /* 底部留空間給簽名 */
+    background: var(--card-glass);
+    backdrop-filter: blur(50px) saturate(120%); -webkit-backdrop-filter: blur(50px) saturate(120%);
+    border-radius: 30px;
+    /* 複雜的雙重邊框與光暈 */
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+        0 40px 80px rgba(0,0,0,0.9),
+        inset 0 1px 1px rgba(255,255,255,0.15),
+        inset 0 -1px 1px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255, 215, 0, 0.1); /* 外圈微金光 */
     overflow: hidden;
-    /* 聚光燈變數 */
-    --x: 50%; --y: 50%;
+    --spot-x: 50%; --spot-y: 50%;
 }
 
-/* 聚光燈反光層 (Spotlight Sheen) */
+/* 動態聚光燈反光 (Spotlight Sheen) - 更聚焦 */
 .card::after {
-    content: ''; position: absolute; inset: 0; z-index: -1;
-    background: radial-gradient(circle at var(--x) var(--y), rgba(255,255,255,0.1) 0%, transparent 50%);
-    opacity: 0; transition: opacity 0.5s; pointer-events: none;
+    content: ''; position: absolute; inset: 0; z-index: 1;
+    background: radial-gradient(circle at var(--spot-x) var(--spot-y), rgba(255,255,255,0.12) 0%, transparent 40%);
+    opacity: 0; transition: opacity 0.5s ease; pointer-events: none; mix-blend-mode: overlay;
 }
-.card:hover::after { opacity: 1; }
+.card-wrapper:hover .card::after { opacity: 1; }
 
-/* 卡片頂部金光 */
-.card-top-light {
-    position: absolute; top: -1px; left: 20%; right: 20%; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
-    opacity: 0.5; box-shadow: 0 0 20px var(--gold);
+/* 頂部流動金屬光條 */
+.card-top-accent {
+    position: absolute; top: 0; left: 15%; right: 15%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-rich), transparent);
+    box-shadow: 0 1px 15px var(--gold-glow); opacity: 0.8;
 }
 
-/* --- 文字排版 --- */
+/* --- Typography & Content --- */
 h1 {
-    margin: 0 0 5px; text-align: center;
-    font-family: 'Cinzel', serif; font-weight: 700; font-size: 32px;
-    color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    letter-spacing: 4px;
-    background: linear-gradient(to bottom, #fff 40%, #ccc 100%);
+    margin: 0 0 10px; text-align: center;
+    font-family: 'Cinzel Decorative', cursive; /* 更華麗的襯線體 */
+    font-weight: 700; font-size: 36px;
+    /* 熔岩金文字效果 */
+    background: linear-gradient(to bottom, #fff 30%, var(--gold-rich) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    opacity: 0; animation: fadeSlideUp 0.8s ease-out 0.2s forwards;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    letter-spacing: 3px;
+    opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    position: relative;
+}
+/* 標題倒影效果 */
+h1::after {
+    content: attr(data-text); position: absolute; top: 100%; left: 0; right: 0;
+    transform: scaleY(-1) translateY(-20px); filter: blur(4px); opacity: 0.15;
+    background: linear-gradient(to bottom, transparent, var(--gold-dark));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; pointer-events: none;
 }
 
 p.subtitle {
-    text-align: center; margin: 0 0 45px;
-    font-size: 12px; color: var(--gold); letter-spacing: 3px; text-transform: uppercase;
-    opacity: 0; animation: fadeSlideUp 0.8s ease-out 0.4s forwards;
+    text-align: center; margin: 0 0 50px;
+    font-family: "Noto Serif TC", serif; font-size: 13px; 
+    color: var(--gold-rich); letter-spacing: 4px; text-transform: uppercase;
+    opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+    text-shadow: 0 0 10px var(--gold-glow);
 }
 
-/* --- 高級輸入框 --- */
-.input-group { position: relative; margin-bottom: 25px; opacity: 0; animation: fadeSlideUp 0.8s ease-out 0.6s forwards; }
-
+/* --- 高級輸入框組 --- */
+.input-group { position: relative; margin-bottom: 28px; opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards; }
 .input-group i {
-    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-    color: #555; transition: 0.4s; pointer-events: none;
+    position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+    color: #555; transition: 0.4s ease; pointer-events: none; z-index: 2;
 }
-
 input {
-    width: 100%; padding: 18px 20px 18px 50px;
-    background: rgba(0,0,0,0.2);
+    width: 100%; padding: 20px 20px 20px 54px;
+    background: rgba(0,0,0,0.3);
     border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    color: #fff; font-size: 15px; font-family: 'Inter', sans-serif; letter-spacing: 0.5px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 14px; color: var(--text-light); font-size: 15px; 
+    font-family: "Noto Sans TC", sans-serif; letter-spacing: 1px;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
-
-input::placeholder { color: #444; font-weight: 300; transition: 0.3s; }
-
-/* 輸入框 Focus 特效 */
+input::placeholder { color: #555; font-weight: 300; transition: 0.3s; font-family: "Noto Serif TC", serif; }
 input:focus {
-    background: rgba(0,0,0,0.4);
-    border-color: var(--gold-dim);
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-    transform: translateY(-2px);
+    background: rgba(0,0,0,0.5);
+    border-color: rgba(255, 215, 0, 0.3);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 10px 30px -5px rgba(0,0,0,0.6);
+    transform: translateY(-1px);
 }
-input:focus + i { color: var(--gold); text-shadow: 0 0 10px var(--gold-dim); }
-input:focus::placeholder { opacity: 0; }
+input:focus + i { color: var(--gold-rich); filter: drop-shadow(0 0 8px var(--gold-glow)); }
+input:focus::placeholder { opacity: 0; transform: translateX(10px); }
 
-/* 底部金線動畫 */
+/* 動態流光金線 */
 .input-line {
-    position: absolute; bottom: 0; left: 50%; width: 0%; height: 1px;
-    background: var(--gold); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateX(-50%); box-shadow: 0 0 8px var(--gold);
+    position: absolute; bottom: 0; left: 5%; width: 90%; height: 1px;
+    background: var(--gold-dark);
+    transform: scaleX(0); transition: 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 -1px 8px var(--gold-glow);
 }
-input:focus ~ .input-line { width: 100%; }
+input:focus ~ .input-line { transform: scaleX(1); background: var(--gold-rich); }
 
-/* --- 旗艦按鈕 --- */
+/* --- 旗艦按鈕 (熔岩質感) --- */
 button {
-    width: 100%; padding: 18px; margin-top: 15px;
-    background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
-    border: none; border-radius: 12px;
-    color: #0a0a0a; font-size: 14px; font-weight: 700; font-family: 'Inter', sans-serif;
-    letter-spacing: 2px; text-transform: uppercase;
-    cursor: pointer; position: relative; overflow: hidden;
-    transition: all 0.3s;
-    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.2);
-    opacity: 0; animation: fadeSlideUp 0.8s ease-out 0.8s forwards;
+    width: 100%; padding: 20px; margin-top: 10px;
+    background: var(--gold-gradient);
+    border: none; border-radius: 14px;
+    color: #111; font-size: 16px; font-weight: 800; 
+    font-family: "Noto Sans TC", sans-serif; letter-spacing: 4px;
+    cursor: pointer; position: relative; overflow: hidden; z-index: 5;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 
+        0 10px 30px -5px rgba(0,0,0,0.5),
+        inset 0 2px 2px rgba(255,255,255,0.4),
+        0 0 20px rgba(255, 215, 0, 0.2);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.8s forwards;
 }
-
 button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 30px rgba(212, 175, 55, 0.4);
-    background: linear-gradient(135deg, #ffe033 0%, #e6be48 100%);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 
+        0 20px 40px -10px rgba(0,0,0,0.6),
+        inset 0 2px 2px rgba(255,255,255,0.6),
+        0 0 40px rgba(255, 215, 0, 0.4);
+    background: linear-gradient(135deg, #ffe54d, #d4af37);
 }
+button:active { transform: scale(0.98) translateY(-1px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
 
-button:active { transform: scale(0.98); }
-
-/* 按鈕流光特效 */
+/* 按鈕內部流光 */
 button::before {
-    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-    transition: 0.6s;
+    content: ''; position: absolute; top: -50%; left: -150%; width: 200%; height: 200%;
+    background: linear-gradient(
+        60deg, transparent, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.1) 80%, transparent
+    );
+    transform: rotate(25deg); transition: 0.8s ease-in-out;
 }
-button:hover::before { left: 100%; }
+button:hover::before { left: 150%; }
 
-/* --- 狀態訊息 --- */
-.footer-text {
-    text-align: center; margin-top: 30px; font-size: 11px; color: #444;
-    letter-spacing: 1px; font-family: 'Inter', sans-serif;
-    opacity: 0; animation: fadeIn 1s ease-out 1s forwards;
+/* --- 底部藝術家簽名 (The KID Signature) --- */
+.signature-container {
+    position: absolute; bottom: 25px; right: 40px;
+    opacity: 0; animation: fadeIn 1.5s ease-out 1.2s forwards;
+    z-index: 20;
 }
+.signature {
+    font-family: 'Italianno', cursive; /* 藝術手寫體 */
+    font-size: 24px; color: var(--gold-dark);
+    text-decoration: none; position: relative; transition: 0.5s ease;
+    opacity: 0.5; letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--gold-dark), var(--text-dim));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    padding: 5px; cursor: default;
+}
+/* 簽名互動：流動金光 */
+.signature::before {
+    content: attr(data-text); position: absolute; inset:0; padding: 5px;
+    background: linear-gradient(90deg, var(--gold-rich), #fff, var(--gold-rich));
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    opacity: 0; transition: 0.5s ease;
+    filter: drop-shadow(0 0 8px var(--gold-glow));
+    pointer-events: none;
+}
+.signature-container:hover .signature { opacity: 1; transform: scale(1.05); }
+.signature-container:hover .signature::before { opacity: 1; animation: shimmerText 3s linear infinite; }
 
-/* --- 動畫關鍵影格 --- */
-@keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* --- 動畫定義 --- */
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(40px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes fadeIn { to { opacity: 1; } }
-@keyframes pulseLight {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-    100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
-}
+@keyframes breathe { 0% { opacity: 0.6; scale: 1; } 100% { opacity: 1; scale: 1.1; } }
+@keyframes shimmerText { to { background-position: 200% center; } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes shake {
-    10%, 90% { transform: translate3d(-1px, 0, 0); }
-    20%, 80% { transform: translate3d(2px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-    40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
-.spinner { width: 20px; height: 20px; border: 2px solid rgba(0,0,0,0.1); border-top-color: #000; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+@keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+.spinner { width: 22px; height: 22px; border: 2px solid rgba(0,0,0,0.1); border-top-color: #111; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
 .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
-.icon-svg { width: 20px; height: 20px; fill: currentColor; }
-
+.icon-svg { width: 22px; height: 22px; fill: currentColor; }
 </style>
 </head>
 
 <body>
 
-<div class="noise"></div>
-<div class="aurora"></div>
+<div class="noise-overlay"></div>
+<div class="ambient-glow"></div>
 <canvas id="bg"></canvas>
 
 <div class="card-wrapper" id="cardWrapper">
     <div class="card" id="card">
-        <div class="card-top-light"></div>
-        <h1>SMOKE QUEUE</h1>
-        <p class="subtitle">Premium Access Control</p>
+        <div class="card-top-accent"></div>
+        <h1 data-text="尊爵吸菸室">尊爵吸菸室</h1>
+        <p class="subtitle">頂級排隊管理系統</p>
 
         <form id="loginForm">
             <div class="input-group">
-                <input id="email" type="email" placeholder="ACCESS ID (EMAIL)" autocomplete="off">
+                <input id="email" type="email" placeholder="通行 ID (Email)" autocomplete="off">
                 <i>
                     <svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                 </i>
@@ -221,24 +253,24 @@ button:hover::before { left: 100%; }
             </div>
             
             <div class="input-group">
-                <input id="password" type="password" placeholder="PASSPHRASE">
+                <input id="password" type="password" placeholder="通行密碼">
                 <i>
                     <svg class="icon-svg" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                 </i>
                 <div class="input-line"></div>
             </div>
 
-            <button id="loginBtn">ENTER LOUNGE</button>
+            <button id="loginBtn">進入休息室</button>
         </form>
         
-        <div class="footer-text">
-            SECURE SYSTEM • AUTHORIZED PERSONNEL ONLY
+        <div class="signature-container">
+            <div class="signature" data-text="Crafted by KID">Crafted by KID</div>
         </div>
     </div>
 </div>
 
 <script>
-/* --- 粒子系統 (更細緻、更慢) --- */
+/* --- 粒子系統 (極致優雅版) --- */
 const canvas = document.getElementById("bg");
 const ctx = canvas.getContext("2d");
 let w, h;
@@ -246,36 +278,45 @@ function resize() { w = canvas.width = innerWidth; h = canvas.height = innerHeig
 window.onresize = resize; resize();
 
 const particles = [];
-const particleCount = 40; // 減少數量，增加質感
+const particleCount = 35; // 數量少而精
 for (let i = 0; i < particleCount; i++) {
     particles.push({
         x: Math.random() * w, y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, // 速度變慢
-        size: Math.random() * 2, 
-        alpha: Math.random() * 0.4 + 0.1
+        vx: (Math.random() - 0.5) * 0.15, vy: (Math.random() - 0.5) * 0.15, // 極慢速流動
+        size: Math.random() * 2.5 + 0.5, 
+        alpha: Math.random() * 0.3 + 0.1,
+        pulseSpeed: Math.random() * 0.005 + 0.002
     });
 }
 function draw() {
     ctx.clearRect(0, 0, w, h);
     ctx.lineWidth = 0.5;
+    const time = Date.now();
     for (let i = 0; i < particleCount; i++) {
         let p = particles[i];
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
         
-        // 粒子閃爍
-        let opacity = p.alpha + Math.sin(Date.now() * 0.002 + i) * 0.05;
+        // 呼吸燈閃爍效果
+        let opacity = p.alpha + Math.sin(time * p.pulseSpeed) * 0.1;
 
-        ctx.fillStyle = `rgba(255, 215, 0, ${opacity})`;
+        // 核心光點
+        ctx.fillStyle = `rgba(255, 220, 100, ${opacity})`;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-        
-        // 連線條件變嚴格，讓線條更稀疏優雅
+        // 外圈光暈
+        ctx.fillStyle = `rgba(255, 215, 0, ${opacity * 0.3})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2); ctx.fill();
+
         for (let j = i + 1; j < particleCount; j++) {
             let p2 = particles[j];
             let dist = Math.sqrt(Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2));
-            if (dist < 120) {
-                ctx.strokeStyle = `rgba(255, 215, 0, ${0.1 * (1 - dist / 120)})`;
+            if (dist < 130) {
+                // 線條帶有金色漸層感
+                let grad = ctx.createLinearGradient(p.x, p.y, p2.x, p2.y);
+                grad.addColorStop(0, `rgba(255, 215, 0, ${0.12 * (1 - dist / 130)})`);
+                grad.addColorStop(1, `rgba(255, 200, 50, ${0.12 * (1 - dist / 130)})`);
+                ctx.strokeStyle = grad;
                 ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
             }
         }
@@ -284,101 +325,71 @@ function draw() {
 }
 draw();
 
-/* --- 3D 視差 + 聚光燈特效 (Spotlight) --- */
+/* --- 3D 視差 + 動態聚光燈 --- */
 const wrapper = document.getElementById('cardWrapper');
 const card = document.getElementById('card');
-
 document.addEventListener('mousemove', (e) => {
-    // 3D 旋轉 (已修正方向)
-    const xAxis = (e.pageX - window.innerWidth / 2) / 30; // 係數改大，讓轉動更沉穩
-    const yAxis = (window.innerHeight / 2 - e.pageY) / 30;
+    const xAxis = (e.pageX - window.innerWidth / 2) / 35;
+    const yAxis = (window.innerHeight / 2 - e.pageY) / 35;
     wrapper.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
 
-    // 聚光燈計算 (相對於卡片左上角)
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    card.style.setProperty('--x', `${x}px`);
-    card.style.setProperty('--y', `${y}px`);
+    card.style.setProperty('--spot-x', `${x}px`);
+    card.style.setProperty('--spot-y', `${y}px`);
 });
-
 wrapper.addEventListener('mouseenter', () => { card.style.transition = 'none'; });
 wrapper.addEventListener('mouseleave', () => { 
-    card.style.transition = 'transform 0.5s ease'; 
+    card.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.6, 0.35, 1)'; 
     wrapper.style.transform = `rotateY(0deg) rotateX(0deg)`; 
 });
 
-/* --- Firebase Logic (Security v8.2) --- */
-const firebaseConfig={
-  apiKey: "AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",
-  authDomain: "smoke-queue.firebaseapp.com",
-  databaseURL: "https://smoke-queue-default-rtdb.firebaseio.com",
-  projectId: "smoke-queue"
-};
-
+/* --- Firebase Logic --- */
+const firebaseConfig={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database(); 
-
+const auth = firebase.auth(), db = firebase.database();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        // 登入成功動畫
-        document.body.style.transition = "opacity 0.8s ease";
+        document.body.style.transition = "opacity 1s ease";
         document.body.style.opacity = "0";
-        setTimeout(() => location.href = "app.html", 800);
+        setTimeout(() => location.href = "app.html", 1000);
     }
 });
 
-const form = document.getElementById("loginForm");
-const btn = document.getElementById("loginBtn");
-const emailInput = document.getElementById("email");
-const passInput = document.getElementById("password");
+const form=document.getElementById("loginForm"), btn=document.getElementById("loginBtn");
+const emailInput=document.getElementById("email"), passInput=document.getElementById("password");
 
 form.addEventListener("submit", e => {
     e.preventDefault();
     if(!emailInput.value || !passInput.value) return;
-
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
+    btn.disabled = true; const originalText = btn.innerHTML;
     btn.innerHTML = '<div class="spinner"></div>';
-    btn.style.background = "#333"; // Loading 狀態顏色
+    btn.style.background = "#222"; btn.style.boxShadow = "none"; color: "#777";
 
     auth.signInWithEmailAndPassword(emailInput.value, passInput.value)
     .then((userCredential) => {
         const user = userCredential.user;
-        // 安全資料寫入
         return db.ref('users/' + user.uid).transaction((currentData) => {
             if (currentData === null) {
-                return {
-                    name: user.displayName || user.email.split('@')[0], 
-                    email: user.email,
-                    role: 'user', 
-                    online: false 
-                };
+                return { name: user.displayName || user.email.split('@')[0], email: user.email, role: 'user', online: false };
             } else { return; }
         });
     })
     .then(() => {
-        btn.style.background = "#00ff88";
-        btn.style.color = "#000";
-        btn.style.boxShadow = "0 0 30px #00ff88";
-        btn.innerHTML = "ACCESS GRANTED";
+        btn.style.background = "linear-gradient(135deg, #00ff9d, #00cc7a)";
+        btn.style.boxShadow = "0 0 40px rgba(0, 255, 157, 0.6)";
+        btn.style.color = "#00331f";
+        btn.innerHTML = "身分驗證通過";
     })
     .catch((error) => {
         console.error("Login Error:", error);
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        btn.style.background = ""; // 恢復原色
-        
-        // 錯誤震動
-        wrapper.classList.remove("shake");
-        void wrapper.offsetWidth;
-        wrapper.classList.add("shake");
+        btn.disabled = false; btn.innerHTML = originalText; btn.style = "";
+        wrapper.classList.remove("shake"); void wrapper.offsetWidth; wrapper.classList.add("shake");
     });
 });
 </script>
-
 </body>
 </html>
