@@ -3,27 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪吸菸室 - v11.0</title>
+<title>萬豪吸菸室 - 白金大理石版 v13.0</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-/* 引入宋體(Serif)增加高級感，與手寫體 */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;500&family=Ma+Shan+Zheng&display=swap');
+/* 引入襯線體 (Serif) 展現優雅，手寫體用於簽名 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Mrs+Saint+Delafield&display=swap');
 
 :root {
-    /* 萬豪行政配色：香檳金與深鉑金 */
-    --champagne: #F3E5AB;
-    --gold-luxury: #C5A059;
-    --gold-dark: #8A6E3E;
+    /* 淺色奢華配色系統 */
+    --marble-base: #fdfbf7; /* 溫潤的米白色 */
+    --marble-vein: #e0e0e0; /* 大理石紋路色 */
     
-    --bg-deep: #08090b; /* 深邃午夜藍黑 */
-    --glass-surface: rgba(20, 22, 26, 0.75);
+    --gold-primary: #B8860B; /* 暗金色，在白底上對比度才夠 */
+    --gold-light: #D4AF37;
+    --gold-foil: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
     
-    --text-primary: #ECECEC;
-    --text-secondary: #9aa0a6;
+    --text-dark: #2c2c2c; /* 深炭灰，比純黑柔和 */
+    --text-grey: #666666;
+    
+    --glass-white: rgba(255, 255, 255, 0.65);
+    --shadow-soft: 0 20px 40px rgba(0,0,0,0.05);
+    --shadow-deep: 0 30px 60px -10px rgba(139, 131, 120, 0.3);
 }
 
 * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -31,174 +35,164 @@
 body {
     margin: 0; height: 100vh; 
     font-family: "Noto Sans TC", sans-serif;
-    background: var(--bg-deep); 
+    background-color: var(--marble-base);
     display: flex; justify-content: center; align-items: center;
-    overflow: hidden; color: var(--text-primary); 
-    perspective: 2000px;
+    overflow: hidden; color: var(--text-dark); 
+    perspective: 1500px;
 }
 
-/* --- 背景氛圍 (Atmosphere) --- */
-/* 1. 絲綢光暈 */
-.ambient-light {
-    position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
-    background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
-    transform: translateX(-50%); pointer-events: none; z-index: 0;
+/* --- 大理石背景紋理 (Procedural Marble) --- */
+.marble-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+    filter: contrast(120%) brightness(110%);
+    opacity: 0.6; pointer-events: none;
+}
+/* 添加流動的光暈，模擬陽光灑落 */
+.sunlight {
+    position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+    animation: slowDaylight 20s infinite alternate ease-in-out;
 }
 
-/* 2. 畫布粒子 */
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 /* --- 3D 卡片容器 --- */
 .card-wrapper {
     position: relative; z-index: 10;
     transform-style: preserve-3d;
-    transition: transform 0.15s cubic-bezier(0.2, 0.6, 0.35, 1);
+    transition: transform 0.2s cubic-bezier(0.2, 0.6, 0.35, 1);
 }
 
-/* --- 主卡片 (The Monolith) --- */
+/* --- 白玉玻璃卡片 --- */
 .card {
-    position: relative; width: 440px; padding: 80px 55px 100px;
-    background: var(--glass-surface);
-    backdrop-filter: blur(60px) brightness(1.1); -webkit-backdrop-filter: blur(60px) brightness(1.1);
-    border-radius: 4px; /* 五星級酒店偏好方正圓角 */
+    position: relative; width: 420px; padding: 70px 50px 90px;
+    background: var(--glass-white);
+    /* 模擬磨砂質感 */
+    backdrop-filter: blur(30px) saturate(150%); -webkit-backdrop-filter: blur(30px) saturate(150%);
+    border-radius: 8px; /* 經典矩形圓角 */
     
-    /* 鑽石切邊光澤 */
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
-    
+    /* 精緻的白邊與陰影 */
+    border: 1px solid rgba(255, 255, 255, 0.8);
     box-shadow: 
-        0 30px 80px -10px rgba(0,0,0,0.8),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        var(--shadow-deep),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5); /* 內發光 */
+    
     overflow: hidden;
-    /* 質感紋理 */
-    background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
-/* 動態金屬反光 (Sheen) */
+/* 頂部裝飾線 */
 .card::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.05) 45%, transparent 60%);
-    background-size: 200% 100%;
-    animation: shine 8s infinite linear;
-    pointer-events: none;
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+    background: var(--gold-foil);
 }
 
-/* --- 排版與文字 --- */
-.logo-area {
-    text-align: center; margin-bottom: 15px; opacity: 0;
-    animation: fadeSlideDown 1s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-}
-.logo-icon {
-    font-size: 24px; color: var(--gold-luxury); margin-bottom: 10px; display: inline-block;
-    filter: drop-shadow(0 0 10px rgba(197, 160, 89, 0.4));
+/* --- Logo 與 標題 --- */
+.logo-area { text-align: center; margin-bottom: 20px; opacity: 0; animation: fadeUp 1s ease 0.1s forwards; }
+.logo-icon { 
+    font-size: 32px; color: var(--gold-primary); 
+    text-shadow: 0 2px 5px rgba(184, 134, 11, 0.2);
 }
 
 h1 {
-    margin: 0 0 15px; text-align: center;
-    font-family: 'Noto Serif TC', serif; /* 宋體，更具人文氣質 */
-    font-weight: 700; font-size: 34px;
-    color: var(--text-primary);
-    letter-spacing: 6px; text-indent: 6px; /* 平衡字距 */
-    text-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    background: linear-gradient(to bottom, #fff 40%, #cfcfcf 100%);
+    margin: 0 0 10px; text-align: center;
+    font-family: 'Noto Serif TC', serif; 
+    font-weight: 700; font-size: 36px;
+    color: var(--text-dark);
+    letter-spacing: 8px; text-indent: 8px;
+    /* 微微的金屬質感文字 */
+    background: linear-gradient(45deg, #333, #555);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    opacity: 0; animation: fadeUp 1s ease 0.3s forwards;
 }
 
 p.subtitle {
     text-align: center; margin: 0 0 50px;
-    font-family: "Noto Sans TC", sans-serif; font-size: 11px; font-weight: 400;
-    color: var(--gold-luxury); letter-spacing: 4px; text-transform: uppercase;
-    border-top: 1px solid rgba(197, 160, 89, 0.2);
-    border-bottom: 1px solid rgba(197, 160, 89, 0.2);
-    display: inline-block; padding: 8px 12px;
-    position: relative; left: 50%; transform: translateX(-50%);
-    opacity: 0; animation: expandLine 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+    font-family: 'Playfair Display', serif; font-size: 11px; font-style: italic;
+    color: var(--gold-primary); letter-spacing: 2px;
+    position: relative; display: inline-block; left: 50%; transform: translateX(-50%);
+    opacity: 0; animation: fadeUp 1s ease 0.5s forwards;
 }
+/* 副標題兩側的線條 */
+p.subtitle::before, p.subtitle::after {
+    content: ''; position: absolute; top: 50%; width: 30px; height: 1px; background: rgba(184, 134, 11, 0.3);
+}
+p.subtitle::before { right: 100%; margin-right: 15px; }
+p.subtitle::after { left: 100%; margin-left: 15px; }
 
-/* --- 極簡輸入框 --- */
-.input-group { position: relative; margin-bottom: 35px; opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards; }
+/* --- 雅緻輸入框 --- */
+.input-group { position: relative; margin-bottom: 30px; opacity: 0; animation: fadeUp 1s ease 0.7s forwards; }
 
 input {
-    width: 100%; padding: 15px 0;
+    width: 100%; padding: 12px 5px;
     background: transparent;
-    border: none; border-bottom: 1px solid rgba(255,255,255,0.2);
+    border: none; border-bottom: 1px solid rgba(0,0,0,0.1);
     border-radius: 0;
-    color: var(--text-primary); font-size: 16px; 
+    color: var(--text-dark); font-size: 16px; 
     font-family: "Noto Serif TC", serif; letter-spacing: 1px;
-    transition: all 0.4s;
+    transition: all 0.3s;
 }
-input::placeholder { color: var(--text-secondary); font-family: "Noto Sans TC"; font-weight: 300; transition:0.3s; }
-input:focus { border-bottom-color: var(--gold-luxury); outline: none; }
-input:focus::placeholder { opacity: 0; transform: translateY(-10px); }
+input::placeholder { color: #999; font-family: "Noto Sans TC"; font-weight: 300; transition: 0.3s; }
+input:focus { border-bottom-color: var(--gold-primary); outline: none; }
+input:focus::placeholder { opacity: 0; transform: translateY(-5px); }
 
-/* 輸入框標籤動畫 */
+/* 輸入框 Focus 特效 */
 .input-highlight {
-    position: absolute; bottom: 0; left: 0; width: 0%; height: 1px;
-    background: var(--gold-luxury);
-    transition: 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    box-shadow: 0 0 10px var(--gold-luxury);
+    position: absolute; bottom: 0; left: 50%; width: 0%; height: 2px;
+    background: var(--gold-primary);
+    transition: 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateX(-50%);
 }
 input:focus ~ .input-highlight { width: 100%; }
 
-/* --- 尊爵按鈕 --- */
+/* --- 白金按鈕 --- */
 button {
-    width: 100%; padding: 18px; margin-top: 15px;
-    background: linear-gradient(135deg, #2a2d35, #1a1c22); /* 深色金屬質感 */
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 2px;
-    color: var(--gold-luxury); font-size: 15px; font-weight: 500; 
-    font-family: "Noto Sans TC", sans-serif; letter-spacing: 5px;
+    width: 100%; padding: 18px; margin-top: 20px;
+    /* 奢華的金屬漸層 */
+    background: linear-gradient(to right, #2c3e50, #000000); 
+    border: none; border-radius: 4px;
+    color: #fff; font-size: 14px; font-weight: 500; 
+    font-family: "Noto Sans TC", sans-serif; letter-spacing: 4px;
     cursor: pointer; position: relative; overflow: hidden;
     transition: all 0.4s;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.8s forwards;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    opacity: 0; animation: fadeUp 1s ease 0.9s forwards;
 }
 button:hover {
-    border-color: var(--gold-luxury);
-    background: rgba(197, 160, 89, 0.05);
-    box-shadow: 0 0 20px rgba(197, 160, 89, 0.15);
-    color: #fff;
-    text-shadow: 0 0 8px rgba(255,255,255,0.5);
+    background: linear-gradient(to right, var(--gold-primary), var(--gold-light));
+    box-shadow: 0 10px 30px rgba(184, 134, 11, 0.3);
+    color: #fff; transform: translateY(-2px);
 }
 button:active { transform: scale(0.98); }
 
-/* --- 藝術家簽名 (KID Seal) --- */
+/* --- 藝術家簽名 (Ink Signature) --- */
 .kid-seal {
-    position: absolute; bottom: 30px; right: 40px;
+    position: absolute; bottom: 25px; right: 40px;
     display: flex; flex-direction: column; align-items: flex-end;
     opacity: 0; animation: fadeIn 2s ease 1.5s forwards;
-    cursor: default; pointer-events: none; /* 讓它像背景一樣 */
+    pointer-events: none; mix-blend-mode: multiply; /* 讓文字像印在紙上 */
 }
 .seal-text {
-    font-family: 'Ma Shan Zheng', cursive; /* 藝術書法體 */
-    font-size: 20px; color: var(--gold-dark);
-    writing-mode: horizontal-tb;
-    opacity: 0.6; transition: 0.5s;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    font-family: 'Mrs Saint Delafield', cursive; /* 極致優雅的手寫體 */
+    font-size: 28px; color: var(--gold-primary);
+    transform: rotate(-5deg);
+    opacity: 0.8;
 }
 .seal-sub {
     font-family: 'Noto Sans TC'; font-size: 9px; 
-    color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase;
-    margin-top: 2px; opacity: 0.4;
-}
-/* 懸停時點亮 */
-.card-wrapper:hover .seal-text { 
-    opacity: 1; color: var(--gold-luxury); 
-    text-shadow: 0 0 8px rgba(197, 160, 89, 0.6);
+    color: #999; letter-spacing: 1px; text-transform: uppercase;
+    margin-top: -5px; margin-right: 5px;
 }
 
 /* --- Animations --- */
-@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes expandLine { from { opacity: 0; width: 0; } to { opacity: 1; width: auto; min-width: 120px; } }
-@keyframes shine { 0% { transform: translateX(-150%); } 100% { transform: translateX(150%); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { to { opacity: 1; } }
+@keyframes slowDaylight { 0% { opacity: 0.5; transform: rotate(0deg); } 100% { opacity: 0.8; transform: rotate(5deg); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
-.spinner { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.1); border-top-color: var(--gold-luxury); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
 .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
 </style>
@@ -206,18 +200,18 @@ button:active { transform: scale(0.98); }
 
 <body>
 
-<div class="ambient-light"></div>
+<div class="marble-bg"></div>
+<div class="sunlight"></div>
 <canvas id="bg"></canvas>
 
 <div class="card-wrapper" id="cardWrapper">
     <div class="card" id="card">
         
         <div class="logo-area">
-            <div class="logo-icon">♛</div>
-        </div>
+            <div class="logo-icon">⚜</div> </div>
 
         <h1>萬豪吸菸室</h1>
-        <p class="subtitle">MARRIOTT EXECUTIVE LOUNGE</p>
+        <p class="subtitle">The Marriott Executive Lounge</p>
 
         <form id="loginForm">
             <div class="input-group">
@@ -230,18 +224,18 @@ button:active { transform: scale(0.98); }
                 <div class="input-highlight"></div>
             </div>
 
-            <button id="loginBtn">進入酒廊</button>
+            <button id="loginBtn">ENTER LOUNGE</button>
         </form>
         
         <div class="kid-seal">
-            <span class="seal-text">KID 匠心監製</span>
-            <span class="seal-sub">Designed by KID</span>
+            <span class="seal-text">KID Design.</span>
+            <span class="seal-sub">EST. 2024</span>
         </div>
     </div>
 </div>
 
 <script>
-/* --- 香檳氣泡粒子系統 (Champagne Bubbles) --- */
+/* --- 金粉粒子系統 (Gold Dust) --- */
 const canvas = document.getElementById("bg");
 const ctx = canvas.getContext("2d");
 let w, h;
@@ -249,16 +243,16 @@ function resize() { w = canvas.width = innerWidth; h = canvas.height = innerHeig
 window.onresize = resize; resize();
 
 const particles = [];
-const particleCount = 45; 
+const particleCount = 50; 
 
 for (let i = 0; i < particleCount; i++) {
     particles.push({
         x: Math.random() * w, 
         y: Math.random() * h,
-        vy: (Math.random() * 0.3) + 0.1, // 氣泡緩慢上升
-        size: Math.random() * 1.5, 
-        alpha: Math.random() * 0.5 + 0.1,
-        swing: Math.random() * 0.2 // 左右微擺
+        vx: (Math.random() - 0.5) * 0.3, // 左右飄動
+        vy: (Math.random() - 0.5) * 0.3, // 上下飄動
+        size: Math.random() * 2, 
+        alpha: Math.random() * 0.4 + 0.1
     });
 }
 
@@ -267,40 +261,50 @@ function draw() {
     
     for (let i = 0; i < particleCount; i++) {
         let p = particles[i];
-        p.y -= p.vy; // 往上浮
-        p.x += Math.sin(Date.now() * 0.001 + i) * p.swing; // 左右搖擺
+        p.x += p.vx; 
+        p.y += p.vy;
 
-        if (p.y < 0) { // 重置到底部
-            p.y = h;
-            p.x = Math.random() * w;
-        }
+        // 邊界檢查 (讓粒子在畫面內循環)
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
         
-        // 繪製香檳金光點
-        ctx.fillStyle = `rgba(197, 160, 89, ${p.alpha})`;
+        // 繪製金粉
+        // 使用暗金色，在白底上才看得見
+        ctx.fillStyle = `rgba(184, 134, 11, ${p.alpha})`; 
         ctx.beginPath(); 
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); 
         ctx.fill();
+        
+        // 連接線 (極細微)
+        for (let j = i + 1; j < particleCount; j++) {
+            let p2 = particles[j];
+            let dist = Math.sqrt(Math.pow(p.x - p2.x, 2) + Math.pow(p.y - p2.y, 2));
+            if (dist < 100) {
+                ctx.strokeStyle = `rgba(184, 134, 11, ${0.05 * (1 - dist / 100)})`;
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+            }
+        }
     }
     requestAnimationFrame(draw);
 }
 draw();
 
-/* --- 3D 視差 (極致微動) --- */
+/* --- 3D 視差 (修正方向：面對滑鼠) --- */
 const wrapper = document.getElementById('cardWrapper');
 const card = document.getElementById('card');
 document.addEventListener('mousemove', (e) => {
-    // 讓轉動幅度極小，呈現厚重感
-    const xAxis = (e.pageX - window.innerWidth / 2) / 60; 
-    const yAxis = (window.innerHeight / 2 - e.pageY) / 60;
+    // 淺色系不需要太強烈的3D感，微動即可，保持優雅
+    const xAxis = (e.pageX - window.innerWidth / 2) / 40; 
+    const yAxis = (window.innerHeight / 2 - e.pageY) / 40;
     wrapper.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
 });
 wrapper.addEventListener('mouseenter', () => { card.style.transition = 'none'; });
 wrapper.addEventListener('mouseleave', () => { 
-    card.style.transition = 'transform 0.5s ease'; 
+    card.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.6, 0.35, 1)'; 
     wrapper.style.transform = `rotateY(0deg) rotateX(0deg)`; 
 });
 
-/* --- Firebase Logic (Security v8.2) --- */
+/* --- Firebase Logic --- */
 const firebaseConfig={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.database();
@@ -308,10 +312,9 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        // 優雅淡出
-        document.body.style.transition = "opacity 1.2s ease";
+        document.body.style.transition = "opacity 0.8s ease";
         document.body.style.opacity = "0";
-        setTimeout(() => location.href = "app.html", 1200);
+        setTimeout(() => location.href = "app.html", 800);
     }
 });
 
@@ -334,13 +337,12 @@ form.addEventListener("submit", e => {
         });
     })
     .then(() => {
-        btn.style.background = "var(--gold-luxury)";
-        btn.style.color = "#000";
-        btn.innerHTML = "身分尊榮驗證通過";
+        btn.style.background = "#2c3e50";
+        btn.innerHTML = "Access Granted";
     })
     .catch((error) => {
         console.error("Login Error:", error);
-        btn.disabled = false; btn.innerHTML = originalText; btn.style.background = "";
+        btn.disabled = false; btn.innerHTML = originalText;
         wrapper.classList.remove("shake"); void wrapper.offsetWidth; wrapper.classList.add("shake");
     });
 });
