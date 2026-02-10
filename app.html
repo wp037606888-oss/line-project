@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v7.1 - Admin Control</title>
+<title>尊爵吸菸室 v7.2 - Timer Fix</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -322,35 +322,28 @@ auth.onAuthStateChanged(user=>{
         myData=s.val()||{};
         document.getElementById("who").textContent=`歡迎 ${(myData.name||"GUEST").toUpperCase()}`;
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
-        engineReady=true;renderStaticLists();updateButtonStates();
+        engineReady=true;
+        renderStaticLists();
+        updateButtonStates();
+        renderOutList(); // 首次載入執行一次
     });
     userRef.child(user.uid+"/online").set(true);
     userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
 function logout(){auth.signOut().then(()=>{location.href="https://wp037606888-oss.github.io/line-project/login.html";});}
 
-/* --- Playground Control (New) --- */
+/* --- Playground Control --- */
 configRef.child("playground_status").on("value", s => {
     playgroundEnabled = s.val() || false;
     const btn = document.getElementById("btnGame");
-    if(playgroundEnabled) {
-        btn.style.display = "flex";
-        playBeep(); // 提示音
-    } else {
-        btn.style.display = "none";
-    }
-    
-    // 更新 Admin UI
+    if(playgroundEnabled) { btn.style.display = "flex"; playBeep(); } else { btn.style.display = "none"; }
     const toggleBtn = document.getElementById("btnTogglePg");
     if(toggleBtn) {
         toggleBtn.textContent = playgroundEnabled ? "遊樂場狀態: 開啟 (OPEN)" : "遊樂場狀態: 關閉 (CLOSED)";
         toggleBtn.className = playgroundEnabled ? "btn-admin-action btn-toggle" : "btn-admin-action btn-toggle off";
     }
 });
-
-function togglePlayground() {
-    configRef.child("playground_status").set(!playgroundEnabled);
-}
+function togglePlayground() { configRef.child("playground_status").set(!playgroundEnabled); }
 
 /* --- Admin --- */
 function openAdmin(){document.getElementById('adminModal').classList.add('show');}
@@ -423,6 +416,7 @@ function getSlotStatus(h,m){
     return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
 }
 
+// 🟢 核心修正：每秒更新外出時間
 setInterval(()=>{
     if(!engineReady)return;
     const now=new Date(), h=now.getHours(), m=now.getMinutes();
@@ -432,10 +426,22 @@ setInterval(()=>{
     if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint} 開放預約)`;
     document.getElementById("slotDisplay").textContent=dText;
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue();
-    updateButtonStates(); updateOutListTimer(); 
+    updateButtonStates(); 
+    
+    // ⚠️ 這裡加入了強制重繪外出清單，讓時間會動
+    renderOutList(); 
+
 },1000);
 
-queueRef.on("value",s=>{cacheQueue=s.val()||{};if(engineReady){renderStaticLists();updateButtonStates();}});
+// 資料庫變動時，更新緩存並重繪
+queueRef.on("value",s=>{
+    cacheQueue=s.val()||{};
+    if(engineReady){
+        renderStaticLists();
+        updateButtonStates();
+        renderOutList();
+    }
+});
 
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
@@ -473,6 +479,7 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
+// 靜態列表 (排隊、歷史) - 只有資料變動時更新
 function renderStaticLists(){
     let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
@@ -485,6 +492,11 @@ function renderStaticLists(){
     let o=cacheQueue.out||{}; 
     Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
     document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
+}
+
+// 🟢 新增：外出清單 (每秒呼叫)
+function renderOutList(){
+    let o=cacheQueue.out||{}; 
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}')" class="btn-mini danger">召回</button>`:"";
