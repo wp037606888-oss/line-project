@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v7.2 - Timer Fix</title>
+<title>尊爵吸菸室 v8.1 - Security Patch</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -309,6 +309,17 @@ let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot
 let audioCtx=null, notifyEnabled=false;
 let playgroundEnabled = false;
 
+/* --- 🟢 XSS 防禦：HTML 跳脫函數 --- */
+function escapeHtml(text) {
+    if (!text) return text;
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 /* --- Background --- */
 const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
 let w,h,particles=[]; function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window.onresize=resize; resize();
@@ -317,7 +328,7 @@ function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy
 
 /* --- Auth --- */
 auth.onAuthStateChanged(user=>{
-    if(!user){location.href="https://wp037606888-oss.github.io/line-project/login.html";return;} me=user;
+    if(!user){location.href="index.html";return;} me=user;
     userRef.child(user.uid).on("value",s=>{
         myData=s.val()||{};
         document.getElementById("who").textContent=`歡迎 ${(myData.name||"GUEST").toUpperCase()}`;
@@ -325,12 +336,12 @@ auth.onAuthStateChanged(user=>{
         engineReady=true;
         renderStaticLists();
         updateButtonStates();
-        renderOutList(); // 首次載入執行一次
+        renderOutList(); 
     });
     userRef.child(user.uid+"/online").set(true);
     userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
-function logout(){auth.signOut().then(()=>{location.href="https://wp037606888-oss.github.io/line-project/login.html";});}
+function logout(){auth.signOut().then(()=>{location.href="index.html";});}
 
 /* --- Playground Control --- */
 configRef.child("playground_status").on("value", s => {
@@ -357,7 +368,7 @@ broadcastRef.on("value",s=>{
     setTimeout(()=>b.classList.remove('active'),5000);
 });
 
-/* --- Chat System --- */
+/* --- Chat System (🟢 修復 XSS) --- */
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => {
@@ -389,12 +400,20 @@ function send(){
     chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time:Date.now() });
     i.value=""; emojiPicker.classList.remove("show");
 }
+
+/* 🟢 XSS Patch: 這裡是最關鍵的修改 */
 chatRef.limitToLast(30).on("value",s=>{
     let b=document.getElementById("chat-box"); b.innerHTML="";
     s.forEach(x=>{
         let m=x.val(), meMsg=m.uid===me.uid;
         let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-        let content = m.type === 'image' ? `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">` : m.text;
+        
+        // 1. 如果是圖片，直接顯示 (Base64)
+        // 2. 如果是文字，必須先經過 escapeHtml() 處理，把 <script> 變成 &lt;script&gt;
+        let content = m.type === 'image' 
+            ? `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">` 
+            : escapeHtml(m.text); // 🔒 這裡擋住了攻擊
+            
         div.innerHTML=`<div class="msg-name">${m.name}</div>${content}`;
         b.appendChild(div);
     });
@@ -416,7 +435,6 @@ function getSlotStatus(h,m){
     return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
 }
 
-// 🟢 核心修正：每秒更新外出時間
 setInterval(()=>{
     if(!engineReady)return;
     const now=new Date(), h=now.getHours(), m=now.getMinutes();
@@ -427,13 +445,9 @@ setInterval(()=>{
     document.getElementById("slotDisplay").textContent=dText;
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue();
     updateButtonStates(); 
-    
-    // ⚠️ 這裡加入了強制重繪外出清單，讓時間會動
     renderOutList(); 
-
 },1000);
 
-// 資料庫變動時，更新緩存並重繪
 queueRef.on("value",s=>{
     cacheQueue=s.val()||{};
     if(engineReady){
@@ -479,7 +493,6 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
-// 靜態列表 (排隊、歷史) - 只有資料變動時更新
 function renderStaticLists(){
     let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
@@ -494,7 +507,6 @@ function renderStaticLists(){
     document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
 }
 
-// 🟢 新增：外出清單 (每秒呼叫)
 function renderOutList(){
     let o=cacheQueue.out||{}; 
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
