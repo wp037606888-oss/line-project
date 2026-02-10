@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪系統 v12.1</title>
+<title>萬豪系統 v12.2</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -14,13 +14,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;500&family=Rajdhani:wght@500;600;700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
-    /* 萬豪行政配色：更加深沉穩重 */
+    /* 萬豪行政配色 */
     --champagne: #F3E5AB;
     --gold-luxury: #C5A059;
     --gold-dark: #8A6E3E;
     
     --bg-deep: #050608;
-    --glass-panel: rgba(18, 20, 24, 0.85); /* 提高不透明度，增加厚實感 */
+    --glass-panel: rgba(18, 20, 24, 0.9); /* 提高不透明度，修復視覺混亂 */
     --border-edge: rgba(255, 255, 255, 0.08);
     
     --text-primary: #ECECEC;
@@ -51,8 +51,8 @@ body {
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 /* --- 佈局 --- */
-#layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 25px; gap: 25px; }
-#dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 5px; min-width: 400px; }
+#layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 20px; gap: 20px; }
+#dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 5px; min-width: 400px; }
 #comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 350px; height: 100%; overflow: hidden; position: relative; }
 
 /* --- 水晶面板 (Crystal Panel) --- */
@@ -60,23 +60,25 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     background: var(--glass-panel);
     backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
     border: 1px solid var(--border-edge);
-    border-top: 1px solid rgba(255, 255, 255, 0.15); /* 頂部高光 */
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 4px;
-    padding: 25px;
-    box-shadow: 0 20px 50px -10px rgba(0,0,0,0.7);
+    padding: 20px;
+    box-shadow: 0 15px 40px -10px rgba(0,0,0,0.8);
     position: relative; flex-shrink: 0;
     transition: border-color 0.3s;
 }
 .glass-panel:hover { border-color: rgba(197, 160, 89, 0.2); }
 
-/* --- 標題與文字 --- */
+/* --- 標題修正 (左側排版) --- */
 h3 { 
-    margin: 0 0 15px 0; font-size: 14px; 
+    margin: 0 0 12px 0; font-size: 14px; 
     color: var(--gold-luxury); font-family: 'Noto Serif TC', serif; 
-    letter-spacing: 3px; font-weight: 700;
-    display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;
+    letter-spacing: 2px; font-weight: 700;
+    display: flex; align-items: center; justify-content: space-between; /* 標題靠左，數字靠右 */
+    border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;
 }
+/* 強制標題內的數字樣式 */
+h3 span { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 16px; color: #fff; }
 
 /* --- 狀態區 --- */
 .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -95,10 +97,10 @@ h3 {
 .btn-logout:hover { border-color: var(--gold-luxury); color: var(--gold-luxury); background: rgba(20,20,20,0.8); }
 
 #clock {
-    font-family: 'Rajdhani', sans-serif; font-size: 56px; line-height: 1;
+    font-family: 'Rajdhani', sans-serif; font-size: 50px; line-height: 1;
     font-weight: 600; color: #fff; 
-    margin: 15px 0 5px; letter-spacing: 2px;
-    background: linear-gradient(180deg, #fff 20%, #888 100%);
+    margin: 10px 0 5px; letter-spacing: 2px;
+    background: linear-gradient(180deg, #fff 20%, #999 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 #slotDisplay { font-size: 14px; color: var(--gold-luxury); letter-spacing: 2px; font-family: "Noto Serif TC"; opacity: 0.9; margin-bottom: 5px; }
@@ -117,54 +119,48 @@ button.action-btn {
 }
 button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); filter: brightness(1.2); }
 
-/* 黃金按鈕 */
 .btn-gold { border-color: var(--gold-luxury) !important; color: var(--gold-luxury) !important; }
 .btn-gold:hover { background: rgba(197, 160, 89, 0.1) !important; color: #fff !important; }
 .btn-green:hover { border-color: var(--success) !important; color: var(--success) !important; }
 .btn-red:hover { border-color: var(--danger) !important; color: var(--danger) !important; }
 
-/* --- 🟢 優化後的線上名單 (Horizontal Scroll) --- */
+/* --- 🟢 線上名單修復 (Wrap Layout) --- */
 #onlineUserList {
-    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;
-    align-items: center; white-space: nowrap;
-    /* 隱藏滾動條但保留功能 */
-    scrollbar-width: none; -ms-overflow-style: none;
-    /* 右側淡出效果 */
-    mask-image: linear-gradient(to right, black 90%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    display: flex; gap: 8px; flex-wrap: wrap; /* 關鍵：允許換行 */
+    padding-bottom: 8px; align-items: center;
 }
-#onlineUserList::-webkit-scrollbar { display: none; }
 
 .online-pill {
-    flex-shrink: 0; /* 防止壓縮 */
-    padding: 5px 12px; border-radius: 50px; font-size: 11px; 
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); 
-    color: #bbb; display: flex; align-items: center; gap: 6px; 
-    transition: 0.3s;
+    padding: 4px 10px; border-radius: 50px; font-size: 11px; 
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.15); 
+    color: #ccc; display: flex; align-items: center; gap: 6px; 
+    transition: 0.3s; margin-bottom: 4px; /* 增加行距 */
 }
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #444; }
 .online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
 .online-pill.admin { 
     border-color: var(--gold-dark); color: var(--gold-luxury); 
-    background: rgba(197, 160, 89, 0.05); padding-left: 10px;
+    background: rgba(197, 160, 89, 0.08); padding-left: 10px;
 }
-/* Admin 皇冠 */
 .online-pill.admin::after { content: '♛'; font-size: 10px; margin-left: 2px; } 
 
-/* --- 列表項目 --- */
+/* --- 列表項目 (List Item) --- */
+.list-container { max-height: 200px; overflow-y: auto; padding-right: 5px; }
+
 .item-card { 
-    background: linear-gradient(90deg, rgba(255,255,255,0.02), transparent); 
+    background: linear-gradient(90deg, rgba(30,30,35,0.8), transparent); /* 背景加深，修復空洞感 */
     margin-bottom: 6px; padding: 12px 16px; border-radius: 2px;
-    border-left: 2px solid rgba(255,255,255,0.1); 
+    border-left: 3px solid rgba(255,255,255,0.1); 
     display: flex; justify-content: space-between; align-items: center; 
     font-size: 14px; transition: 0.3s;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
 }
-.item-card:hover { background: rgba(255,255,255,0.05); transform: translateX(2px); }
-.item-card.rank-1 { border-left-color: var(--gold-luxury); background: linear-gradient(90deg, rgba(197, 160, 89, 0.1), transparent); }
+.item-card:hover { background: rgba(255,255,255,0.08); transform: translateX(2px); border-left-color: var(--gold-luxury); }
+.item-card.rank-1 { border-left-color: var(--gold-luxury); background: linear-gradient(90deg, rgba(197, 160, 89, 0.15), transparent); }
 .item-card.rank-2 { border-left-color: #aaa; }
 
-.btn-mini { padding: 3px 8px; font-size: 10px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #888; cursor: pointer; margin-left: 8px; border-radius: 2px; }
-.btn-mini:hover { color: #fff; border-color: #fff; }
+.btn-mini { padding: 3px 8px; font-size: 10px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #aaa; cursor: pointer; margin-left: 8px; border-radius: 2px; }
+.btn-mini:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 .btn-arrow { background:none; border:none; color:#666; cursor:pointer; font-size:10px; transition:0.2s; margin-left:2px; }
 .btn-arrow:hover { color:var(--gold-luxury); transform:scale(1.2); }
 
@@ -195,9 +191,9 @@ button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rg
 }
 .msg-other { 
     align-self: flex-start; 
-    background: rgba(255,255,255,0.05); 
+    background: rgba(255,255,255,0.08); /* 稍微加亮對話框 */
     border: 1px solid rgba(255,255,255,0.05);
-    color: #ddd; 
+    color: #eee; 
     border-bottom-left-radius: 2px;
 }
 .msg-name { font-size: 10px; margin-bottom: 3px; opacity: 0.6; font-family: 'Noto Serif TC'; letter-spacing: 1px; }
@@ -232,7 +228,6 @@ button.btn-send:hover { background: #fff; transform: scale(1.05); }
 #adminModal { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); display: none; align-items: center; justify-content: center; }
 #adminModal.show { display: flex; }
 .admin-card { width: 450px; background: #0c0c0e; border: 1px solid var(--gold-dark); border-radius: 4px; padding: 35px; box-shadow: 0 0 60px rgba(0,0,0,0.9); }
-/* 下拉選單美化 */
 select#adminUserSelect {
     appearance: none; -webkit-appearance: none;
     background: #1a1a1a url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 10px center;
@@ -326,24 +321,24 @@ select#adminUserSelect:focus { border-color: var(--gold-luxury); }
         <div class="monitor-grid">
             <div class="monitor-left">
                 <div class="glass-panel">
-                    <h3>外出貴賓 (<span id="outCountNum" style="color:var(--success)">0</span>/3)</h3>
+                    <h3><span>外出貴賓</span><span id="outCountNum" style="color:var(--success)">0 / 3</span></h3>
                     <div id="outList" class="list-container"></div>
                 </div>
                 <div class="glass-panel">
-                    <h3>歷史紀錄</h3>
+                    <h3><span>歷史紀錄</span></h3>
                     <div id="history" class="list-container"></div>
                 </div>
             </div>
             <div class="monitor-right">
                 <div class="glass-panel">
-                    <h3>候位名單</h3>
+                    <h3><span>候位名單</span></h3>
                     <div id="queue" class="list-container"></div>
                 </div>
             </div>
         </div>
 
         <div class="glass-panel" style="flex-shrink: 0;">
-            <h3>SYSTEM LOG</h3>
+            <h3><span>SYSTEM LOG</span></h3>
             <div id="log" class="list-container" style="font-family: 'Rajdhani', monospace; font-size: 12px; color:#666; max-height:100px;"></div>
         </div>
     </div>
@@ -397,7 +392,7 @@ function draw(){
 }
 draw();
 
-/* --- Auth & Data Loading (Admin Fix) --- */
+/* --- Auth --- */
 auth.onAuthStateChanged(user=>{
     if(!user){location.href="login.html";return;} me=user;
     userRef.child(user.uid).on("value",s=>{
@@ -406,11 +401,11 @@ auth.onAuthStateChanged(user=>{
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
         engineReady=true;
         
-        // 🟢 修復：只要是 Admin，立刻加載所有名單，確保下拉選單有資料
+        // 🟢 修復：確保名單加載邏輯正確
         if(myData.role === "admin") { 
             userRef.on("value", snap => { 
                 allUsers = snap.val() || {}; 
-                // 如果管理員選單是打開的，即時更新
+                // 如果管理員 Modal 開啟，實時更新選單
                 if(document.getElementById('adminModal').classList.contains('show')){
                     updateAdminUserSelect(); 
                 }
@@ -424,12 +419,11 @@ auth.onAuthStateChanged(user=>{
 });
 function logout(){auth.signOut().then(()=>{location.href="login.html";});}
 
-/* --- Admin Logic (Refined) --- */
+/* --- Admin Logic --- */
 function updateAdminUserSelect() {
     const sel = document.getElementById("adminUserSelect"); 
     sel.innerHTML = "<option value=''>選擇貴賓...</option>";
     
-    // 將所有用戶轉為陣列並排序
     const userArray = Object.entries(allUsers).map(([uid, u]) => ({uid, ...u})).sort((a,b) => (a.name || "").localeCompare(b.name || ""));
     
     userArray.forEach(u => {
@@ -460,7 +454,16 @@ function adminForceAdd() {
 
 function openAdmin(){
     document.getElementById('adminModal').classList.add('show'); 
-    updateAdminUserSelect(); // 打開時刷新名單
+    // 🟢 確保每次打開時名單都是最新的
+    if(Object.keys(allUsers).length > 0) {
+        updateAdminUserSelect();
+    } else {
+        // 如果名單尚未加載，嘗試手動抓取一次
+        userRef.once("value").then(snap => {
+            allUsers = snap.val() || {};
+            updateAdminUserSelect();
+        });
+    }
 }
 function closeAdmin(){document.getElementById('adminModal').classList.remove('show');}
 
@@ -487,7 +490,7 @@ broadcastRef.on("value",s=>{
     b.style.top="30px"; playBeep('urgent'); setTimeout(()=>b.style.top="-200px",5000);
 });
 
-/* --- Chat System --- */
+/* --- Chat --- */
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
@@ -524,7 +527,7 @@ chatRef.limitToLast(30).on("value",s=>{
 });
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
-/* --- Core & Lists --- */
+/* --- Core --- */
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function getSlotStatus(h,m){
     const slots=[14,16,18,20,22,0];
@@ -575,7 +578,7 @@ function updateButtonStates(){
         else if(currentSlotInfo.phase==='RESERVE') st.innerHTML="<span style='color:var(--success)'>開放預約中</span>";
         else st.innerHTML="<span style='color:#666'>尚未預約</span>";
     }
-    document.getElementById("outCountNum").textContent=outCount;
+    document.getElementById("outCountNum").textContent=`${outCount} / 3`;
 }
 
 function renderStaticLists(){
