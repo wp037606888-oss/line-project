@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>尊爵吸菸室 v8.1 - Security Patch</title>
+<title>尊爵吸菸室 v8.2 - Admin Power</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -102,6 +102,8 @@ h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--gold); text-transform: up
 .btn-mini.danger:hover { background: var(--danger); color: #fff; }
 .btn-mini.success { color: var(--success); border-color: var(--success); }
 .btn-mini.success:hover { background: var(--success); color: #000; }
+.btn-arrow { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border:none; border-radius:4px; color:#aaa; cursor:pointer; margin-left:4px; font-size:10px; transition:0.2s; }
+.btn-arrow:hover { background: var(--gold); color:#000; }
 
 /* --- 聊天室 --- */
 #chat-header { padding: 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--glass-border); font-size: 12px; letter-spacing: 2px; display: flex; flex-direction: column; gap: 10px; }
@@ -211,6 +213,14 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
         </div>
         
         <div class="admin-section">
+            <h4>Queue Management 排隊管理</h4>
+            <div style="display:flex; gap:10px;">
+                <select id="adminUserSelect" style="flex:1; background:#222; color:#fff; padding:10px; border-radius:8px; border:1px solid #444; font-family:'Noto Sans TC';"></select>
+                <button onclick="adminForceAdd()" class="btn-mini success" style="padding:0 15px; font-size:13px; font-weight:bold;">加入</button>
+            </div>
+        </div>
+
+        <div class="admin-section">
             <h4>Global Switch 全域開關</h4>
             <button id="btnTogglePg" class="btn-admin-action btn-toggle" onclick="togglePlayground()">遊樂場狀態: 讀取中...</button>
         </div>
@@ -305,19 +315,14 @@ firebase.initializeApp(config);
 const db=firebase.database(), auth=firebase.auth();
 const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast"), configRef=db.ref("config");
 
-let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0};
+let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false;
 let playgroundEnabled = false;
 
 /* --- 🟢 XSS 防禦：HTML 跳脫函數 --- */
 function escapeHtml(text) {
     if (!text) return text;
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
 /* --- Background --- */
@@ -334,6 +339,15 @@ auth.onAuthStateChanged(user=>{
         document.getElementById("who").textContent=`歡迎 ${(myData.name||"GUEST").toUpperCase()}`;
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
         engineReady=true;
+        
+        // 🟢 如果是 Admin，加載所有用戶清單以供管理
+        if(myData.role === "admin") {
+            userRef.on("value", snap => {
+                allUsers = snap.val() || {};
+                updateAdminUserSelect();
+            });
+        }
+        
         renderStaticLists();
         updateButtonStates();
         renderOutList(); 
@@ -342,6 +356,72 @@ auth.onAuthStateChanged(user=>{
     userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
 function logout(){auth.signOut().then(()=>{location.href="index.html";});}
+
+/* --- 🟢 Admin Feature: Populate User Select --- */
+function updateAdminUserSelect() {
+    const sel = document.getElementById("adminUserSelect");
+    sel.innerHTML = "<option value=''>選擇使用者...</option>";
+    Object.entries(allUsers).forEach(([uid, u]) => {
+        // 排除已在排隊或外出的人
+        let isReserved = cacheQueue.reserve && cacheQueue.reserve[uid];
+        let isOut = cacheQueue.out && cacheQueue.out[uid];
+        if(!isReserved && !isOut) {
+            let opt = document.createElement("option");
+            opt.value = uid;
+            opt.textContent = u.name;
+            sel.appendChild(opt);
+        }
+    });
+}
+
+/* --- 🟢 Admin Feature: Force Add & Reorder --- */
+function adminForceAdd() {
+    const sel = document.getElementById("adminUserSelect");
+    const uid = sel.value;
+    if(!uid) return;
+    const u = allUsers[uid];
+    if(u) {
+        let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
+        // 寫入隊列
+        queueRef.child("reserve/"+uid).set({
+            name: u.name,
+            time: Date.now(), // 排在最後
+            slot: t
+        });
+        addLog(`ADMIN 加入: ${u.name}`);
+        // 關閉 Modal
+        closeAdmin();
+    }
+}
+
+function moveQueue(uid, direction) {
+    if(!myData || myData.role !== 'admin') return;
+    
+    let r = cacheQueue.reserve || {};
+    // 取得當前排序後的陣列
+    let sorted = Object.entries(r).sort((a,b) => a[1].time - b[1].time);
+    let idx = sorted.findIndex(x => x[0] === uid);
+    
+    if (idx === -1) return;
+    let targetIdx = idx + direction;
+    
+    // 邊界檢查
+    if (targetIdx < 0 || targetIdx >= sorted.length) return;
+
+    let targetUid = sorted[targetIdx][0];
+    let myTime = sorted[idx][1].time;
+    let targetTime = sorted[targetIdx][1].time;
+
+    // 若時間戳相同，微調 1ms 以確保順序交換
+    if (myTime === targetTime) {
+        if(direction < 0) targetTime -= 1; // 往上移，目標時間要變小
+        else targetTime += 1;
+    }
+
+    // 交換時間戳 (這是最穩定的排序交換法)
+    queueRef.child('reserve/' + uid).update({ time: targetTime });
+    queueRef.child('reserve/' + targetUid).update({ time: myTime });
+}
 
 /* --- Playground Control --- */
 configRef.child("playground_status").on("value", s => {
@@ -357,7 +437,7 @@ configRef.child("playground_status").on("value", s => {
 function togglePlayground() { configRef.child("playground_status").set(!playgroundEnabled); }
 
 /* --- Admin --- */
-function openAdmin(){document.getElementById('adminModal').classList.add('show');}
+function openAdmin(){document.getElementById('adminModal').classList.add('show'); updateAdminUserSelect();}
 function closeAdmin(){document.getElementById('adminModal').classList.remove('show');}
 function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i.value.trim())return;broadcastRef.set({text:i.value,t:Date.now()});i.value="";closeAdmin();}
 broadcastRef.on("value",s=>{
@@ -368,7 +448,7 @@ broadcastRef.on("value",s=>{
     setTimeout(()=>b.classList.remove('active'),5000);
 });
 
-/* --- Chat System (🟢 修復 XSS) --- */
+/* --- Chat System (🟢 XSS Fix) --- */
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => {
@@ -401,19 +481,15 @@ function send(){
     i.value=""; emojiPicker.classList.remove("show");
 }
 
-/* 🟢 XSS Patch: 這裡是最關鍵的修改 */
+/* 🟢 XSS Patch & Image Patch */
 chatRef.limitToLast(30).on("value",s=>{
     let b=document.getElementById("chat-box"); b.innerHTML="";
     s.forEach(x=>{
         let m=x.val(), meMsg=m.uid===me.uid;
         let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-        
-        // 1. 如果是圖片，直接顯示 (Base64)
-        // 2. 如果是文字，必須先經過 escapeHtml() 處理，把 <script> 變成 &lt;script&gt;
         let content = m.type === 'image' 
             ? `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">` 
-            : escapeHtml(m.text); // 🔒 這裡擋住了攻擊
-            
+            : escapeHtml(m.text);
         div.innerHTML=`<div class="msg-name">${m.name}</div>${content}`;
         b.appendChild(div);
     });
@@ -497,8 +573,22 @@ function renderStaticLists(){
     let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}')" class="btn-mini success">去抽</button>`:"";
+        
+        // 🟢 Admin Feature: Reorder Buttons
+        let moveBtns = "";
+        if(myData && myData.role === "admin") {
+            moveBtns = `<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`;
+        }
+
         let rc=i===0?'rank-1':(i===1?'rank-2':'');
-        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}</div></div>`;
+        return `<div class="item-card ${rc}">
+            <div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong></div>
+            <div style="display:flex;align-items:center;">
+                <small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>
+                ${btn}
+                ${moveBtns}
+            </div>
+        </div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
 
     let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime}));
