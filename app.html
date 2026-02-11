@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪吸菸室 v15.5 </title>
+<title>萬豪吸菸室 v15.6 </title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -266,7 +266,7 @@ button.btn-send:hover { background: #fff; }
         </div>
         
         <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.5</span>)</h4>
+            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.6</span>)</h4>
             <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
         </div>
 
@@ -372,7 +372,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 15.5;
+const APP_VERSION = 15.6;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -500,7 +500,7 @@ broadcastRef.on("value",s=>{
     b.classList.add('active'); playBeep('urgent'); setTimeout(()=>b.classList.remove('active'),5000);
 });
 
-/* --- 🟢 完美置底修復版 Chat System --- */
+/* --- Chat System --- */
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
@@ -528,7 +528,6 @@ chatRef.limitToLast(30).on("value",s=>{
         let m=x.val(), meMsg=m.uid===me.uid;
         let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
         
-        // 🟢 圖片加上 onload 事件：確保圖片撐開高度後，強制再滾動一次
         let content = m.type === 'image' 
             ? `<img src="${m.text}" class="msg-img" onload="document.getElementById('chat-box').scrollTop=document.getElementById('chat-box').scrollHeight" onclick="showImg(this.src)">` 
             : escapeHtml(m.text);
@@ -537,7 +536,6 @@ chatRef.limitToLast(30).on("value",s=>{
         b.appendChild(div);
     });
     
-    // 🟢 延遲 50 毫秒執行：確保瀏覽器把 DOM 節點(文字)渲染完畢後再計算高度
     setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
 });
 
@@ -555,7 +553,7 @@ function getSlotStatus(h,m){
     return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
 }
 
-// 執行閒置降階懲罰 (彈出強制通知)
+// 執行閒置降階懲罰 
 function executeAfkPenalty(uid, currentIndex, sorted) {
     let targetIndex = currentIndex + 3; 
     let newTime;
@@ -627,6 +625,20 @@ setInterval(()=>{
                 span.style.display = "inline-block";
             } else {
                 span.style.display = "none";
+            }
+        }
+    });
+
+    // 🟢 動態更新外出名單的計時器
+    let o = cacheQueue.out || {};
+    Object.entries(o).forEach(([uid, u]) => {
+        let span = document.getElementById(`out-timer-${uid}`);
+        if (span) {
+            let s = Math.floor((Date.now() - u.time) / 1000);
+            span.innerHTML = `${Math.floor(s/60)}m ${s%60}s`;
+            if (s > 600) {
+                span.style.color = "var(--danger)";
+                span.classList.add("text-danger");
             }
         }
     });
@@ -706,7 +718,8 @@ function renderOutList(){
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${u.name}')" class="btn-mini danger">召回</button>`:"";
-        return `<div class="item-card" style="border-left-color:var(--success);"><strong>${u.name}</strong><div style="display:flex;align-items:center;gap:8px;"><span class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
+        // 🟢 加入 id="out-timer-${uid}"
+        return `<div class="item-card" style="border-left-color:var(--success);"><strong>${u.name}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
@@ -760,5 +773,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
-
