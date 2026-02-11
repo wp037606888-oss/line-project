@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪吸菸室 v15.2 - 幽靈防禦版</title>
+<title>萬豪吸菸室 v15.4 </title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -194,6 +194,12 @@ button.btn-send:hover { background: #fff; }
 .confirm-btn.no { background: #333; color: #aaa; }
 .confirm-btn.no:hover { background: #444; color: #fff; }
 
+/* --- 🟢 Alert Modal (強制關閉彈窗) --- */
+#alertModal { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; }
+#alertModal.show { display: flex; opacity: 1; }
+#alertModal .confirm-box { background: #111; border: 1px solid var(--danger); border-radius: 4px; padding: 35px 30px; width: 320px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transform: scale(0.95); transition: 0.3s; }
+#alertModal.show .confirm-box { transform: scale(1); }
+
 /* Online List */
 #onlineUserList { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
 .online-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa; white-space: nowrap; transition: 0.3s; display: flex; align-items: center; gap: 5px; }
@@ -231,6 +237,15 @@ button.btn-send:hover { background: #fff; }
     </div>
 </div>
 
+<div id="alertModal">
+    <div class="confirm-box">
+        <div class="confirm-text" id="alertMsg" style="font-size:15px; color:#ddd;">提示訊息</div>
+        <div class="confirm-btns">
+            <button class="confirm-btn yes" onclick="closeAlert()" style="width:100%; letter-spacing:2px;">我知道了</button>
+        </div>
+    </div>
+</div>
+
 <div id="imgModal" onclick="this.style.display='none'">
     <img id="imgModalSrc" src="">
 </div>
@@ -251,7 +266,7 @@ button.btn-send:hover { background: #fff; }
         </div>
         
         <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.2</span>)</h4>
+            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.4</span>)</h4>
             <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
         </div>
 
@@ -309,7 +324,7 @@ button.btn-send:hover { background: #fff; }
         <div class="monitor-grid">
             <div class="monitor-left">
                 <div class="glass-panel">
-                    <h3>抽菸中 (<span id="outCountNum" style="color:var(--success)">0</span>/3)</h3>
+                    <h3>外出貴賓 (<span id="outCountNum" style="color:var(--success)">0</span>/3)</h3>
                     <div id="outList" class="list-container"></div>
                 </div>
                 <div class="glass-panel">
@@ -319,7 +334,7 @@ button.btn-send:hover { background: #fff; }
             </div>
             <div class="monitor-right">
                 <div class="glass-panel">
-                    <h3>外出抽菸順序</h3>
+                    <h3>候位名單</h3>
                     <div id="queue" class="list-container"></div>
                 </div>
             </div>
@@ -357,7 +372,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 15.2;
+const APP_VERSION = 15.4;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -369,7 +384,7 @@ const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"),
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 
-/* --- Toast & Confirm --- */
+/* --- Toast, Confirm, & Alert --- */
 function showToast(msg, type='info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.textContent = msg;
@@ -386,6 +401,14 @@ function customConfirm(msg) {
     });
 }
 function closeConfirm(result) { document.getElementById('confirmModal').classList.remove('show'); if(confirmResolve) { confirmResolve(result); confirmResolve = null; } }
+
+// 🟢 Alert Modal 邏輯
+function customAlert(msg) {
+    document.getElementById('alertMsg').innerHTML = msg;
+    document.getElementById('alertModal').classList.add('show');
+}
+function closeAlert() { document.getElementById('alertModal').classList.remove('show'); }
+
 function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
 /* --- 香檳氣泡背景 --- */
@@ -525,16 +548,14 @@ function getSlotStatus(h,m){
     return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
 }
 
-// 🟢 執行閒置降階懲罰
+// 🟢 執行閒置降階懲罰 (彈出強制通知)
 function executeAfkPenalty(uid, currentIndex, sorted) {
-    let targetIndex = currentIndex + 3; // 降 3 名 (第一名變第四名)
+    let targetIndex = currentIndex + 3; // 降 3 名
     let newTime;
     
-    // 如果後面排不夠多人，直接移到最後一個
     if (targetIndex >= sorted.length - 1) {
         newTime = sorted[sorted.length - 1][1].time + 1000;
     } else {
-        // 插入到目標位置中間
         let t1 = sorted[targetIndex][1].time;
         let t2 = sorted[targetIndex + 1][1].time;
         newTime = t1 + (t2 - t1) / 2;
@@ -544,7 +565,8 @@ function executeAfkPenalty(uid, currentIndex, sorted) {
     if (cacheQueue.reserve && cacheQueue.reserve[uid] && cacheQueue.reserve[uid].afkDeadline) {
         queueRef.child("reserve/" + uid).update({ time: newTime, afkDeadline: null });
         if (uid === me.uid) {
-            showToast("您似乎暫時離開，已為您保留順位並延後三個位置", "error");
+            // 🟢 改用自訂的 Alert Modal 強制提醒，並加上紅色大圖示與醒目文字
+            customAlert("<div style='font-size:24px;margin-bottom:10px;'>⚠️</div><div style='color:var(--danger);font-size:18px;font-weight:bold;margin-bottom:15px;'>順位延後通知</div>您已超過 3 分鐘未確認前往<br>為維持排隊順暢，系統已自動將您的順位延後。");
         }
     }
 }
@@ -559,39 +581,37 @@ setInterval(()=>{
     document.getElementById("slotDisplay").textContent=dText;
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue(true); 
 
-    // --- 🟢 AFK 幽靈排隊防禦邏輯 ---
+    // --- AFK 幽靈排隊防禦邏輯 ---
     let r=cacheQueue.reserve||{};
     let sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let outCount=Object.keys(cacheQueue.out||{}).length;
     let eligibleForOut = (outCount < 3 && sorted.length >= 3 && currentSlotInfo.phase === 'OUT');
+    let penaltyExecutedThisTick = false; 
 
     sorted.forEach((u, i) => {
         let uid = u[0]; let data = u[1];
-        let isTop2 = (i === 0 || i === 1); // 第一或第二順位
+        let isTop2 = (i === 0 || i === 1);
         
         if (isTop2 && eligibleForOut) {
             if (!data.afkDeadline) {
-                // 如果符合資格且沒計時器，開始 3 分鐘倒數 (只由本人或管理員寫入避免衝突)
                 if (uid === me.uid || myData.role === 'admin') {
                     queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); // 180秒
                 }
             } else {
                 let timeLeft = data.afkDeadline - Date.now();
                 if (timeLeft <= 0) {
-                    // 時間到，執行懲罰
-                    if (uid === me.uid || myData.role === 'admin') {
+                    if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) {
+                        penaltyExecutedThisTick = true;
                         executeAfkPenalty(uid, i, sorted);
                     }
                 }
             }
         } else {
-            // 如果不符合資格（例如滿位了，或掉出前兩名），清除倒數
             if (data.afkDeadline && (uid === me.uid || myData.role === 'admin')) {
                 queueRef.child("reserve/"+uid).child("afkDeadline").remove();
             }
         }
         
-        // 🟢 動態更新名單上的倒數文字 (避免重繪整個 DOM)
         let span = document.getElementById(`afk-${uid}`);
         if (span) {
             if (data.afkDeadline) {
@@ -607,7 +627,6 @@ setInterval(()=>{
     });
 
     updateButtonStates(); 
-    // 不在此處呼叫 renderStaticLists，改用上面的 DOM 更新，避免畫面閃爍
 },1000);
 
 queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } });
@@ -641,12 +660,10 @@ function updateButtonStates(){
     else if(r[me.uid]) {
         if(currentSlotInfo.phase==='OUT'){
             if(myRank<=1&&outCount<3) {
-                // 🟢 左側狀態列的 AFK 倒數警告
                 let txt = "<span style='color:var(--success)'>名額開放，請前往</span>";
                 if(sorted.length >= 3 && r[me.uid].afkDeadline) {
                     let sLeft = Math.max(0, Math.floor((r[me.uid].afkDeadline - Date.now())/1000));
-                    let mStr = String(Math.floor(sLeft/60)).padStart(2,'0');
-                    let sStr = String(sLeft%60).padStart(2,'0');
+                    let mStr = String(Math.floor(sLeft/60)).padStart(2,'0'); let sStr = String(sLeft%60).padStart(2,'0');
                     txt = `<span style='color:var(--danger)'>請盡速前往 (倒數 ${mStr}:${sStr})</span>`;
                 }
                 st.innerHTML = txt;
@@ -671,7 +688,6 @@ function renderStaticLists(){
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${u[1].name}')" class="btn-mini success">派發</button>`:"";
         let moveBtns = (myData&&myData.role==="admin")?`<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`:"";
         let rc=i===0?'rank-1':(i===1?'rank-2':'');
-        // 🟢 加入隱藏的 afk 倒數 span
         return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
 
@@ -723,13 +739,11 @@ logRef.limitToLast(15).on("value",s=>{const b=document.getElementById("log");b.i
 function reserve(){ 
     if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
     let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
-    // 預設寫入時清空 afkDeadline，防止舊紀錄干擾
     queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
     if(Notification.permission!=="granted")enableNotification(); addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
 }
 function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
 function goOut(){
-    // 出發前清除可能存在的 afkDeadline
     queueRef.child("reserve/"+me.uid).child("afkDeadline").remove();
     queueRef.child("out/"+me.uid).set({name:myData.name,time:Date.now()}).then(()=>{queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 出發`); showToast('祝您享受美好時光', 'success');});
 }
@@ -741,5 +755,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
-
