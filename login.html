@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪吸菸室 - 行政典藏版 v11.0</title>
+<title>萬豪吸菸室 - 旗艦登入版 v15.0</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -24,6 +24,7 @@
     
     --text-primary: #ECECEC;
     --text-secondary: #9aa0a6;
+    --danger: #d32f2f;
 }
 
 * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -37,15 +38,19 @@ body {
     perspective: 2000px;
 }
 
+/* --- 🟢 Toast 輕量提示浮窗 --- */
+#toast-container { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.toast { background: rgba(15, 15, 20, 0.95); border: 1px solid var(--gold-dark); color: #fff; padding: 12px 24px; border-radius: 4px; font-family: 'Noto Sans TC'; font-size: 14px; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateY(-20px); transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.error { border-color: var(--danger); }
+.toast.error::before { content: '✕'; color: var(--danger); font-weight: bold; }
+
 /* --- 背景氛圍 (Atmosphere) --- */
-/* 1. 絲綢光暈 */
 .ambient-light {
     position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
     background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
     transform: translateX(-50%); pointer-events: none; z-index: 0;
 }
-
-/* 2. 畫布粒子 */
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 /* --- 3D 卡片容器 --- */
@@ -60,9 +65,8 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     position: relative; width: 440px; padding: 80px 55px 100px;
     background: var(--glass-surface);
     backdrop-filter: blur(60px) brightness(1.1); -webkit-backdrop-filter: blur(60px) brightness(1.1);
-    border-radius: 4px; /* 五星級酒店偏好方正圓角 */
+    border-radius: 4px; 
     
-    /* 鑽石切邊光澤 */
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-top: 1px solid rgba(255, 255, 255, 0.15);
     border-bottom: 1px solid rgba(0, 0, 0, 0.4);
@@ -71,11 +75,9 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
         0 30px 80px -10px rgba(0,0,0,0.8),
         inset 0 0 0 1px rgba(255, 255, 255, 0.03);
     overflow: hidden;
-    /* 質感紋理 */
     background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
-/* 動態金屬反光 (Sheen) */
 .card::before {
     content: ''; position: absolute; inset: 0;
     background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.05) 45%, transparent 60%);
@@ -96,10 +98,10 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 h1 {
     margin: 0 0 15px; text-align: center;
-    font-family: 'Noto Serif TC', serif; /* 宋體，更具人文氣質 */
+    font-family: 'Noto Serif TC', serif; 
     font-weight: 700; font-size: 34px;
     color: var(--text-primary);
-    letter-spacing: 6px; text-indent: 6px; /* 平衡字距 */
+    letter-spacing: 6px; text-indent: 6px; 
     text-shadow: 0 5px 15px rgba(0,0,0,0.5);
     background: linear-gradient(to bottom, #fff 40%, #cfcfcf 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -117,7 +119,7 @@ p.subtitle {
     opacity: 0; animation: expandLine 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
 }
 
-/* --- 極簡輸入框 --- */
+/* --- 極簡輸入框 (🟢 升級中心暈開動畫) --- */
 .input-group { position: relative; margin-bottom: 35px; opacity: 0; animation: fadeSlideUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards; }
 
 input {
@@ -130,22 +132,29 @@ input {
     transition: all 0.4s;
 }
 input::placeholder { color: var(--text-secondary); font-family: "Noto Sans TC"; font-weight: 300; transition:0.3s; }
-input:focus { border-bottom-color: var(--gold-luxury); outline: none; }
+input:focus { outline: none; }
 input:focus::placeholder { opacity: 0; transform: translateY(-10px); }
 
-/* 輸入框標籤動畫 */
+/* 🟢 輸入框中心展開動畫 */
 .input-highlight {
-    position: absolute; bottom: 0; left: 0; width: 0%; height: 1px;
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0%; height: 1px;
     background: var(--gold-luxury);
     transition: 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     box-shadow: 0 0 10px var(--gold-luxury);
 }
 input:focus ~ .input-highlight { width: 100%; }
 
+/* 🟢 密碼顯示切換 (Eye Icon) */
+.toggle-password {
+    position: absolute; right: 0; top: 15px; color: var(--text-secondary); 
+    cursor: pointer; transition: 0.3s; width: 20px; height: 20px;
+}
+.toggle-password:hover { color: var(--gold-luxury); }
+
 /* --- 尊爵按鈕 --- */
 button {
     width: 100%; padding: 18px; margin-top: 15px;
-    background: linear-gradient(135deg, #2a2d35, #1a1c22); /* 深色金屬質感 */
+    background: linear-gradient(135deg, #2a2d35, #1a1c22); 
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 2px;
     color: var(--gold-luxury); font-size: 15px; font-weight: 500; 
@@ -169,10 +178,10 @@ button:active { transform: scale(0.98); }
     position: absolute; bottom: 30px; right: 40px;
     display: flex; flex-direction: column; align-items: flex-end;
     opacity: 0; animation: fadeIn 2s ease 1.5s forwards;
-    cursor: default; pointer-events: none; /* 讓它像背景一樣 */
+    cursor: default; pointer-events: none; 
 }
 .seal-text {
-    font-family: 'Ma Shan Zheng', cursive; /* 藝術書法體 */
+    font-family: 'Ma Shan Zheng', cursive; 
     font-size: 20px; color: var(--gold-dark);
     writing-mode: horizontal-tb;
     opacity: 0.6; transition: 0.5s;
@@ -183,13 +192,12 @@ button:active { transform: scale(0.98); }
     color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase;
     margin-top: 2px; opacity: 0.4;
 }
-/* 懸停時點亮 */
 .card-wrapper:hover .seal-text { 
     opacity: 1; color: var(--gold-luxury); 
     text-shadow: 0 0 8px rgba(197, 160, 89, 0.6);
 }
 
-/* --- Animations --- */
+/* --- Animations & 🟢 高級 Spinner --- */
 @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes expandLine { from { opacity: 0; width: 0; } to { opacity: 1; width: auto; min-width: 120px; } }
@@ -198,7 +206,15 @@ button:active { transform: scale(0.98); }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
-.spinner { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.1); border-top-color: var(--gold-luxury); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+/* 🟢 質感雙環脈衝 Spinner */
+.spinner { 
+    width: 20px; height: 20px; margin: 0 auto;
+    border: 2px solid transparent; 
+    border-top-color: var(--gold-luxury); border-bottom-color: var(--gold-luxury); 
+    border-radius: 50%; 
+    animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; 
+    box-shadow: 0 0 10px rgba(197, 160, 89, 0.4);
+}
 .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
 </style>
@@ -208,6 +224,8 @@ button:active { transform: scale(0.98); }
 
 <div class="ambient-light"></div>
 <canvas id="bg"></canvas>
+
+<div id="toast-container"></div>
 
 <div class="card-wrapper" id="cardWrapper">
     <div class="card" id="card">
@@ -228,6 +246,10 @@ button:active { transform: scale(0.98); }
             <div class="input-group">
                 <input id="password" type="password" placeholder="密碼">
                 <div class="input-highlight"></div>
+                <svg class="toggle-password" id="togglePassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
             </div>
 
             <button id="loginBtn">登入</button>
@@ -241,6 +263,39 @@ button:active { transform: scale(0.98); }
 </div>
 
 <script>
+/* --- 🟢 Toast 提示邏輯 --- */
+function showToast(msg, type='info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    
+    void toast.offsetWidth; // Trigger reflow
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+/* --- 🟢 密碼顯示切換邏輯 --- */
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+togglePassword.addEventListener('click', function () {
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    
+    // 切換 SVG 圖示 (閉眼/睜眼)
+    if (type === 'password') {
+        this.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
+    } else {
+        this.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+    }
+});
+
 /* --- 香檳氣泡粒子系統 (Champagne Bubbles) --- */
 const canvas = document.getElementById("bg");
 const ctx = canvas.getContext("2d");
@@ -255,10 +310,10 @@ for (let i = 0; i < particleCount; i++) {
     particles.push({
         x: Math.random() * w, 
         y: Math.random() * h,
-        vy: (Math.random() * 0.3) + 0.1, // 氣泡緩慢上升
+        vy: (Math.random() * 0.3) + 0.1, 
         size: Math.random() * 1.5, 
         alpha: Math.random() * 0.5 + 0.1,
-        swing: Math.random() * 0.2 // 左右微擺
+        swing: Math.random() * 0.2 
     });
 }
 
@@ -267,15 +322,14 @@ function draw() {
     
     for (let i = 0; i < particleCount; i++) {
         let p = particles[i];
-        p.y -= p.vy; // 往上浮
-        p.x += Math.sin(Date.now() * 0.001 + i) * p.swing; // 左右搖擺
+        p.y -= p.vy; 
+        p.x += Math.sin(Date.now() * 0.001 + i) * p.swing; 
 
-        if (p.y < 0) { // 重置到底部
+        if (p.y < 0) { 
             p.y = h;
             p.x = Math.random() * w;
         }
         
-        // 繪製香檳金光點
         ctx.fillStyle = `rgba(197, 160, 89, ${p.alpha})`;
         ctx.beginPath(); 
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); 
@@ -289,7 +343,6 @@ draw();
 const wrapper = document.getElementById('cardWrapper');
 const card = document.getElementById('card');
 document.addEventListener('mousemove', (e) => {
-    // 讓轉動幅度極小，呈現厚重感
     const xAxis = (e.pageX - window.innerWidth / 2) / 60; 
     const yAxis = (window.innerHeight / 2 - e.pageY) / 60;
     wrapper.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
@@ -300,7 +353,7 @@ wrapper.addEventListener('mouseleave', () => {
     wrapper.style.transform = `rotateY(0deg) rotateX(0deg)`; 
 });
 
-/* --- Firebase Logic (Security v8.2) --- */
+/* --- Firebase Logic --- */
 const firebaseConfig={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(), db = firebase.database();
@@ -308,7 +361,6 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        // 優雅淡出
         document.body.style.transition = "opacity 1.2s ease";
         document.body.style.opacity = "0";
         setTimeout(() => location.href = "app.html", 1200);
@@ -341,11 +393,21 @@ form.addEventListener("submit", e => {
     .catch((error) => {
         console.error("Login Error:", error);
         btn.disabled = false; btn.innerHTML = originalText; btn.style.background = "";
+        
+        // 🟢 錯誤震動與 Toast 提示
         wrapper.classList.remove("shake"); void wrapper.offsetWidth; wrapper.classList.add("shake");
+        
+        let errorMsg = "登入失敗，請檢查帳號或密碼";
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            errorMsg = "帳號或密碼錯誤，請重新確認";
+        } else if (error.code === 'auth/invalid-email') {
+            errorMsg = "請輸入有效的 Email 格式";
+        } else if (error.code === 'auth/network-request-failed') {
+            errorMsg = "網路連線異常，請檢查網路狀態";
+        }
+        showToast(errorMsg, 'error');
     });
 });
 </script>
 </body>
 </html>
-
-
