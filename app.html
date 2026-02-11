@@ -523,15 +523,25 @@ function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return
 function insertTag(text) { const input = document.getElementById("msg"); input.value += text + " "; input.focus(); }
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
+// 🟢 完美置底修復版
 chatRef.limitToLast(30).on("value",s=>{
     let b=document.getElementById("chat-box"); b.innerHTML="";
     s.forEach(x=>{
         let m=x.val(), meMsg=m.uid===me.uid;
         let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-        let content = m.type === 'image' ? `<img src="${m.text}" class="msg-img" onclick="showImg(this.src)">` : escapeHtml(m.text);
+        
+        // 1. 圖片加上 onload 事件：確保圖片撐開高度後，強制再滾動一次
+        let content = m.type === 'image' 
+            ? `<img src="${m.text}" class="msg-img" onload="document.getElementById('chat-box').scrollTop=document.getElementById('chat-box').scrollHeight" onclick="showImg(this.src)">` 
+            : escapeHtml(m.text);
+            
         div.innerHTML=`<div class="msg-name" title="標記" onclick="mentionUser('${m.name}')">${m.name}</div>${content}`;
         b.appendChild(div);
     });
+    
+    // 2. 延遲 50 毫秒執行：確保瀏覽器把 DOM 節點(文字)渲染完畢後再計算高度
+    setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
+});
     b.scrollTop=b.scrollHeight;
 });
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
@@ -755,3 +765,4 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
+
