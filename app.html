@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪吸菸室 v15.4 </title>
+<title>萬豪吸菸室 v15.5 - 完美體驗版</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -266,7 +266,7 @@ button.btn-send:hover { background: #fff; }
         </div>
         
         <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.4</span>)</h4>
+            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.5</span>)</h4>
             <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
         </div>
 
@@ -372,7 +372,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 15.4;
+const APP_VERSION = 15.5;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -402,7 +402,6 @@ function customConfirm(msg) {
 }
 function closeConfirm(result) { document.getElementById('confirmModal').classList.remove('show'); if(confirmResolve) { confirmResolve(result); confirmResolve = null; } }
 
-// 🟢 Alert Modal 邏輯
 function customAlert(msg) {
     document.getElementById('alertMsg').innerHTML = msg;
     document.getElementById('alertModal').classList.add('show');
@@ -501,7 +500,7 @@ broadcastRef.on("value",s=>{
     b.classList.add('active'); playBeep('urgent'); setTimeout(()=>b.classList.remove('active'),5000);
 });
 
-/* --- Chat System --- */
+/* --- 🟢 完美置底修復版 Chat System --- */
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
@@ -523,14 +522,13 @@ function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return
 function insertTag(text) { const input = document.getElementById("msg"); input.value += text + " "; input.focus(); }
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
-// 🟢 完美置底修復版
 chatRef.limitToLast(30).on("value",s=>{
     let b=document.getElementById("chat-box"); b.innerHTML="";
     s.forEach(x=>{
         let m=x.val(), meMsg=m.uid===me.uid;
         let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
         
-        // 1. 圖片加上 onload 事件：確保圖片撐開高度後，強制再滾動一次
+        // 🟢 圖片加上 onload 事件：確保圖片撐開高度後，強制再滾動一次
         let content = m.type === 'image' 
             ? `<img src="${m.text}" class="msg-img" onload="document.getElementById('chat-box').scrollTop=document.getElementById('chat-box').scrollHeight" onclick="showImg(this.src)">` 
             : escapeHtml(m.text);
@@ -539,14 +537,13 @@ chatRef.limitToLast(30).on("value",s=>{
         b.appendChild(div);
     });
     
-    // 2. 延遲 50 毫秒執行：確保瀏覽器把 DOM 節點(文字)渲染完畢後再計算高度
+    // 🟢 延遲 50 毫秒執行：確保瀏覽器把 DOM 節點(文字)渲染完畢後再計算高度
     setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
 });
-    b.scrollTop=b.scrollHeight;
-});
+
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
-/* --- 🟢 核心邏輯 & 幽靈防禦機制 (AFK Defense) --- */
+/* --- 核心邏輯 & 幽靈防禦機制 --- */
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function getSlotStatus(h,m){
     const slots=[14,16,18,20,22,0]; let currentSlot=slots.find(s=>s===h);
@@ -558,9 +555,9 @@ function getSlotStatus(h,m){
     return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
 }
 
-// 🟢 執行閒置降階懲罰 (彈出強制通知)
+// 執行閒置降階懲罰 (彈出強制通知)
 function executeAfkPenalty(uid, currentIndex, sorted) {
-    let targetIndex = currentIndex + 3; // 降 3 名
+    let targetIndex = currentIndex + 3; 
     let newTime;
     
     if (targetIndex >= sorted.length - 1) {
@@ -575,7 +572,6 @@ function executeAfkPenalty(uid, currentIndex, sorted) {
     if (cacheQueue.reserve && cacheQueue.reserve[uid] && cacheQueue.reserve[uid].afkDeadline) {
         queueRef.child("reserve/" + uid).update({ time: newTime, afkDeadline: null });
         if (uid === me.uid) {
-            // 🟢 改用自訂的 Alert Modal 強制提醒，並加上紅色大圖示與醒目文字
             customAlert("<div style='font-size:24px;margin-bottom:10px;'>⚠️</div><div style='color:var(--danger);font-size:18px;font-weight:bold;margin-bottom:15px;'>順位延後通知</div>您已超過 3 分鐘未確認前往<br>為維持排隊順暢，系統已自動將您的順位延後。");
         }
     }
@@ -591,7 +587,6 @@ setInterval(()=>{
     document.getElementById("slotDisplay").textContent=dText;
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue(true); 
 
-    // --- AFK 幽靈排隊防禦邏輯 ---
     let r=cacheQueue.reserve||{};
     let sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let outCount=Object.keys(cacheQueue.out||{}).length;
@@ -605,7 +600,7 @@ setInterval(()=>{
         if (isTop2 && eligibleForOut) {
             if (!data.afkDeadline) {
                 if (uid === me.uid || myData.role === 'admin') {
-                    queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); // 180秒
+                    queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); 
                 }
             } else {
                 let timeLeft = data.afkDeadline - Date.now();
@@ -765,4 +760,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
