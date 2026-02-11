@@ -279,6 +279,7 @@ button.btn-send:hover { background: #fff; }
                 <button onclick="clearChat()" class="btn-admin-action">清空聊天室</button>
                 <button onclick="clearHistory()" class="btn-admin-action">清空歷史紀錄</button>
                 <button onclick="clearLog()" class="btn-admin-action">清空日誌</button>
+                <button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button>
             </div>
         </div>
     </div>
@@ -740,3 +741,4 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
+
