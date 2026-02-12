@@ -2,8 +2,13 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>萬豪吸菸室 v15.6 </title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>萬豪吸菸室 v16.0 - 尊榮 APP 版</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#08090b">
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -31,6 +36,8 @@ body {
     margin: 0; font-family: "Noto Sans TC", sans-serif;
     background: var(--bg-dark); color: var(--text-main);
     display: flex; height: 100vh; overflow: hidden; font-size: 15px; perspective: 1000px;
+    /* 防止 PWA 下拉重新整理 */
+    overscroll-behavior-y: none;
 }
 
 /* --- 背景特效 --- */
@@ -45,13 +52,6 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 20px; gap: 20px; }
 #dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding-right: 6px; min-width: 400px; }
 #comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; }
-
-/* --- 監控網格 --- */
-.monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.monitor-left { display: flex; flex-direction: column; gap: 16px; }
-.monitor-right { display: flex; flex-direction: column; }
-.monitor-right .glass-panel { flex: 1; display: flex; flex-direction: column; }
-.monitor-right .list-container { flex: 1; max-height: none; }
 
 /* --- 玻璃卡片 --- */
 .glass-panel {
@@ -104,7 +104,6 @@ h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--gold); text-transform: up
 .item-card.rank-1 { border-left-color: var(--gold); background: linear-gradient(90deg, var(--gold-dim), transparent); }
 .item-card.rank-2 { border-left-color: #c0c0c0; }
 
-/* 🟢 閒置倒數特效 */
 .afk-timer {
     color: var(--danger); font-size: 11px; margin-left: 8px; 
     font-family: 'Rajdhani'; font-weight: bold;
@@ -194,11 +193,36 @@ button.btn-send:hover { background: #fff; }
 .confirm-btn.no { background: #333; color: #aaa; }
 .confirm-btn.no:hover { background: #444; color: #fff; }
 
-/* --- 🟢 Alert Modal (強制關閉彈窗) --- */
+/* --- Alert Modal --- */
 #alertModal { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; }
 #alertModal.show { display: flex; opacity: 1; }
 #alertModal .confirm-box { background: #111; border: 1px solid var(--danger); border-radius: 4px; padding: 35px 30px; width: 320px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transform: scale(0.95); transition: 0.3s; }
 #alertModal.show .confirm-box { transform: scale(1); }
+
+/* --- 🟢 權限請求遮罩 (Permission Blocker) --- */
+#permModal { 
+    position: fixed; inset: 0; z-index: 99999; background: rgba(5,6,10,0.95); backdrop-filter: blur(15px); 
+    display: none; align-items: center; justify-content: center; flex-direction: column; 
+    text-align: center; padding: 30px; 
+}
+#permModal.show { display: flex; }
+.perm-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+.perm-title { color: var(--gold); font-size: 24px; font-weight: bold; margin-bottom: 15px; font-family: 'Noto Serif TC'; }
+.perm-desc { color: #ccc; font-size: 15px; line-height: 1.6; max-width: 400px; margin-bottom: 30px; }
+.perm-btn { 
+    padding: 15px 40px; background: var(--gold); color: #000; border: none; font-size: 16px; font-weight: bold; 
+    border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(197, 160, 89, 0.4); transition: 0.3s; 
+}
+.perm-btn:hover { transform: scale(1.05); background: #fff; }
+
+/* 封鎖時的教學區塊 */
+.blocked-guide { 
+    border: 1px solid var(--danger); background: rgba(211,47,47,0.1); padding: 20px; border-radius: 8px; 
+    margin-top: 20px; text-align: left; font-size: 14px; display: none; 
+}
+.blocked-guide ol { padding-left: 20px; margin: 10px 0; color: #aaa; }
+.blocked-guide li { margin-bottom: 8px; }
 
 /* Online List */
 #onlineUserList { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
@@ -225,6 +249,32 @@ button.btn-send:hover { background: #fff; }
 <body>
 <div class="ambient-light"></div>
 <canvas id="bg"></canvas>
+
+<div id="permModal">
+    <div id="perm-default">
+        <div class="perm-icon">🔔</div>
+        <div class="perm-title">啟用尊榮通知</div>
+        <div class="perm-desc">為了確保您不錯過入場順位，<br>萬豪吸菸室需要您的通知權限。</div>
+        <button class="perm-btn" onclick="requestPermission()">開啟通知</button>
+    </div>
+    
+    <div id="perm-blocked" style="display:none;">
+        <div class="perm-icon" style="color:var(--danger)">⚠️</div>
+        <div class="perm-title" style="color:var(--danger)">通知已被封鎖</div>
+        <div class="perm-desc">系統偵測到您封鎖了通知權限。<br>請依照下方指示解鎖以繼續使用。</div>
+        
+        <div class="blocked-guide" style="display:block;">
+            <strong>如何解鎖：</strong>
+            <ol>
+                <li>點擊網址列左側的 🔒 鎖頭圖示 (或是設定圖示)</li>
+                <li>找到「通知」或「權限」選項</li>
+                <li>將開關切換為 <strong>「允許 (Allow)」</strong></li>
+                <li>重新整理網頁</li>
+            </ol>
+        </div>
+        <button class="perm-btn" onclick="location.reload()" style="background:#333; color:#fff; margin-top:20px;">我已開啟，重新整理</button>
+    </div>
+</div>
 
 <div id="toast-container"></div>
 <div id="confirmModal">
@@ -266,7 +316,7 @@ button.btn-send:hover { background: #fff; }
         </div>
         
         <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">15.6</span>)</h4>
+            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">16.0</span>)</h4>
             <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
         </div>
 
@@ -372,7 +422,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 15.6;
+const APP_VERSION = 16.0;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -383,6 +433,51 @@ const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"),
 
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
+
+/* --- 🟢 通知權限守門員 --- */
+function checkNotificationPermission() {
+    if (!("Notification" in window)) return; // 瀏覽器不支援
+    
+    if (Notification.permission === "granted") {
+        document.getElementById("permModal").classList.remove("show");
+        notifyEnabled = true;
+    } else if (Notification.permission === "denied") {
+        // 🔴 被封鎖：顯示教學，隱藏開啟按鈕
+        document.getElementById("permModal").classList.add("show");
+        document.getElementById("perm-default").style.display = "none";
+        document.getElementById("perm-blocked").style.display = "block";
+    } else {
+        // 🟡 尚未決定：顯示開啟按鈕
+        document.getElementById("permModal").classList.add("show");
+        document.getElementById("perm-default").style.display = "block";
+        document.getElementById("perm-blocked").style.display = "none";
+    }
+}
+
+function requestPermission() {
+    Notification.requestPermission().then(permission => {
+        checkNotificationPermission(); // 重新檢查狀態
+        if (permission === "granted") {
+            playBeep(); // 成功時逼一聲
+            showToast("✅ 通知已啟用", "success");
+        }
+    });
+}
+
+// 🟢 觸發推播通知 (當輪到使用者時)
+function sendPushNotification(title, body) {
+    if (Notification.permission === "granted") {
+        // 手機震動 (Android Only)
+        if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        
+        const options = {
+            body: body,
+            icon: "https://cdn-icons-png.flaticon.com/512/1830/1830839.png", // 可以換成你的 icon
+            vibrate: [200, 100, 200]
+        };
+        new Notification(title, options);
+    }
+}
 
 /* --- Toast, Confirm, & Alert --- */
 function showToast(msg, type='info') {
@@ -446,6 +541,10 @@ auth.onAuthStateChanged(user=>{
         
         engineReady=true;
         if(myData.role === "admin") { userRef.on("value", snap => { allUsers = snap.val() || {}; if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); }); }
+        
+        // 🟢 檢查通知權限 (每次登入或刷新時檢查)
+        checkNotificationPermission();
+        
         renderStaticLists(); updateButtonStates(); renderOutList(); 
     });
     userRef.child(user.uid+"/online").set(true); userRef.child(user.uid+"/online").onDisconnect().set(false);
@@ -497,7 +596,12 @@ function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i
 broadcastRef.on("value",s=>{
     const v=s.val(); if(!v||Date.now()-v.t>10000)return;
     const b=document.getElementById('broadcastBanner'); document.getElementById('broadcastText').textContent=v.text;
-    b.classList.add('active'); playBeep('urgent'); setTimeout(()=>b.classList.remove('active'),5000);
+    b.classList.add('active'); playBeep('urgent'); 
+    
+    // 🟢 廣播也發推播
+    sendPushNotification("📢 萬豪吸菸室廣播", v.text);
+    
+    setTimeout(()=>b.classList.remove('active'),5000);
 });
 
 /* --- Chat System --- */
@@ -527,15 +631,12 @@ chatRef.limitToLast(30).on("value",s=>{
     s.forEach(x=>{
         let m=x.val(), meMsg=m.uid===me.uid;
         let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-        
         let content = m.type === 'image' 
             ? `<img src="${m.text}" class="msg-img" onload="document.getElementById('chat-box').scrollTop=document.getElementById('chat-box').scrollHeight" onclick="showImg(this.src)">` 
             : escapeHtml(m.text);
-            
         div.innerHTML=`<div class="msg-name" title="標記" onclick="mentionUser('${m.name}')">${m.name}</div>${content}`;
         b.appendChild(div);
     });
-    
     setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
 });
 
@@ -553,27 +654,20 @@ function getSlotStatus(h,m){
     return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
 }
 
-// 執行閒置降階懲罰 
 function executeAfkPenalty(uid, currentIndex, sorted) {
     let targetIndex = currentIndex + 3; 
     let newTime;
-    
-    if (targetIndex >= sorted.length - 1) {
-        newTime = sorted[sorted.length - 1][1].time + 1000;
-    } else {
-        let t1 = sorted[targetIndex][1].time;
-        let t2 = sorted[targetIndex + 1][1].time;
-        newTime = t1 + (t2 - t1) / 2;
-        if(newTime <= t1) newTime = t1 + 1;
-    }
+    if (targetIndex >= sorted.length - 1) { newTime = sorted[sorted.length - 1][1].time + 1000; } 
+    else { let t1 = sorted[targetIndex][1].time; let t2 = sorted[targetIndex + 1][1].time; newTime = t1 + (t2 - t1) / 2; if(newTime <= t1) newTime = t1 + 1; }
 
     if (cacheQueue.reserve && cacheQueue.reserve[uid] && cacheQueue.reserve[uid].afkDeadline) {
         queueRef.child("reserve/" + uid).update({ time: newTime, afkDeadline: null });
-        if (uid === me.uid) {
-            customAlert("<div style='font-size:24px;margin-bottom:10px;'>⚠️</div><div style='color:var(--danger);font-size:18px;font-weight:bold;margin-bottom:15px;'>順位延後通知</div>您已超過 3 分鐘未確認前往<br>為維持排隊順暢，系統已自動將您的順位延後。");
-        }
+        if (uid === me.uid) { customAlert("<div style='font-size:24px;margin-bottom:10px;'>⚠️</div><div style='color:var(--danger);font-size:18px;font-weight:bold;margin-bottom:15px;'>順位延後通知</div>您已超過 3 分鐘未確認前往<br>為維持排隊順暢，系統已自動將您的順位延後。"); }
     }
 }
+
+// 🟢 用來記錄上一次我的順位，以觸發推播
+let lastMyRank = -1;
 
 setInterval(()=>{
     if(!engineReady)return; const now=new Date(), h=now.getHours(), m=now.getMinutes();
@@ -591,55 +685,44 @@ setInterval(()=>{
     let eligibleForOut = (outCount < 3 && sorted.length >= 3 && currentSlotInfo.phase === 'OUT');
     let penaltyExecutedThisTick = false; 
 
+    // 🟢 檢查自己是不是變成第一名，若是則推播
+    let myCurrentRank = sorted.findIndex(x => x[0] === me.uid);
+    if (myCurrentRank === 0 && lastMyRank !== 0 && currentSlotInfo.phase === 'OUT' && outCount < 3) {
+        sendPushNotification("🥂 尊敬的貴賓", "現在輪到您入場了，請前往吸菸室。");
+    }
+    lastMyRank = myCurrentRank;
+
     sorted.forEach((u, i) => {
         let uid = u[0]; let data = u[1];
         let isTop2 = (i === 0 || i === 1);
-        
         if (isTop2 && eligibleForOut) {
             if (!data.afkDeadline) {
-                if (uid === me.uid || myData.role === 'admin') {
-                    queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); 
-                }
+                if (uid === me.uid || myData.role === 'admin') { queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); }
             } else {
                 let timeLeft = data.afkDeadline - Date.now();
-                if (timeLeft <= 0) {
-                    if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) {
-                        penaltyExecutedThisTick = true;
-                        executeAfkPenalty(uid, i, sorted);
-                    }
-                }
+                if (timeLeft <= 0) { if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) { penaltyExecutedThisTick = true; executeAfkPenalty(uid, i, sorted); } }
             }
         } else {
-            if (data.afkDeadline && (uid === me.uid || myData.role === 'admin')) {
-                queueRef.child("reserve/"+uid).child("afkDeadline").remove();
-            }
+            if (data.afkDeadline && (uid === me.uid || myData.role === 'admin')) { queueRef.child("reserve/"+uid).child("afkDeadline").remove(); }
         }
-        
         let span = document.getElementById(`afk-${uid}`);
         if (span) {
             if (data.afkDeadline) {
                 let sLeft = Math.max(0, Math.floor((data.afkDeadline - Date.now())/1000));
                 let mStr = String(Math.floor(sLeft/60)).padStart(2,'0');
                 let sStr = String(sLeft%60).padStart(2,'0');
-                span.innerHTML = `⏳ ${mStr}:${sStr}`;
-                span.style.display = "inline-block";
-            } else {
-                span.style.display = "none";
-            }
+                span.innerHTML = `⏳ ${mStr}:${sStr}`; span.style.display = "inline-block";
+            } else { span.style.display = "none"; }
         }
     });
 
-    // 🟢 動態更新外出名單的計時器
     let o = cacheQueue.out || {};
     Object.entries(o).forEach(([uid, u]) => {
         let span = document.getElementById(`out-timer-${uid}`);
         if (span) {
             let s = Math.floor((Date.now() - u.time) / 1000);
             span.innerHTML = `${Math.floor(s/60)}m ${s%60}s`;
-            if (s > 600) {
-                span.style.color = "var(--danger)";
-                span.classList.add("text-danger");
-            }
+            if (s > 600) { span.style.color = "var(--danger)"; span.classList.add("text-danger"); }
         }
     });
 
@@ -718,7 +801,6 @@ function renderOutList(){
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${u.name}')" class="btn-mini danger">召回</button>`:"";
-        // 🟢 加入 id="out-timer-${uid}"
         return `<div class="item-card" style="border-left-color:var(--success);"><strong>${u.name}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
