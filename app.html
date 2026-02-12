@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.9 </title>
+<title>萬豪吸菸室 v16.9 - 極簡流暢版</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -132,7 +132,7 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
 
-/* 🟢 優化輸入區塊：移除 Tag 後更簡潔 */
+/* 🟢 輸入區塊優化 (Tag 已移除) */
 .input-area { 
     padding: 12px; 
     background: rgba(0,0,0,0.4); 
@@ -141,6 +141,8 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
     gap: 8px; 
     align-items: center; 
     flex-shrink: 0; 
+    /* 確保底部有安全距離 */
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 .input-main { 
     display: flex; 
@@ -148,10 +150,9 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
     gap: 8px; 
     align-items: center; 
 }
-/* 🟢 關鍵修正：min-width: 0 防止輸入框擠出按鈕 */
 input#msg { 
     flex: 1; 
-    min-width: 0;
+    min-width: 0; /* 關鍵：防止撐開 */
     background: transparent; 
     border: none; 
     border-bottom: 1px solid rgba(255,255,255,0.2); 
@@ -163,7 +164,12 @@ input#msg {
 input#msg:focus { border-bottom-color: var(--gold); }
 .btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
-button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+/* 🟢 發送按鈕固定寬度，防止被擠壓 */
+button.btn-send { 
+    background: var(--gold); border: none; color: #000; border-radius: 2px; 
+    width: 36px; height: 36px; min-width: 36px; /* 強制最小寬度 */
+    cursor: pointer; font-weight: bold; flex-shrink: 0; 
+}
 
 #emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
 #emojiPicker.show { display: grid; }
@@ -414,7 +420,6 @@ auth.onAuthStateChanged(user=>{
         myData=s.val()||{};
         document.getElementById("who").textContent = getGreeting(myData.name || "GUEST");
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
-        // 移除 chatTags 顯示判斷，因為 HTML 元素已刪除
         
         engineReady=true;
         if(myData.role === "admin") { 
