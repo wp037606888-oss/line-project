@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.6 </title>
+<title>萬豪吸菸室 v16.7 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -82,7 +82,7 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 /* 列表容器 */
 .list-container { flex: 1; overflow-y: auto; padding-right: 4px; }
 
-/* --- 🟢 線上名單樣式修復 (Online User List Fix) --- */
+/* --- 線上名單樣式修復 --- */
 #chat-header { 
     padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--glass-border); 
     display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; 
@@ -90,34 +90,21 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 .chat-title { font-weight:700; color:var(--gold); font-family: 'Noto Serif TC'; letter-spacing: 2px; font-size: 13px; }
 
 #onlineUserList { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 6px; 
-    width: 100%; 
-    /* 關鍵：限制高度並允許滾動，防止擠壓下方聊天室 */
-    max-height: 85px; 
-    overflow-y: auto; 
-    padding-bottom: 2px;
+    display: flex; flex-wrap: wrap; gap: 6px; width: 100%; 
+    max-height: 85px; overflow-y: auto; padding-bottom: 2px;
 }
 
 .online-pill { 
-    display: flex !important; /* 強制 Flex */
-    align-items: center; 
-    padding: 3px 10px; 
-    border-radius: 20px; 
-    font-size: 11px; 
-    background: rgba(255,255,255,0.08); 
-    border: 1px solid rgba(255,255,255,0.1); 
-    color: #aaa; 
-    white-space: nowrap; 
-    transition: 0.3s; 
-    height: 24px;
+    display: flex !important; align-items: center; 
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; 
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); 
+    color: #aaa; white-space: nowrap; height: 24px;
 }
 .online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.1); }
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; margin-right: 6px; }
 .online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
 
-/* --- 其他 UI --- */
+/* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
 .user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
@@ -255,7 +242,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.6</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.7</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -332,7 +319,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 </div>
 
 <script>
-const APP_VERSION = 16.6;
+const APP_VERSION = 16.7;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
@@ -674,47 +661,45 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-function enableNotification(){if(!("Notification" in window))return;Notification.requestPermission().then(p=>{if(p==="granted"){notifyEnabled=true;playBeep();document.getElementById("btnNotify").style.display="none";}});}
-if(Notification.permission!=="granted") document.getElementById("btnNotify").style.display="inline-block";
-function playBeep(t='normal'){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);if(t==='urgent'){o.frequency.value=880;o.type='square';o.start();setTimeout(()=>o.stop(),100);setTimeout(()=>{const o2=audioCtx.createOscillator(),g2=audioCtx.createGain();o2.connect(g2);g2.connect(audioCtx.destination);o2.frequency.value=880;o2.type='square';o2.start();setTimeout(()=>o2.stop(),100);},150);}else{o.frequency.value=523.25;o.type='sine';g.gain.setValueAtTime(0.05,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.00001,audioCtx.currentTime+0.5);o.start();o.stop(audioCtx.currentTime+0.5);}}
-
-async function forceComeBack(uid, name){
-    if(await customConfirm(`確定強制召回 <span style="color:var(--gold)">${name}</span> ？`)) {
-        queueRef.child("out/"+uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+uid).remove();addLog(`ADMIN 召回: ${u.name}`); showToast(`已召回 ${u.name}`, 'success');}});
-    }
-}
-async function forceGoOut(uid, name){
-    if(await customConfirm(`強制派發 <span style="color:var(--success)">${name}</span> 前往？`)){
-        queueRef.child("reserve/"+uid).once("value").then(s=>{let u=s.val();if(u){queueRef.child("out/"+uid).set({name:u.name,time:Date.now()}).then(()=>{queueRef.child("reserve/"+uid).remove();addLog(`ADMIN 派發: ${u.name}`); showToast(`已派發 ${u.name}`, 'success');});}});
-    }
-}
-async function forceReload(){ 
-    if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
-}
-
-async function resetQueue(auto = false){ 
-    if(auto || await customConfirm("<span style='color:var(--danger)'>確定清空所有排隊、外出狀態？</span><br><small>此操作無法復原</small>")) { 
-        Promise.all([ queueRef.child("reserve").remove(), queueRef.child("out").remove(), queueRef.child("used").remove() ]).then(() => { addLog("ADMIN 重置系統"); if(!auto) {showToast("系統狀態已重置", 'success'); closeAdmin();} }).catch(e => showToast("權限被拒絕", 'error'));
-    } 
-}
-async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
-async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
-async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
-function addLog(t){logRef.push({t,time:Date.now()});}
-
-logRef.limitToLast(15).on("value",s=>{const b=document.getElementById("log");b.innerHTML="";s.forEach(x=>{let d=x.val();let dv=document.createElement("div");dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;b.appendChild(dv);});b.scrollTop=b.scrollHeight;});
-
-function reserve(){ 
-    if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
-    let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
-    queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
-    if(Notification.permission!=="granted")enableNotification(); addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
-}
-function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
+/* --- 🟢 關鍵修正: Transaction 解決4人外出問題 --- */
 function goOut(){
-    queueRef.child("reserve/"+me.uid).child("afkDeadline").remove();
-    queueRef.child("out/"+me.uid).set({name:myData.name,time:Date.now()}).then(()=>{queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 出發`); showToast('祝您享受美好時光', 'success');});
+    // 檢查自己是不是排在名單內的前2名 (防止非前2名偷跑)
+    let r = cacheQueue.reserve || {};
+    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    let myRank = sorted.findIndex(x => x[0] === me.uid);
+    
+    // 如果不是排前2名 (0, 1)，而且不是 Admin，就不能自己出去
+    if (myRank > 1 && myData.role !== 'admin') {
+        showToast("還沒輪到您，請稍候", "error");
+        return;
+    }
+
+    const outRef = queueRef.child("out");
+    outRef.transaction((currentOutData) => {
+        // 如果目前外出人數已經 >= 3，則取消操作 (回傳 undefined 代表放棄)
+        if (currentOutData && Object.keys(currentOutData).length >= 3) {
+            return; 
+        }
+        if (!currentOutData) currentOutData = {};
+        
+        // 成功加入
+        currentOutData[me.uid] = {name: myData.name, time: Date.now()};
+        return currentOutData;
+    }, (error, committed, snapshot) => {
+        if (error) {
+            showToast("系統忙碌中，請重試", "error");
+        } else if (!committed) {
+            // committed = false 代表被 transaction 擋下來了 (人數已滿)
+            showToast("動作太慢了！名額剛好被搶光", "error");
+        } else {
+            // 成功寫入 Out，現在移除 Reserve
+            queueRef.child("reserve/"+me.uid).remove();
+            addLog(`${myData.name} 出發`);
+            showToast('祝您享受美好時光', 'success');
+        }
+    });
 }
+
 function comeBack(){queueRef.child("out/"+me.uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${me.uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+me.uid).remove();addLog(`${myData.name} 返回`); showToast('歡迎回來', 'info');}});}
 
 userRef.on("value",s=>{ const list=document.getElementById("onlineUserList"); list.innerHTML=""; s.forEach(u=>{ let d=u.val(); if(d.online){ let pill = document.createElement("div"); pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; pill.innerHTML = `<div class="online-dot"></div>${d.name}`; list.appendChild(pill); }}); });
