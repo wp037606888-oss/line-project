@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.13 - 功能修復版</title>
+<title>萬豪吸菸室 v16.14 - 穩定修復版</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,7 +38,6 @@ body {
     overscroll-behavior-y: none;
 }
 
-/* --- 背景特效 --- */
 .ambient-light {
     position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
     background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
@@ -46,7 +45,6 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-/* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; }
 
 #dashboard { 
@@ -59,18 +57,13 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 .dashboard-top { flex-shrink: 0; }
 
-/* --- 監控網格 --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
     flex: 1; min-height: 0; 
 }
 
-.monitor-column { 
-    display: flex; flex-direction: column; gap: 15px; 
-    height: 100%; min-height: 0; 
-}
+.monitor-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
 
-/* --- 玻璃卡片 --- */
 .glass-panel {
     background: var(--glass); backdrop-filter: blur(25px); 
     border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
@@ -83,11 +76,8 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 .flex-3 { flex: 3; } .flex-7 { flex: 7; }
 
-.list-container { 
-    flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; 
-}
+.list-container { flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; }
 
-/* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
 .user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
@@ -132,49 +122,19 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
 
-/* 🟢 輸入區塊 (Tag 已移除) */
-.input-area { 
-    padding: 12px; 
-    background: rgba(0,0,0,0.4); 
-    border-top: 1px solid var(--glass-border); 
-    display: flex; 
-    gap: 8px; 
-    align-items: center; 
-    flex-shrink: 0; 
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-}
-.input-main { 
-    display: flex; 
-    width: 100%; 
-    gap: 8px; 
-    align-items: center; 
-}
-input#msg { 
-    flex: 1; 
-    min-width: 0;
-    background: transparent; 
-    border: none; 
-    border-bottom: 1px solid rgba(255,255,255,0.2); 
-    border-radius: 0; 
-    padding: 8px 5px; 
-    color: #fff; 
-    font-family: "Noto Serif TC"; 
-}
+.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
+input#msg { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
 input#msg:focus { border-bottom-color: var(--gold); }
 .btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
-button.btn-send { 
-    background: var(--gold); border: none; color: #000; border-radius: 2px; 
-    width: 36px; height: 36px; min-width: 36px; 
-    cursor: pointer; font-weight: bold; flex-shrink: 0; 
-}
+button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; min-width: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
 
 #emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
 #emojiPicker.show { display: grid; }
 .emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; }
 .emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
 
-/* Modals */
 #btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 #btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 
@@ -258,7 +218,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.13</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.14</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -331,7 +291,7 @@ button.btn-send {
 </div>
 
 <script>
-const APP_VERSION = 16.13;
+const APP_VERSION = 16.14;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
@@ -418,6 +378,8 @@ auth.onAuthStateChanged(user=>{
         myData=s.val()||{};
         document.getElementById("who").textContent = getGreeting(myData.name || "GUEST");
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
+        
+        // 🟢 徹底移除當機源頭：chatTags JS 判斷
         
         engineReady=true;
         if(myData.role === "admin") { 
@@ -684,21 +646,17 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-// 🟢 修復：預約功能改用 requestPermission
 function reserve(){ 
     if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
     let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
     queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
-    
-    // 如果權限還沒決定，才問
     if(Notification.permission === "default") requestPermission();
-    
     addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
 }
 
 function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
 
-// 🟢 修復：一般外出使用 Transaction (防爆衝)
+// 🟢 修復：防爆衝 Transaction
 function goOut(){
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
@@ -730,7 +688,7 @@ function goOut(){
     });
 }
 
-// 🟢 補回：Admin 強制派發 (無視交易鎖)
+// 🟢 補回：Admin 強制派發
 async function forceGoOut(uid, name) {
     if (await customConfirm(`強制派發 <span style="color:var(--success)">${name}</span> 前往？`)) {
         queueRef.child("reserve/" + uid).once("value").then(snapshot => {
