@@ -224,8 +224,8 @@ button.btn-send {
 <div id="nameModal">
     <div class="admin-card" style="text-align:center;">
         <h2 style="color:var(--gold); margin-top:0;">👋 初次見面</h2>
-        <p style="color:#ccc; margin-bottom:20px;">請輸入您在吸菸室的暱稱</p>
-        <input id="newNameInput" type="text" placeholder="例如: 帥哥" maxlength="10" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
+        <p style="color:#ccc; margin-bottom:20px;">請輸入您在吸菸室的本名+稱號</p>
+        <input id="newNameInput" type="text" placeholder="例如: 小明-帥哥 PS.看不懂的資料會被刪除" maxlength="10" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
         <button onclick="submitName()" class="perm-btn" style="width:100%;">開始使用</button>
     </div>
 </div>
@@ -885,3 +885,4 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
+
