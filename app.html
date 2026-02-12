@@ -47,7 +47,7 @@ body {
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 /* --- 主佈局 --- */
-#layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; }
+#layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; transition: filter 0.3s ease; }
 
 #dashboard { 
     flex: 1.8; display: flex; flex-direction: column; gap: 15px; min-width: 0; height: 100%; 
@@ -174,8 +174,7 @@ button.btn-send {
 .emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
 
 /* Modals */
-#btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-#btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+#nameModal { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; }
 
 #adminModal, #confirmModal, #alertModal, #imgModal, #permModal { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
 #adminModal.show, #confirmModal.show, #alertModal.show, #permModal.show { display: flex; }
@@ -221,6 +220,15 @@ button.btn-send {
 <body>
 <div class="ambient-light"></div>
 <canvas id="bg"></canvas>
+
+<div id="nameModal">
+    <div class="admin-card" style="text-align:center;">
+        <h2 style="color:var(--gold); margin-top:0;">👋 初次見面</h2>
+        <p style="color:#ccc; margin-bottom:20px;">請輸入您在吸菸室的暱稱</p>
+        <input id="newNameInput" type="text" placeholder="例如: 帥哥" maxlength="10" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
+        <button onclick="submitName()" class="perm-btn" style="width:100%;">開始使用</button>
+    </div>
+</div>
 
 <div id="permModal">
     <div id="perm-default">
@@ -417,7 +425,7 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-// --- 核心邏輯 ---
+// --- 核心邏輯 (暱稱系統修改版) ---
 let firstVerCheck = true;
 db.ref("config/system_version").on("value", snap => {
     const dbVer = snap.val(); if (!dbVer) return;
@@ -437,26 +445,61 @@ function getGreeting(name) {
 
 auth.onAuthStateChanged(user=>{
     if(!user){location.href="login.html";return;} me=user;
-    userRef.child(user.uid).on("value",s=>{
-        myData=s.val()||{};
-        document.getElementById("who").textContent = getGreeting(myData.name || "GUEST");
-        document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
+    
+    // 監聽用戶資料
+    userRef.child(user.uid).on("value", s => {
+        myData = s.val() || {};
         
-        engineReady=true;
-        if(myData.role === "admin") { 
-            userRef.on("value", snap => { 
-                allUsers = snap.val() || {}; 
-                if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); 
-            }); 
+        // 🔥 檢查邏輯：如果沒有名字，顯示輸入視窗；有名字才進入系統
+        if (!myData.name) {
+            document.getElementById("nameModal").style.display = "flex";
+            document.getElementById("layout").style.filter = "blur(5px)"; // 背景模糊效果
+        } else {
+            // 隱藏輸入視窗，恢復背景
+            document.getElementById("nameModal").style.display = "none";
+            document.getElementById("layout").style.filter = "none";
+            
+            // 正常渲染 UI
+            document.getElementById("who").textContent = getGreeting(myData.name);
+            document.getElementById("btnAdminFloat").style.display = (myData.role === "admin") ? "flex" : "none";
+            
+            engineReady = true;
+            if(myData.role === "admin") { 
+                userRef.on("value", snap => { 
+                    allUsers = snap.val() || {}; 
+                    if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); 
+                }); 
+            }
+            
+            checkNotificationPermission();
+            renderStaticLists(); updateButtonStates(); renderOutList(); 
         }
-        
-        checkNotificationPermission();
-        renderStaticLists(); updateButtonStates(); renderOutList(); 
     });
-    // 上線狀態
-    userRef.child(user.uid).update({online: true, name: user.displayName || 'User'});
+
+    // 只更新上線狀態，不再覆蓋名字
+    userRef.child(user.uid).update({online: true});
     userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
+
+// 🔥 新增：提交名字的函式
+function submitName() {
+    const nameInput = document.getElementById("newNameInput");
+    const name = nameInput.value.trim();
+    
+    if (!name) { showToast("請輸入暱稱", "error"); return; }
+    if (name.length > 10) { showToast("暱稱太長了", "error"); return; }
+    
+    // 寫入資料庫：預設身分為 user
+    userRef.child(me.uid).update({
+        name: name,
+        role: 'user' 
+    }).then(() => {
+        showToast(`歡迎加入，${name}！`, "success");
+        // 更新成功後，上方的 on('value') 會自動偵測到有名字，並關閉視窗
+    }).catch(e => {
+        showToast("設定失敗: " + e.message, "error");
+    });
+}
 
 function logout(){auth.signOut().then(()=>{location.href="login.html";});}
 
