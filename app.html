@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.1 </title>
+<title>萬豪吸菸室 v16.2 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -47,17 +47,17 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-/* --- 主佈局 (Flex Column) --- */
+/* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 20px; gap: 20px; }
 
 #dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 16px; min-width: 400px; height: 100%; overflow: hidden; }
 #comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; }
 
-/* --- 監控網格 (Grid System 修復) --- */
+/* --- 監控網格 --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 16px; 
-    flex: 1; /* 讓網格填滿 dashboard 的剩餘空間 */
-    min-height: 0; /* 防止溢出 */
+    flex: 1; 
+    min-height: 0; 
 }
 .monitor-left { 
     display: flex; flex-direction: column; gap: 16px; 
@@ -68,31 +68,30 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     height: 100%;
 }
 
-/* --- 玻璃卡片 (通用) --- */
+/* --- 玻璃卡片 --- */
 .glass-panel {
     background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
     border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; flex-shrink: 0; transition: border-color 0.3s;
-    display: flex; flex-direction: column; /* 讓內部內容可以撐開 */
+    display: flex; flex-direction: column;
 }
 .glass-panel:hover { border-color: var(--gold-dim); }
 
-/* --- 特別針對左側面板的 Flex 設定 --- */
+/* 🟢 關鍵修復：給左側面板強制最小高度，防止消失 */
 .monitor-left .glass-panel {
-    flex: 1; /* 讓「外出」和「歷史」各佔一半高度 */
-    min-height: 0; /* 關鍵：防止內部列表撐爆容器 */
+    flex: 1;
+    min-height: 150px; /* 這裡！保證它至少有 150px 高 */
 }
 .monitor-right .glass-panel {
-    flex: 1; /* 讓右側排隊名單填滿高度 */
+    flex: 1;
     min-height: 0;
 }
 
-/* --- 列表容器 (滾動區) --- */
 .list-container { 
-    flex: 1; /* 自動填滿卡片剩餘空間 */
-    overflow-y: auto; /* 只有這裡滾動 */
+    flex: 1; 
+    overflow-y: auto; 
     padding-right: 4px; 
-    max-height: none; /* 移除舊的固定高度限制 */
+    max-height: none; 
 }
 
 /* --- 狀態列 --- */
@@ -270,9 +269,14 @@ button.btn-send:hover { background: #fff; }
 
 @media (max-width: 900px) {
     #layout { flex-direction: column; padding: 10px; }
-    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; }
+    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; 
+        /* 🟢 讓 Dashboard 在手機上可以內部捲動，防止被切掉 */
+        overflow-y: auto; 
+    }
     #comms { flex: 1; min-width: 0; height: 40vh; }
     .monitor-grid { grid-template-columns: 1fr; }
+    /* 🟢 讓左右面板在手機上不鎖高度，改為自動撐開 */
+    .monitor-left, .monitor-right { height: auto; }
 }
 </style>
 </head>
@@ -347,7 +351,7 @@ button.btn-send:hover { background: #fff; }
         </div>
         
         <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">16.1</span>)</h4>
+            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">16.2</span>)</h4>
             <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
         </div>
 
@@ -453,7 +457,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 16.1;
+const APP_VERSION = 16.2;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -648,7 +652,7 @@ chatRef.limitToLast(30).on("value",s=>{
 
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
-/* --- 核心邏輯 --- */
+/* --- 核心邏輯 & 幽靈防禦機制 --- */
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function getSlotStatus(h,m){
     const slots=[14,16,18,20,22,0]; let currentSlot=slots.find(s=>s===h);
