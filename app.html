@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v17.3 -安全版</title>
+<title>萬豪吸菸室 v17.3 -安全</title>
 
 <meta http-equiv="Content-Security-Policy" content="
-default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
-script-src 'self' 'unsafe-inline' https://www.gstatic.com;
+default-src 'self';
+script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com;
 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
 font-src https://fonts.gstatic.com;
 img-src 'self' data: https:;
@@ -17,8 +17,11 @@ connect-src
     https://*.googleapis.com
     https://identitytoolkit.googleapis.com
     https://securetoken.googleapis.com
-    https://firebasestorage.googleapis.com;
+    https://firebasestorage.googleapis.com
+    wss://*.firebaseio.com;
+frame-src https://*.firebaseapp.com;
 ">
+
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -995,6 +998,7 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
+
 
 
 
