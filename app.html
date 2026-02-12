@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.9 - 極簡流暢版</title>
+<title>萬豪吸菸室 v16.10 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -132,7 +132,6 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
 
-/* 🟢 輸入區塊優化 (Tag 已移除) */
 .input-area { 
     padding: 12px; 
     background: rgba(0,0,0,0.4); 
@@ -141,8 +140,6 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
     gap: 8px; 
     align-items: center; 
     flex-shrink: 0; 
-    /* 確保底部有安全距離 */
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 .input-main { 
     display: flex; 
@@ -152,7 +149,7 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 }
 input#msg { 
     flex: 1; 
-    min-width: 0; /* 關鍵：防止撐開 */
+    min-width: 0;
     background: transparent; 
     border: none; 
     border-bottom: 1px solid rgba(255,255,255,0.2); 
@@ -164,10 +161,9 @@ input#msg {
 input#msg:focus { border-bottom-color: var(--gold); }
 .btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
-/* 🟢 發送按鈕固定寬度，防止被擠壓 */
 button.btn-send { 
     background: var(--gold); border: none; color: #000; border-radius: 2px; 
-    width: 36px; height: 36px; min-width: 36px; /* 強制最小寬度 */
+    width: 36px; height: 36px; min-width: 36px; 
     cursor: pointer; font-weight: bold; flex-shrink: 0; 
 }
 
@@ -260,7 +256,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.9</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.10</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -333,7 +329,7 @@ button.btn-send {
 </div>
 
 <script>
-const APP_VERSION = 16.9;
+const APP_VERSION = 16.10;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
@@ -686,6 +682,21 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
+/* --- 🟢 關鍵修正 1: 預約功能 (修復 enableNotification 錯誤) --- */
+function reserve(){ 
+    if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
+    let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
+    queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
+    
+    // 修復這裡：使用 requestPermission 替代舊的 enableNotification
+    if(Notification.permission !== "granted" && Notification.permission !== "denied") requestPermission();
+    
+    addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
+}
+
+function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
+
+// 一般人的外出 (使用 Transaction 防爆衝)
 function goOut(){
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
@@ -698,10 +709,10 @@ function goOut(){
 
     const outRef = queueRef.child("out");
     outRef.transaction((currentOutData) => {
-        if (currentOutData && Object.keys(currentOutData).length >= 3) {
+        if (currentOutData === null) currentOutData = {};
+        if (Object.keys(currentOutData).length >= 3) {
             return; 
         }
-        if (!currentOutData) currentOutData = {};
         currentOutData[me.uid] = {name: myData.name, time: Date.now()};
         return currentOutData;
     }, (error, committed, snapshot) => {
@@ -715,6 +726,36 @@ function goOut(){
             showToast('祝您享受美好時光', 'success');
         }
     });
+}
+
+/* --- 🟢 關鍵修正 2: 補回遺失的 Admin 強制派發功能 --- */
+async function forceGoOut(uid, name) {
+    if (await customConfirm(`強制派發 <span style="color:var(--success)">${name}</span> 前往？`)) {
+        queueRef.child("reserve/" + uid).once("value").then(snapshot => {
+            if (snapshot.exists()) {
+                let updates = {};
+                updates["queue/out/" + uid] = { name: name, time: Date.now() };
+                updates["queue/reserve/" + uid] = null;
+                db.ref().update(updates)
+                    .then(() => {
+                        addLog(`ADMIN 派發: ${name}`);
+                        showToast(`已成功派發 ${name}`, 'success');
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        showToast("派發失敗", "error");
+                    });
+            } else {
+                showToast("該用戶已不在排隊名單中", "error");
+            }
+        });
+    }
+}
+
+async function forceComeBack(uid, name){
+    if(await customConfirm(`確定強制召回 <span style="color:var(--gold)">${name}</span> ？`)) {
+        queueRef.child("out/"+uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+uid).remove();addLog(`ADMIN 召回: ${u.name}`); showToast(`已召回 ${u.name}`, 'success');}});
+    }
 }
 
 function comeBack(){queueRef.child("out/"+me.uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${me.uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+me.uid).remove();addLog(`${myData.name} 返回`); showToast('歡迎回來', 'info');}});}
