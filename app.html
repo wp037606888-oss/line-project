@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.14 - 穩定修復版</title>
+<title>萬豪吸菸室 v16.9 - 極簡流暢版</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +38,7 @@ body {
     overscroll-behavior-y: none;
 }
 
+/* --- 背景特效 --- */
 .ambient-light {
     position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
     background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
@@ -45,6 +46,7 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
+/* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; }
 
 #dashboard { 
@@ -57,13 +59,18 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 .dashboard-top { flex-shrink: 0; }
 
+/* --- 監控網格 --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
     flex: 1; min-height: 0; 
 }
 
-.monitor-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
+.monitor-column { 
+    display: flex; flex-direction: column; gap: 15px; 
+    height: 100%; min-height: 0; 
+}
 
+/* --- 玻璃卡片 --- */
 .glass-panel {
     background: var(--glass); backdrop-filter: blur(25px); 
     border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
@@ -76,8 +83,11 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 .flex-3 { flex: 3; } .flex-7 { flex: 7; }
 
-.list-container { flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; }
+.list-container { 
+    flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; 
+}
 
+/* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
 .user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
@@ -122,19 +132,48 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
 
-.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-.input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
-input#msg { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
+.input-area { 
+    padding: 12px; 
+    background: rgba(0,0,0,0.4); 
+    border-top: 1px solid var(--glass-border); 
+    display: flex; 
+    gap: 8px; 
+    align-items: center; 
+    flex-shrink: 0; 
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.input-main { 
+    display: flex; 
+    width: 100%; 
+    gap: 8px; 
+    align-items: center; 
+}
+input#msg { 
+    flex: 1; 
+    min-width: 0;
+    background: transparent; 
+    border: none; 
+    border-bottom: 1px solid rgba(255,255,255,0.2); 
+    border-radius: 0; 
+    padding: 8px 5px; 
+    color: #fff; 
+    font-family: "Noto Serif TC"; 
+}
 input#msg:focus { border-bottom-color: var(--gold); }
 .btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
-button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; min-width: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+button.btn-send { 
+    background: var(--gold); border: none; color: #000; border-radius: 2px; 
+    width: 36px; height: 36px; min-width: 36px; 
+    cursor: pointer; font-weight: bold; flex-shrink: 0; 
+}
 
 #emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
 #emojiPicker.show { display: grid; }
 .emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; }
 .emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
 
+/* Modals */
 #btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 #btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 
@@ -218,7 +257,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.14</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.9</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -231,7 +270,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <div class="status-header">
                 <div style="display: flex; align-items: center;">
                     <span class="user-badge" id="who">連線中...</span>
-                    <button class="btn-logout" onclick="enableNotification()" id="btnNotify" style="display:none;">🔔</button>
+                    <button class="btn-logout" onclick="requestPermission()" id="btnNotify" style="display:none;">🔔</button>
                     <button class="btn-logout" onclick="logout()">登出</button>
                 </div>
                 <div id="slotDisplay">---</div>
@@ -291,45 +330,65 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 </div>
 
 <script>
-const APP_VERSION = 16.14;
+// --- 初始化設定 ---
+const APP_VERSION = 16.9;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
+// 請確認這裡的 Config 正確
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
-firebase.initializeApp(config);
+if (!firebase.apps.length) firebase.initializeApp(config);
+
 const db=firebase.database(), auth=firebase.auth();
 const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast"), configRef=db.ref("config");
 
+// --- 全域變數 ---
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 
+// --- 通知權限 ---
 function checkNotificationPermission() {
     if (!("Notification" in window)) return;
+    const btn = document.getElementById("btnNotify");
     if (Notification.permission === "granted") {
         document.getElementById("permModal").classList.remove("show");
         notifyEnabled = true;
+        if(btn) btn.style.display = "none";
     } else if (Notification.permission === "denied") {
-        document.getElementById("permModal").classList.add("show");
-        document.getElementById("perm-default").style.display = "none";
-        document.getElementById("perm-blocked").style.display = "block";
+        if(btn) btn.style.display = "flex";
     } else {
-        document.getElementById("permModal").classList.add("show");
-        document.getElementById("perm-default").style.display = "block";
-        document.getElementById("perm-blocked").style.display = "none";
+        if(btn) btn.style.display = "flex";
     }
 }
+
 function requestPermission() {
     Notification.requestPermission().then(permission => {
         checkNotificationPermission();
         if (permission === "granted") { playBeep(); showToast("✅ 通知已啟用", "success"); }
     });
 }
+
 function sendPushNotification(title, body) {
-    if (Notification.permission === "granted") {
+    if (Notification.permission === "granted" && document.hidden) {
         if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
-        new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/1830/1830839.png", vibrate: [200, 100, 200] });
+        new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/1830/1830839.png" });
     }
 }
 
+function playBeep(type) {
+    try {
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = type === 'urgent' ? 'square' : 'sine';
+        osc.frequency.setValueAtTime(type === 'urgent' ? 880 : 440, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    } catch(e) {}
+}
+
+// --- UI 工具 ---
 function showToast(msg, type='info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.textContent = msg;
@@ -337,6 +396,7 @@ function showToast(msg, type='info') {
     void toast.offsetWidth; toast.classList.add('show');
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
 }
+
 let confirmResolve = null;
 function customConfirm(msg) {
     return new Promise((resolve) => {
@@ -350,11 +410,14 @@ function customAlert(msg) { document.getElementById('alertMsg').innerHTML = msg;
 function closeAlert() { document.getElementById('alertModal').classList.remove('show'); }
 function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
+// --- 背景特效 ---
 const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
-let w,h,particles=[]; function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window.onresize=resize; resize();
+let w,h,particles=[]; 
+function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window.onresize=resize; resize();
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
+// --- 核心邏輯 ---
 let firstVerCheck = true;
 db.ref("config/system_version").on("value", snap => {
     const dbVer = snap.val(); if (!dbVer) return;
@@ -369,7 +432,7 @@ db.ref("config/system_version").on("value", snap => {
 function getGreeting(name) {
     const hr = new Date().getHours(); let greet = "晚安";
     if(hr >= 5 && hr < 12) greet = "早安"; else if(hr >= 12 && hr < 18) greet = "午安";
-    return `${greet}，${name.toUpperCase()}`;
+    return `${greet}，${name ? name.toUpperCase() : ''}`;
 }
 
 auth.onAuthStateChanged(user=>{
@@ -378,8 +441,6 @@ auth.onAuthStateChanged(user=>{
         myData=s.val()||{};
         document.getElementById("who").textContent = getGreeting(myData.name || "GUEST");
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
-        
-        // 🟢 徹底移除當機源頭：chatTags JS 判斷
         
         engineReady=true;
         if(myData.role === "admin") { 
@@ -392,10 +453,14 @@ auth.onAuthStateChanged(user=>{
         checkNotificationPermission();
         renderStaticLists(); updateButtonStates(); renderOutList(); 
     });
-    userRef.child(user.uid+"/online").set(true); userRef.child(user.uid+"/online").onDisconnect().set(false);
+    // 上線狀態
+    userRef.child(user.uid).update({online: true, name: user.displayName || 'User'});
+    userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
+
 function logout(){auth.signOut().then(()=>{location.href="login.html";});}
 
+// --- Admin ---
 function openAdmin(){ 
     document.getElementById('adminModal').classList.add('show'); 
     if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); 
@@ -421,6 +486,21 @@ function adminForceAdd() {
         addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
     }
 }
+function forceGoOut(uid, name) {
+    if(!confirm(`確定讓 ${name} 強制外出？`)) return;
+    queueRef.child("out/"+uid).set({name: name, time: Date.now()});
+    queueRef.child("reserve/"+uid).remove();
+    addLog(`ADMIN 派發: ${name}`);
+}
+function forceComeBack(uid, name) {
+    if(!confirm(`確定召回 ${name}？`)) return;
+    let now = Date.now();
+    let slot = new Date().getHours();
+    queueRef.child(`used/${slot}/${uid}`).set(true);
+    queueRef.child("out/"+uid).remove();
+    addLog(`ADMIN 召回: ${name}`);
+}
+
 function moveQueue(uid, direction) {
     if(!myData || myData.role !== 'admin') return;
     let r = cacheQueue.reserve || {}; let sorted = Object.entries(r).sort((a,b) => a[1].time - b[1].time); let idx = sorted.findIndex(x => x[0] === uid);
@@ -439,7 +519,7 @@ async function publishNewVersion() {
 configRef.child("playground_status").on("value", s => {
     playgroundEnabled = s.val() || false;
     const btn = document.getElementById("btnGame"), toggleBtn = document.getElementById("btnTogglePg");
-    if(playgroundEnabled) { btn.style.display = "flex"; } else { btn.style.display = "none"; }
+    if(btn) { if(playgroundEnabled) btn.style.display = "flex"; else btn.style.display = "none"; }
     if(toggleBtn) { toggleBtn.textContent = playgroundEnabled ? "遊樂場狀態: 開啟" : "遊樂場狀態: 關閉"; toggleBtn.style.color = playgroundEnabled ? "var(--success)" : "var(--danger)"; toggleBtn.style.borderColor = playgroundEnabled ? "var(--success)" : "var(--danger)"; }
 });
 function togglePlayground() { configRef.child("playground_status").set(!playgroundEnabled); showToast(playgroundEnabled?"已關閉遊樂場":"已開啟遊樂場", 'info');}
@@ -451,10 +531,12 @@ broadcastRef.on("value",s=>{
     b.classList.add('active'); playBeep('urgent'); sendPushNotification("📢 萬豪吸菸室廣播", v.text); setTimeout(()=>b.classList.remove('active'),5000);
 });
 
+// --- Chat ---
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
 function toggleEmoji() { emojiPicker.classList.toggle("show"); }
+
 function handleFile(e) {
     const file = e.target.files[0]; if(!file) return;
     if(file.size > 2 * 1024 * 1024) { showToast("圖片不能超過 2MB", 'error'); return; }
@@ -468,7 +550,6 @@ function handleFile(e) {
     }; reader.readAsDataURL(file); e.target.value = '';
 }
 function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return; chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time:Date.now() }); i.value=""; emojiPicker.classList.remove("show"); }
-
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
 chatRef.limitToLast(30).on("value",s=>{
@@ -484,9 +565,9 @@ chatRef.limitToLast(30).on("value",s=>{
     });
     setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
 });
-
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
+// --- 時間與排隊邏輯 ---
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function getSlotStatus(h,m){
     const slots=[14,16,18,20,22,0]; let currentSlot=slots.find(s=>s===h);
@@ -511,7 +592,6 @@ function executeAfkPenalty(uid, currentIndex, sorted) {
 }
 
 let lastMyRank = -1;
-
 setInterval(()=>{
     if(!engineReady)return; const now=new Date(), h=now.getHours(), m=now.getMinutes();
     document.getElementById("clock").textContent=format12H(now);
@@ -572,6 +652,22 @@ setInterval(()=>{
 
 queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } });
 
+// --- 預約與操作函式 ---
+function reserve() {
+    if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
+    
+    queueRef.child("reserve/" + me.uid).set({
+        name: myData.name,
+        time: Date.now(),
+        slot: currentSlotInfo.slot
+    }).then(() => {
+        addLog(`${myData.name} 預約排隊`);
+        showToast("預約成功", "success");
+    }).catch(e => {
+        showToast("預約失敗: " + e.message, "error");
+    });
+}
+
 let cancelConfirming = false;
 function handleCancelClick() {
     const btn = document.getElementById('bCancel');
@@ -581,11 +677,71 @@ function handleCancelClick() {
     } else { cancelConfirming = false; cancelReserve(); }
 }
 
+function cancelReserve() {
+    queueRef.child("reserve/" + me.uid).remove().then(() => {
+        addLog(`${myData.name} 取消預約`);
+        showToast("已取消預約", "info");
+    });
+}
+
+function goOut(){
+    let r = cacheQueue.reserve || {};
+    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    let myRank = sorted.findIndex(x => x[0] === me.uid);
+    
+    if (myRank > 1 && myData.role !== 'admin') {
+        showToast("還沒輪到您，請稍候", "error");
+        return;
+    }
+
+    queueRef.child("out").get().then(snapshot => {
+        const outCount = snapshot.numChildren();
+        if (outCount >= 3) {
+             showToast("動作太慢了！名額剛好被搶光", "error");
+             return;
+        }
+
+        const updates = {};
+        updates[`queue/out/${me.uid}`] = {name: myData.name, time: Date.now()};
+        updates[`queue/reserve/${me.uid}`] = null;
+
+        db.ref().update(updates).then(() => {
+            addLog(`${myData.name} 出發`);
+            showToast('祝您享受美好時光', 'success');
+        }).catch(err => {
+            showToast("系統錯誤: " + err.message, 'error');
+        });
+    });
+}
+
+function comeBack(){
+    queueRef.child("out/"+me.uid).once("value").then(s=>{
+        let u=s.val();
+        if(u){
+            let now=Date.now(),slot=new Date(u.time).getHours();
+            let updates = {};
+            updates[`queue/used/${slot}/${me.uid}`] = true;
+            updates[`queue/out/${me.uid}`] = null;
+            
+            db.ref().update(updates).then(() => {
+                queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});
+                addLog(`${myData.name} 返回`); 
+                showToast('歡迎回來', 'info');
+            });
+        }
+    });
+}
+
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
     let sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time); let outCount=Object.keys(o).length;
     let myRank=sorted.findIndex(x=>x[0]===me.uid); let alreadyUsed = used[currentSlotInfo.slot]?.[me.uid];
+
+    const bReserve = document.getElementById('bReserve');
+    const bOut = document.getElementById('bOut');
+    const bBack = document.getElementById('bBack');
+    const bCancel = document.getElementById('bCancel');
 
     const hideAll = () => { bReserve.style.display='none'; bOut.style.display='none'; bBack.style.display='none'; bCancel.style.display='none'; }; hideAll();
     const setBtn = (btn, cls, txt) => { btn.style.display = 'block'; if(!cancelConfirming || btn.id !== 'bCancel') { btn.className = `action-btn ${cls}`; btn.textContent = txt; } };
@@ -646,81 +802,6 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-function reserve(){ 
-    if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
-    let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
-    queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
-    if(Notification.permission === "default") requestPermission();
-    addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
-}
-
-function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
-
-// 🟢 修復：防爆衝 Transaction
-function goOut(){
-    let r = cacheQueue.reserve || {};
-    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-    let myRank = sorted.findIndex(x => x[0] === me.uid);
-    
-    if (myRank > 1 && myData.role !== 'admin') {
-        showToast("還沒輪到您，請稍候", "error");
-        return;
-    }
-
-    const outRef = queueRef.child("out");
-    outRef.transaction((currentOutData) => {
-        if (currentOutData && Object.keys(currentOutData).length >= 3) {
-            return; 
-        }
-        if (!currentOutData) currentOutData = {};
-        currentOutData[me.uid] = {name: myData.name, time: Date.now()};
-        return currentOutData;
-    }, (error, committed, snapshot) => {
-        if (error) {
-            showToast("系統忙碌中，請重試", "error");
-        } else if (!committed) {
-            showToast("動作太慢了！名額剛好被搶光", "error");
-        } else {
-            queueRef.child("reserve/"+me.uid).remove();
-            addLog(`${myData.name} 出發`);
-            showToast('祝您享受美好時光', 'success');
-        }
-    });
-}
-
-// 🟢 補回：Admin 強制派發
-async function forceGoOut(uid, name) {
-    if (await customConfirm(`強制派發 <span style="color:var(--success)">${name}</span> 前往？`)) {
-        queueRef.child("reserve/" + uid).once("value").then(snapshot => {
-            if (snapshot.exists()) {
-                let updates = {};
-                updates["queue/out/" + uid] = { name: name, time: Date.now() };
-                updates["queue/reserve/" + uid] = null;
-                db.ref().update(updates)
-                    .then(() => {
-                        addLog(`ADMIN 派發: ${name}`);
-                        showToast(`已成功派發 ${name}`, 'success');
-                    })
-                    .catch(error => {
-                        console.error(error);
-                        showToast("派發失敗", "error");
-                    });
-            } else {
-                showToast("該用戶已不在排隊名單中", "error");
-            }
-        });
-    }
-}
-
-// 🟢 補回：Admin 強制召回
-async function forceComeBack(uid, name){
-    if(await customConfirm(`確定強制召回 <span style="color:var(--gold)">${name}</span> ？`)) {
-        queueRef.child("out/"+uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+uid).remove();addLog(`ADMIN 召回: ${u.name}`); showToast(`已召回 ${u.name}`, 'success');}});
-    }
-}
-
-function comeBack(){queueRef.child("out/"+me.uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${me.uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+me.uid).remove();addLog(`${myData.name} 返回`); showToast('歡迎回來', 'info');}});}
-
 userRef.on("value",s=>{ const list=document.getElementById("onlineUserList"); list.innerHTML=""; s.forEach(u=>{ let d=u.val(); if(d.online){ let pill = document.createElement("div"); pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; pill.innerHTML = `<div class="online-dot"></div>${d.name}`; list.appendChild(pill); }}); });
 
 async function forceReload(){ 
@@ -735,7 +816,7 @@ async function resetQueue(auto = false){
 async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
-function addLog(t){logRef.push({t,time:Date.now()});}
+function addLog(t){logRef.push({t,time:Date.now()}).catch(e=>{});}
 
 logRef.limitToLast(15).on("value",s=>{
     const b=document.getElementById("log");
