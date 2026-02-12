@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.7 </title>
+<title>萬豪吸菸室 v16.8 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -57,14 +57,20 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; 
 }
 
+/* 上方固定區塊 */
 .dashboard-top { flex-shrink: 0; }
 
+/* --- 監控網格 (Grid + Flex) --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-    flex: 1; min-height: 0; 
+    flex: 1; /* 佔滿剩餘高度 */
+    min-height: 0; /* 防止溢出 */
 }
 
-.monitor-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
+.monitor-column { 
+    display: flex; flex-direction: column; gap: 15px; 
+    height: 100%; min-height: 0; 
+}
 
 /* --- 玻璃卡片 --- */
 .glass-panel {
@@ -73,36 +79,21 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     border-radius: 6px; padding: 15px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
     display: flex; flex-direction: column;
-    min-height: 0;
+    min-height: 0; position: relative;
 }
 .glass-panel:hover { border-color: var(--gold-dim); }
 
-.flex-3 { flex: 3; } .flex-7 { flex: 7; }
+/* --- 🟢 強制比例分配 (關鍵修復) --- */
+.flex-3 { flex: 3; } /* 30% */
+.flex-7 { flex: 7; } /* 70% */
 
-/* 列表容器 */
-.list-container { flex: 1; overflow-y: auto; padding-right: 4px; }
-
-/* --- 線上名單樣式修復 --- */
-#chat-header { 
-    padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--glass-border); 
-    display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; 
+/* 列表容器 (內部滾動) */
+.list-container { 
+    flex: 1; 
+    overflow-y: auto; 
+    padding-right: 4px; 
+    min-height: 0; /* 確保滾動條出現 */
 }
-.chat-title { font-weight:700; color:var(--gold); font-family: 'Noto Serif TC'; letter-spacing: 2px; font-size: 13px; }
-
-#onlineUserList { 
-    display: flex; flex-wrap: wrap; gap: 6px; width: 100%; 
-    max-height: 85px; overflow-y: auto; padding-bottom: 2px;
-}
-
-.online-pill { 
-    display: flex !important; align-items: center; 
-    padding: 3px 10px; border-radius: 20px; font-size: 11px; 
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); 
-    color: #aaa; white-space: nowrap; height: 24px;
-}
-.online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.1); }
-.online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; margin-right: 6px; }
-.online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
 
 /* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
@@ -132,6 +123,14 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .btn-mini.danger:hover { background: var(--danger); } .btn-mini.success:hover { background: var(--success); color: #000;}
 .btn-arrow { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; background: none; border:none; color:#666; cursor:pointer; font-size:10px; }
 .btn-arrow:hover { color: var(--gold); transform: scale(1.2); }
+
+#chat-header { padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.chat-title { font-weight:700; color:var(--gold); font-family: 'Noto Serif TC'; letter-spacing: 2px; font-size: 13px; }
+#onlineUserList { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; max-height: 85px; overflow-y: auto; padding-bottom: 2px; }
+.online-pill { display: flex !important; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #aaa; white-space: nowrap; height: 24px; }
+.online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.1); }
+.online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; margin-right: 6px; }
+.online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
 
 #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; word-break: break-all; }
@@ -242,7 +241,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.7</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.8</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -319,7 +318,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 </div>
 
 <script>
-const APP_VERSION = 16.7;
+const APP_VERSION = 16.8;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
@@ -409,7 +408,13 @@ auth.onAuthStateChanged(user=>{
         document.getElementById("chatTags").style.display=(myData.role==="admin")?"flex":"none";
         
         engineReady=true;
-        if(myData.role === "admin") { userRef.on("value", snap => { allUsers = snap.val() || {}; if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); }); }
+        if(myData.role === "admin") { 
+            userRef.on("value", snap => { 
+                allUsers = snap.val() || {}; 
+                // 🟢 確保 Admin Modal 打開時有資料
+                if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); 
+            }); 
+        }
         
         checkNotificationPermission();
         renderStaticLists(); updateButtonStates(); renderOutList(); 
@@ -418,8 +423,19 @@ auth.onAuthStateChanged(user=>{
 });
 function logout(){auth.signOut().then(()=>{location.href="login.html";});}
 
+// 🟢 確保 Admin 函數在 Global Scope
+function openAdmin(){ 
+    document.getElementById('adminModal').classList.add('show'); 
+    if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); 
+    else if(myData.role === 'admin') userRef.once("value").then(snap => { allUsers = snap.val() || {}; updateAdminUserSelect(); }); 
+}
+function closeAdmin(){document.getElementById('adminModal').classList.remove('show');}
+
 function updateAdminUserSelect() {
-    const sel = document.getElementById("adminUserSelect"); sel.innerHTML = "<option value=''>選擇貴賓...</option>";
+    const sel = document.getElementById("adminUserSelect"); 
+    if(!sel) return;
+    sel.innerHTML = "<option value=''>選擇貴賓...</option>";
+    if(!allUsers) return;
     Object.entries(allUsers).forEach(([uid, u]) => {
         let isReserved = cacheQueue.reserve && cacheQueue.reserve[uid]; let isOut = cacheQueue.out && cacheQueue.out[uid];
         if(!isReserved && !isOut) { let opt = document.createElement("option"); opt.value = uid; opt.textContent = u.name; sel.appendChild(opt); }
@@ -456,8 +472,6 @@ configRef.child("playground_status").on("value", s => {
 });
 function togglePlayground() { configRef.child("playground_status").set(!playgroundEnabled); showToast(playgroundEnabled?"已關閉遊樂場":"已開啟遊樂場", 'info');}
 
-function openAdmin(){ document.getElementById('adminModal').classList.add('show'); if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); else userRef.once("value").then(snap => { allUsers = snap.val() || {}; updateAdminUserSelect(); }); }
-function closeAdmin(){document.getElementById('adminModal').classList.remove('show');}
 function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i.value.trim())return;broadcastRef.set({text:i.value,t:Date.now()});i.value="";closeAdmin(); showToast("廣播已發送", 'success');}
 broadcastRef.on("value",s=>{
     const v=s.val(); if(!v||Date.now()-v.t>10000)return;
@@ -661,9 +675,9 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-/* --- 🟢 關鍵修正: Transaction 解決4人外出問題 --- */
+/* --- 🟢 關鍵修復: 使用 Transaction (交易) 解決 4 人外出問題 --- */
 function goOut(){
-    // 檢查自己是不是排在名單內的前2名 (防止非前2名偷跑)
+    // 防呆：確認是否為前 2 名
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let myRank = sorted.findIndex(x => x[0] === me.uid);
@@ -678,7 +692,7 @@ function goOut(){
     outRef.transaction((currentOutData) => {
         // 如果目前外出人數已經 >= 3，則取消操作 (回傳 undefined 代表放棄)
         if (currentOutData && Object.keys(currentOutData).length >= 3) {
-            return; 
+            return; // 放棄寫入
         }
         if (!currentOutData) currentOutData = {};
         
@@ -703,6 +717,35 @@ function goOut(){
 function comeBack(){queueRef.child("out/"+me.uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${me.uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+me.uid).remove();addLog(`${myData.name} 返回`); showToast('歡迎回來', 'info');}});}
 
 userRef.on("value",s=>{ const list=document.getElementById("onlineUserList"); list.innerHTML=""; s.forEach(u=>{ let d=u.val(); if(d.online){ let pill = document.createElement("div"); pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; pill.innerHTML = `<div class="online-dot"></div>${d.name}`; list.appendChild(pill); }}); });
+
+async function forceReload(){ 
+    if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
+}
+
+async function resetQueue(auto = false){ 
+    if(auto || await customConfirm("<span style='color:var(--danger)'>確定清空所有排隊、外出狀態？</span><br><small>此操作無法復原</small>")) { 
+        Promise.all([ queueRef.child("reserve").remove(), queueRef.child("out").remove(), queueRef.child("used").remove() ]).then(() => { addLog("ADMIN 重置系統"); if(!auto) {showToast("系統狀態已重置", 'success'); closeAdmin();} }).catch(e => showToast("權限被拒絕", 'error'));
+    } 
+}
+async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+function addLog(t){logRef.push({t,time:Date.now()});}
+
+// 🟢 確保日誌能正確顯示
+logRef.limitToLast(15).on("value",s=>{
+    const b=document.getElementById("log");
+    b.innerHTML="";
+    s.forEach(x=>{
+        let d=x.val();
+        let dv=document.createElement("div");
+        // 增加一個 div 包裹，確保樣式正確
+        dv.style.marginBottom = "4px";
+        dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;
+        b.appendChild(dv);
+    });
+    b.scrollTop=b.scrollHeight;
+});
 
 let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();});
 </script>
