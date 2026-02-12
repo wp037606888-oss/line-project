@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.9 - 極簡流暢版</title>
+<title>萬豪吸菸室 v16.9 - 安全強化版</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -476,8 +476,8 @@ auth.onAuthStateChanged(user=>{
         }
     });
 
-    // 只更新上線狀態，不再覆蓋名字
-    userRef.child(user.uid).update({online: true});
+    // 只更新上線狀態，使用 catch 忽略第一次因為沒有名字而失敗的錯誤
+    userRef.child(user.uid).update({online: true}).catch(e=>{});
     userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
 
@@ -489,10 +489,9 @@ function submitName() {
     if (!name) { showToast("請輸入暱稱", "error"); return; }
     if (name.length > 10) { showToast("暱稱太長了", "error"); return; }
     
-    // 寫入資料庫：預設身分為 user
+    // 寫入資料庫：✅ 企業級寫法，只送名字，絕對不送 role
     userRef.child(me.uid).update({
-        name: name,
-        role: 'user' 
+        name: name
     }).then(() => {
         showToast(`歡迎加入，${name}！`, "success");
         // 更新成功後，上方的 on('value') 會自動偵測到有名字，並關閉視窗
@@ -767,7 +766,15 @@ function comeBack(){
             updates[`queue/out/${me.uid}`] = null;
             
             db.ref().update(updates).then(() => {
-                queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});
+                // ✅ 修正：這裡補上了 uid: me.uid，以符合嚴格規則
+                queueRef.child("history").push({
+                    uid: me.uid, 
+                    name: u.name,
+                    slot,
+                    outTime: u.time,
+                    backTime: now,
+                    over: (now-u.time)>600000
+                });
                 addLog(`${myData.name} 返回`); 
                 showToast('歡迎回來', 'info');
             });
