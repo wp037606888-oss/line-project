@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.4 </title>
+<title>萬豪吸菸室 v16.5 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-/* 引入頂級字體 */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&family=Ma+Shan+Zheng&display=swap');
 
 :root {
@@ -23,7 +22,7 @@
     --gold-dim: rgba(197, 160, 89, 0.2);
     --gold-dark: #8A6E3E;
     --bg-dark: #08090b;
-    --glass: rgba(20, 22, 26, 0.75);
+    --glass: rgba(20, 22, 26, 0.85); /* 稍微加深背景，增加對比 */
     --glass-border: rgba(255, 255, 255, 0.08);
     --text-main: #ECECEC;
     --success: #4caf50;
@@ -47,244 +46,185 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-/* --- 主佈局 --- */
-#layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 20px; gap: 20px; }
+/* --- 主佈局 (關鍵修正) --- */
+#layout { 
+    display: flex; 
+    width: 100%; 
+    height: 100%; /* 強制填滿螢幕 */
+    z-index: 10; 
+    position: relative; 
+    padding: 15px; /* 稍微縮小內距以爭取空間 */
+    gap: 15px; 
+}
 
 /* Dashboard 容器 */
 #dashboard { 
     flex: 1.8; 
     display: flex; 
     flex-direction: column; 
-    gap: 16px; 
-    min-width: 400px; 
+    gap: 15px; 
+    min-width: 0; /* 防止 Flex 子元素溢出 */
     height: 100%; 
-    overflow: hidden; /* 讓內部 Grid 負責滾動 */
 }
 
-#comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; }
+#comms { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0; 
+    min-width: 320px; 
+    height: 100%; 
+    overflow: hidden; 
+    position: relative; 
+}
 
-/* --- 監控網格 (Grid Layout) --- */
+/* 🟢 頂部固定高度區塊 (Header + Buttons) */
+/* 這裡不設 flex: 1，讓它根據內容高度自動撐開，但不要縮小 */
+.dashboard-top {
+    flex-shrink: 0; 
+}
+
+/* 🟢 監控網格 (Grid Layout) - 佔滿剩餘空間 */
 .monitor-grid { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 16px; 
-    flex: 1; /* 佔滿 Dashboard 剩餘高度 */
-    min-height: 0; /* 防止 Grid 爆版 */
+    gap: 15px; 
+    flex: 1; /* 這行很重要：佔滿剩餘高度 */
+    min-height: 0; /* 這行更重要：允許縮小到比內容還小 */
 }
 
-/* 左欄與右欄：都設為 Flex Column */
-.monitor-left, .monitor-right { 
+/* 左欄與右欄：Flex Column */
+.monitor-column { 
     display: flex; 
     flex-direction: column; 
-    gap: 16px; 
+    gap: 15px; 
     height: 100%; 
+    min-height: 0; /* 再次強調，允許內部縮小 */
 }
 
 /* --- 玻璃卡片 --- */
 .glass-panel {
-    background: var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; transition: border-color 0.3s;
+    background: var(--glass); backdrop-filter: blur(25px); 
+    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
+    border-radius: 6px; padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
     display: flex; flex-direction: column;
-    min-height: 0; /* 關鍵：讓 flex item 可以縮小到內容以下，出現捲軸 */
+    min-height: 0; /* 讓卡片可以被壓縮 */
 }
 .glass-panel:hover { border-color: var(--gold-dim); }
 
-/* --- 🟢 高度比例分配 (關鍵修改) --- */
-/* Flex 3 = 30%, Flex 7 = 70% */
-.h-30 { flex: 3; }
-.h-70 { flex: 7; }
+/* 🟢 關鍵比例設定 (Flex Weights) */
+.flex-3 { flex: 3; } /* 30% */
+.flex-7 { flex: 7; } /* 70% */
 
-/* 列表容器 */
+/* 列表容器 (內部滾動) */
 .list-container { 
     flex: 1; 
     overflow-y: auto; 
     padding-right: 4px; 
-    max-height: none; 
 }
 
-/* --- 狀態列 --- */
-.status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
-.user-badge { 
-    background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; 
-    border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); 
-    color: #fff; letter-spacing: 1px; font-weight: 500; display: flex; align-items: center;
-}
-.btn-logout { 
-    background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; 
-    padding: 4px 10px; border-radius: 2px; font-size: 11px; transition: .3s; margin-left: 10px;
-}
+/* --- UI 元件細節 --- */
+.status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+.user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
+.btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
 .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
 
-#clock {
-    font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1;
-    font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15);
-    margin: 12px 0 8px; letter-spacing: 2px; flex-shrink: 0;
-}
+#clock { font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15); margin: 8px 0; letter-spacing: 2px; }
 #slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-family: 'Noto Serif TC'; font-weight: 500; opacity: 0.9; }
-#status { font-size: 16px; font-weight: 700; margin: 5px 0 15px; min-height: 24px; letter-spacing: 1px; color: #ccc; flex-shrink: 0; }
+#status { font-size: 16px; font-weight: 700; margin: 5px 0 10px; min-height: 24px; letter-spacing: 1px; color: #ccc; }
 
-/* --- 按鈕系統 --- */
-.control-grid { display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap; flex-shrink: 0; }
-button.action-btn {
-    flex: 1; min-width: 120px; padding: 18px 10px; border-radius: 2px; font-size: 14px; font-weight: 500; letter-spacing: 2px;
-    cursor: pointer; transition: all 0.3s; font-family: "Noto Sans TC", sans-serif;
-    position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, #2a2d35, #1a1c22); color: #ccc;
-}
+.control-grid { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+button.action-btn { flex: 1; min-width: 100px; padding: 15px 10px; border-radius: 2px; font-size: 14px; font-weight: 500; letter-spacing: 2px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, #2a2d35, #1a1c22); color: #ccc; }
 button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+.btn-gold { border-color: var(--gold) !important; color: var(--gold) !important; background: var(--gold-dim) !important; color: #fff !important; }
+.btn-red { border-color: var(--danger) !important; color: var(--danger) !important; background: rgba(211,47,47,0.1) !important;}
+.btn-green { border-color: var(--success) !important; color: var(--success) !important; background: rgba(76,175,80,0.1) !important;}
 
-.btn-gold { border-color: var(--gold) !important; color: var(--gold) !important; }
-.btn-gold:hover { background: var(--gold-dim) !important; color: #fff !important; }
-.btn-red:hover { border-color: var(--danger) !important; color: var(--danger) !important; background: rgba(211,47,47,0.1) !important;}
-.btn-green:hover { border-color: var(--success) !important; color: var(--success) !important; background: rgba(76,175,80,0.1) !important;}
-
-/* --- 列表項目與標題 --- */
-h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; gap: 8px; font-family: 'Noto Serif TC', serif; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; flex-shrink: 0; }
-.item-card { background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); margin-bottom: 6px; padding: 10px 14px; border-radius: 2px; border-left: 2px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-size: 14px; transition: 0.3s;}
-.item-card:hover { background: rgba(255,255,255,0.05); }
+h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; gap: 8px; font-family: 'Noto Serif TC', serif; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; flex-shrink: 0; }
+.item-card { background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); margin-bottom: 5px; padding: 8px 12px; border-radius: 2px; border-left: 2px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
 .item-card.rank-1 { border-left-color: var(--gold); background: linear-gradient(90deg, var(--gold-dim), transparent); }
 .item-card.rank-2 { border-left-color: #c0c0c0; }
+.afk-timer { color: var(--danger); font-size: 11px; margin-left: 8px; font-family: 'Rajdhani'; font-weight: bold; animation: flashRed 1s infinite alternate; display: none; }
+@keyframes flashRed { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
-.afk-timer {
-    color: var(--danger); font-size: 11px; margin-left: 8px; 
-    font-family: 'Rajdhani'; font-weight: bold;
-    animation: flashRed 1s infinite alternate; display: none;
-}
-@keyframes flashRed { 0% { opacity: 0.5; text-shadow: 0 0 5px transparent; } 100% { opacity: 1; text-shadow: 0 0 10px var(--danger); } }
-
-.btn-mini { padding: 3px 8px; font-size: 10px; border-radius: 2px; cursor: pointer; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #888; transition: 0.2s;}
-.btn-mini:hover { color: #fff; border-color: #fff; }
-.btn-mini.danger:hover { background: var(--danger); border-color: var(--danger); }
-.btn-mini.success:hover { background: var(--success); border-color: var(--success); color: #000;}
-
-.btn-arrow { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; background: none; border:none; color:#666; cursor:pointer; margin-left:2px; font-size:10px; transition:0.2s; }
+.btn-mini { padding: 2px 6px; font-size: 10px; border-radius: 2px; cursor: pointer; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #888; }
+.btn-mini.danger:hover { background: var(--danger); } .btn-mini.success:hover { background: var(--success); color: #000;}
+.btn-arrow { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; background: none; border:none; color:#666; cursor:pointer; font-size:10px; }
 .btn-arrow:hover { color: var(--gold); transform: scale(1.2); }
 
-/* --- 聊天室 --- */
 #chat-header { padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .chat-title { font-weight:700; color:var(--gold); font-family: 'Noto Serif TC'; letter-spacing: 2px; font-size: 13px; }
 #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-
-.msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; word-break: break-all; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+.msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; word-break: break-all; }
 .msg-mine { align-self: flex-end; background: linear-gradient(135deg, #2a2d35, #1a1c22); border: 1px solid var(--gold-dark); color: #fff; border-bottom-right-radius: 0; }
 .msg-other { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); color: #ccc; border-bottom-left-radius: 0; }
-.msg-name { font-size: 10px; margin-bottom: 3px; opacity: 0.6; font-family: 'Noto Serif TC'; cursor: pointer; transition: 0.2s;}
-.msg-name:hover { color: var(--gold); opacity: 1; }
+.msg-name { font-size: 10px; margin-bottom: 3px; opacity: 0.6; font-family: 'Noto Serif TC'; }
+.msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
 
-/* 快捷標籤 */
 .chat-tags { display: flex; gap: 5px; margin-top: -5px; margin-bottom: 5px; flex-shrink: 0; }
-.chat-tag { font-size: 10px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #888; cursor: pointer; transition: 0.2s; white-space: nowrap;}
+.chat-tag { font-size: 10px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #888; cursor: pointer; white-space: nowrap;}
 .chat-tag:hover { color: var(--gold); border-color: var(--gold); }
 
-/* 輸入區 */
-.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; position: relative; flex-wrap: wrap; flex-shrink: 0; }
+.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 .input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
-input#msg { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; transition: .3s; font-family: "Noto Serif TC"; }
+input#msg { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
 input#msg:focus { border-bottom-color: var(--gold); }
-.btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; transition: .2s; }
+.btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; }
 .btn-tool:hover { color: var(--gold); }
-button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; transition: 0.2s;}
-button.btn-send:hover { background: #fff; }
+button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
 
-/* 表情面板 */
-#emojiPicker { 
-    position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); 
-    border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; 
-    display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50;
-}
+#emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
 #emojiPicker.show { display: grid; }
-.emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; transition:0.2s;}
+.emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; }
 .emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
 
-/* --- Admin UI & Modals --- */
-#btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; backdrop-filter: blur(10px); }
-#btnAdminFloat:hover { background: var(--gold); color: #000; transform: rotate(90deg); box-shadow: 0 0 20px rgba(197, 160, 89, 0.5); }
-#btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; transition: 0.3s; backdrop-filter: blur(10px); }
+/* Modals & Overlays */
+#btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+#btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 
-#adminModal { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
-#adminModal.show { display: flex; opacity: 1; }
-.admin-card { width: 420px; background: #0c0c0e; border: 1px solid var(--gold-dark); border-radius: 4px; padding: 30px; box-shadow: 0 0 60px rgba(0,0,0,0.9); transform: translateY(20px); transition: transform 0.3s; }
-#adminModal.show .admin-card { transform: translateY(0); }
-.admin-section { margin-bottom: 25px; }
-.btn-admin-action { padding: 12px; border-radius: 2px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; transition: 0.2s; font-size: 13px; }
+#adminModal, #confirmModal, #alertModal, #imgModal, #permModal { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
+#adminModal.show, #confirmModal.show, #alertModal.show, #permModal.show { display: flex; }
+.admin-card, .confirm-box { background: #0c0c0e; border: 1px solid var(--gold-dark); border-radius: 4px; padding: 30px; box-shadow: 0 0 60px rgba(0,0,0,0.9); width: 90%; max-width: 420px; }
+.admin-section { margin-bottom: 20px; }
+.btn-admin-action { padding: 12px; border-radius: 2px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; font-size: 13px; }
 .btn-admin-action:hover { border-color: #fff; color: #fff; background: #222; }
-
-/* --- Toast --- */
 #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
 .toast { background: rgba(15, 15, 20, 0.95); border: 1px solid var(--gold-dark); color: #fff; padding: 12px 24px; border-radius: 4px; font-family: 'Noto Sans TC'; font-size: 14px; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateY(-20px); transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
 .toast.show { opacity: 1; transform: translateY(0); }
-.toast.success { border-color: var(--success); }
-.toast.success::before { content: '✓'; color: var(--success); font-weight: bold; }
-.toast.error { border-color: var(--danger); }
-.toast.error::before { content: '✕'; color: var(--danger); font-weight: bold; }
-.toast.info::before { content: 'ℹ'; color: var(--gold); font-weight: bold; font-family: serif; }
+.toast.success { border-color: var(--success); } .toast.success::before { content: '✓'; color: var(--success); font-weight: bold; }
+.toast.error { border-color: var(--danger); } .toast.error::before { content: '✕'; color: var(--danger); font-weight: bold; }
+.confirm-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+.confirm-btn { padding: 10px 20px; border-radius: 2px; border: none; cursor: pointer; font-weight: bold; font-family: 'Noto Sans TC'; }
+.yes { background: var(--danger); color: #fff; } .no { background: #333; color: #aaa; }
 
-/* --- Confirm Modal --- */
-#confirmModal { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; }
-#confirmModal.show { display: flex; opacity: 1; }
-.confirm-box { background: #111; border: 1px solid #444; border-radius: 4px; padding: 30px; width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.9); transform: scale(0.95); transition: 0.3s; }
-#confirmModal.show .confirm-box { transform: scale(1); }
-.confirm-text { color: #fff; font-size: 16px; margin-bottom: 25px; font-family: 'Noto Serif TC'; line-height:1.5;}
-.confirm-btns { display: flex; gap: 10px; justify-content: center; }
-.confirm-btn { padding: 10px 20px; border-radius: 2px; border: none; cursor: pointer; font-weight: bold; font-family: 'Noto Sans TC'; transition: 0.2s; }
-.confirm-btn.yes { background: var(--danger); color: #fff; }
-.confirm-btn.yes:hover { filter: brightness(1.2); }
-.confirm-btn.no { background: #333; color: #aaa; }
-.confirm-btn.no:hover { background: #444; color: #fff; }
+/* Permission Modal Styles */
+.perm-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; text-align: center; } @keyframes pulse { 0% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.8; transform: scale(1); } }
+.perm-title { color: var(--gold); font-size: 24px; font-weight: bold; margin-bottom: 15px; text-align: center; font-family: 'Noto Serif TC'; }
+.perm-desc { color: #ccc; font-size: 15px; line-height: 1.6; max-width: 400px; margin-bottom: 30px; text-align: center; }
+.perm-btn { padding: 15px 40px; background: var(--gold); color: #000; border: none; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(197, 160, 89, 0.4); display: block; margin: 0 auto; }
+.blocked-guide { border: 1px solid var(--danger); background: rgba(211,47,47,0.1); padding: 20px; border-radius: 8px; margin-top: 20px; text-align: left; font-size: 14px; color: #ccc; }
+.blocked-guide ol { padding-left: 20px; margin: 10px 0; } .blocked-guide li { margin-bottom: 8px; }
 
-/* --- Alert Modal --- */
-#alertModal { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; }
-#alertModal.show { display: flex; opacity: 1; }
-#alertModal .confirm-box { background: #111; border: 1px solid var(--danger); border-radius: 4px; padding: 35px 30px; width: 320px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transform: scale(0.95); transition: 0.3s; }
-#alertModal.show .confirm-box { transform: scale(1); }
-
-/* --- 權限請求遮罩 --- */
-#permModal { 
-    position: fixed; inset: 0; z-index: 99999; background: rgba(5,6,10,0.95); backdrop-filter: blur(15px); 
-    display: none; align-items: center; justify-content: center; flex-direction: column; 
-    text-align: center; padding: 30px; 
-}
-#permModal.show { display: flex; }
-.perm-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; }
-@keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
-.perm-title { color: var(--gold); font-size: 24px; font-weight: bold; margin-bottom: 15px; font-family: 'Noto Serif TC'; }
-.perm-desc { color: #ccc; font-size: 15px; line-height: 1.6; max-width: 400px; margin-bottom: 30px; }
-.perm-btn { 
-    padding: 15px 40px; background: var(--gold); color: #000; border: none; font-size: 16px; font-weight: bold; 
-    border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(197, 160, 89, 0.4); transition: 0.3s; 
-}
-.perm-btn:hover { transform: scale(1.05); background: #fff; }
-.blocked-guide { 
-    border: 1px solid var(--danger); background: rgba(211,47,47,0.1); padding: 20px; border-radius: 8px; 
-    margin-top: 20px; text-align: left; font-size: 14px; display: none; 
-}
-.blocked-guide ol { padding-left: 20px; margin: 10px 0; color: #aaa; }
-.blocked-guide li { margin-bottom: 8px; }
-
-/* Online List */
-#onlineUserList { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
-.online-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa; white-space: nowrap; transition: 0.3s; display: flex; align-items: center; gap: 5px; }
-.online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.05); }
-.online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
-.online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
+#imgModal img { max-width: 90%; max-height: 90%; border: 1px solid var(--gold); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+#broadcastBanner { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 9999; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--gold); border-radius: 4px; padding: 25px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+#broadcastBanner.active { top: 30px; }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-#imgModal { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; }
-#imgModal img { max-width: 90%; max-height: 90%; border: 1px solid var(--gold); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
 
 @media (max-width: 900px) {
     #layout { flex-direction: column; padding: 10px; }
-    /* 手機版：Dashboard 允許整體滾動 */
-    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; overflow-y: auto; }
+    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; 
+        overflow-y: auto; /* 手機上允許儀表板滾動，防止內容被切 */
+    }
     #comms { flex: 1; min-width: 0; height: 40vh; }
-    .monitor-grid { grid-template-columns: 1fr; }
-    /* 手機版：各區塊高度自動，不強制比例 */
-    .monitor-left, .monitor-right { height: auto; }
-    .h-30, .h-70 { flex: none; height: auto; min-height: 150px; }
+    .monitor-grid { grid-template-columns: 1fr; } /* 手機轉為單欄 */
+    /* 手機上取消強制高度，改為最小高度，避免太扁 */
+    .flex-3, .flex-7 { flex: none; min-height: 180px; }
+    .status-header { margin-top: 5px; }
 }
 </style>
 </head>
@@ -300,53 +240,24 @@ button.btn-send:hover { background: #fff; }
         <div class="perm-desc">為了確保您不錯過入場順位，<br>萬豪吸菸室需要您的通知權限。</div>
         <button class="perm-btn" onclick="requestPermission()">開啟通知</button>
     </div>
-    
     <div id="perm-blocked" style="display:none;">
         <div class="perm-icon" style="color:var(--danger)">⚠️</div>
         <div class="perm-title" style="color:var(--danger)">通知已被封鎖</div>
         <div class="perm-desc">系統偵測到您封鎖了通知權限。<br>請依照下方指示解鎖以繼續使用。</div>
-        
-        <div class="blocked-guide" style="display:block;">
+        <div class="blocked-guide">
             <strong>如何解鎖：</strong>
-            <ol>
-                <li>點擊網址列左側的 🔒 鎖頭圖示</li>
-                <li>找到「通知」或「權限」選項</li>
-                <li>將開關切換為 <strong>「允許 (Allow)」</strong></li>
-                <li>重新整理網頁</li>
-            </ol>
+            <ol><li>點擊網址列左側的 🔒 鎖頭圖示</li><li>找到「通知」或「權限」</li><li>將開關切換為 <strong>「允許 (Allow)」</strong></li><li>重新整理網頁</li></ol>
         </div>
         <button class="perm-btn" onclick="location.reload()" style="background:#333; color:#fff; margin-top:20px;">我已開啟，重新整理</button>
     </div>
 </div>
 
 <div id="toast-container"></div>
-<div id="confirmModal">
-    <div class="confirm-box">
-        <div class="confirm-text" id="confirmMsg">確認執行此操作？</div>
-        <div class="confirm-btns">
-            <button class="confirm-btn no" onclick="closeConfirm(false)">取消</button>
-            <button class="confirm-btn yes" onclick="closeConfirm(true)">確認</button>
-        </div>
-    </div>
-</div>
+<div id="confirmModal"><div class="confirm-box"><div class="confirm-text" id="confirmMsg">確認？</div><div class="confirm-btns"><button class="confirm-btn no" onclick="closeConfirm(false)">取消</button><button class="confirm-btn yes" onclick="closeConfirm(true)">確認</button></div></div></div>
+<div id="alertModal"><div class="confirm-box"><div class="confirm-text" id="alertMsg"></div><div class="confirm-btns"><button class="confirm-btn yes" onclick="closeAlert()" style="width:100%">我知道了</button></div></div></div>
+<div id="imgModal" onclick="this.style.display='none'"><img id="imgModalSrc" src=""></div>
 
-<div id="alertModal">
-    <div class="confirm-box">
-        <div class="confirm-text" id="alertMsg" style="font-size:15px; color:#ddd;">提示訊息</div>
-        <div class="confirm-btns">
-            <button class="confirm-btn yes" onclick="closeAlert()" style="width:100%; letter-spacing:2px;">我知道了</button>
-        </div>
-    </div>
-</div>
-
-<div id="imgModal" onclick="this.style.display='none'">
-    <img id="imgModalSrc" src="">
-</div>
-
-<div id="broadcastBanner" style="position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 9999; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--gold); border-radius: 4px; padding: 25px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1);">
-    <h3 style="border:none; justify-content:center; color:var(--gold);">📢 萬豪吸菸室公告</h3>
-    <p id="broadcastText" style="font-size:18px; font-weight:700; color:#fff; margin:0; font-family:'Noto Serif TC';">---</p>
-</div>
+<div id="broadcastBanner"><h3 style="border:none; justify-content:center; color:var(--gold);">📢 萬豪吸菸室公告</h3><p id="broadcastText" style="font-size:18px; font-weight:700; color:#fff; margin:0;">---</p></div>
 
 <button id="btnAdminFloat" onclick="openAdmin()" style="display:none;">⚙️</button>
 <button id="btnGame" onclick="location.href='game.html'" title="前往遊樂場">🎮</button>
@@ -357,45 +268,16 @@ button.btn-send:hover { background: #fff; }
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        
-        <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">16.4</span>)</h4>
-            <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
-        </div>
-
-        <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4>
-            <div style="display:flex; gap:10px;">
-                <select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333; font-family:'Noto Sans TC';"></select>
-                <button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button>
-            </div>
-        </div>
-
-        <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播系統</h4>
-            <div style="display:flex; gap:10px;">
-                <input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="輸入公告內容...">
-                <button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button>
-            </div>
-        </div>
-        
-        <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">系統維護</h4>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2; border-color:var(--success); color:var(--success);" onclick="togglePlayground()">遊樂場狀態: 讀取中...</button>
-                <button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button>
-                <button onclick="clearChat()" class="btn-admin-action">清空聊天室</button>
-                <button onclick="clearHistory()" class="btn-admin-action">清空歷史紀錄</button>
-                <button onclick="clearLog()" class="btn-admin-action">清空日誌</button>
-                <button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button>
-            </div>
-        </div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.5</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
     </div>
 </div>
 
 <div id="layout">
     <div id="dashboard">
-        <div class="glass-panel" style="flex-shrink: 0;">
+        <div class="glass-panel dashboard-top">
             <div class="status-header">
                 <div style="display: flex; align-items: center;">
                     <span class="user-badge" id="who">連線中...</span>
@@ -415,22 +297,22 @@ button.btn-send:hover { background: #fff; }
         </div>
 
         <div class="monitor-grid">
-            <div class="monitor-left">
-                <div class="glass-panel h-30">
+            <div class="monitor-column">
+                <div class="glass-panel flex-3">
                     <h3>外出中.. (<span id="outCountNum" style="color:var(--success)">0</span>/3)</h3>
                     <div id="outList" class="list-container"></div>
                 </div>
-                <div class="glass-panel h-70">
+                <div class="glass-panel flex-7">
                     <h3>歷史紀錄</h3>
                     <div id="history" class="list-container"></div>
                 </div>
             </div>
-            <div class="monitor-right">
-                <div class="glass-panel h-70">
+            <div class="monitor-column">
+                <div class="glass-panel flex-7">
                     <h3>抽菸順序</h3>
                     <div id="queue" class="list-container"></div>
                 </div>
-                <div class="glass-panel h-30">
+                <div class="glass-panel flex-3">
                     <h3>系統日誌</h3>
                     <div id="log" class="list-container" style="font-family: 'Rajdhani', monospace; font-size: 12px; color:#888;"></div>
                 </div>
@@ -464,7 +346,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 16.4;
+const APP_VERSION = 16.5;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -505,7 +387,7 @@ function sendPushNotification(title, body) {
     }
 }
 
-/* --- Toast, Confirm, & Alert --- */
+/* --- Toast, Confirm, Alert --- */
 function showToast(msg, type='info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.textContent = msg;
@@ -522,10 +404,7 @@ function customConfirm(msg) {
     });
 }
 function closeConfirm(result) { document.getElementById('confirmModal').classList.remove('show'); if(confirmResolve) { confirmResolve(result); confirmResolve = null; } }
-function customAlert(msg) {
-    document.getElementById('alertMsg').innerHTML = msg;
-    document.getElementById('alertModal').classList.add('show');
-}
+function customAlert(msg) { document.getElementById('alertMsg').innerHTML = msg; document.getElementById('alertModal').classList.add('show'); }
 function closeAlert() { document.getElementById('alertModal').classList.remove('show'); }
 function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
@@ -535,7 +414,7 @@ let w,h,particles=[]; function resize(){w=canvas.width=innerWidth;h=canvas.heigh
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-/* --- 雲端熱更新監聽 --- */
+/* --- 熱更新監聽 --- */
 let firstVerCheck = true;
 db.ref("config/system_version").on("value", snap => {
     const dbVer = snap.val(); if (!dbVer) return;
@@ -547,7 +426,6 @@ db.ref("config/system_version").on("value", snap => {
     firstVerCheck = false;
 });
 
-/* --- 動態問候語 --- */
 function getGreeting(name) {
     const hr = new Date().getHours(); let greet = "晚安";
     if(hr >= 5 && hr < 12) greet = "早安"; else if(hr >= 12 && hr < 18) greet = "午安";
@@ -566,7 +444,7 @@ auth.onAuthStateChanged(user=>{
         engineReady=true;
         if(myData.role === "admin") { userRef.on("value", snap => { allUsers = snap.val() || {}; if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); }); }
         
-        checkNotificationPermission(); // 檢查權限
+        checkNotificationPermission();
         renderStaticLists(); updateButtonStates(); renderOutList(); 
     });
     userRef.child(user.uid+"/online").set(true); userRef.child(user.uid+"/online").onDisconnect().set(false);
@@ -659,7 +537,7 @@ chatRef.limitToLast(30).on("value",s=>{
 
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
-/* --- 核心邏輯 & 幽靈防禦機制 --- */
+/* --- 核心邏輯 --- */
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function getSlotStatus(h,m){
     const slots=[14,16,18,20,22,0]; let currentSlot=slots.find(s=>s===h);
