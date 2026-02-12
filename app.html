@@ -1,34 +1,766 @@
-{
-  "rules": {
-    ".read": "auth != null",
-    
-    "users": {
-      "$uid": {
-        // 保護使用者資料，只准本人或管理員修改
-        ".write": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
-      }
-    },
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>萬豪吸菸室 v16.12 - 終極修復版</title>
 
-    "queue": {
-      // 🟢 關鍵：開放 queue 節點的寫入權限
-      // 這對於 Transaction (防爆衝) 和 update (管理員派發) 非常重要
-      ".write": "auth != null",
-      
-      "out": {
-        // 雙重保險：只有本人或管理員可以操作外出的名單
-        "$uid": {
-           ".validate": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
-        }
-      }
-    },
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#08090b">
 
-    "chat": { ".write": "auth != null" },
-    "log": { ".write": "auth != null" },
-    
-    // 管理員專用區
-    "broadcast": { ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'" },
-    "config": { ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'" },
-    "reload": { ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'" },
-    "playground": { ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'" }
-  }
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&family=Ma+Shan+Zheng&display=swap');
+
+:root {
+    --gold: #C5A059;
+    --gold-dim: rgba(197, 160, 89, 0.2);
+    --gold-dark: #8A6E3E;
+    --bg-dark: #08090b;
+    --glass: rgba(20, 22, 26, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --text-main: #ECECEC;
+    --success: #4caf50;
+    --danger: #d32f2f;
 }
+
+* { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+
+body {
+    margin: 0; font-family: "Noto Sans TC", sans-serif;
+    background: var(--bg-dark); color: var(--text-main);
+    display: flex; height: 100vh; overflow: hidden; font-size: 15px; perspective: 1000px;
+    overscroll-behavior-y: none;
+}
+
+.ambient-light {
+    position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
+    background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
+    transform: translateX(-50%); pointer-events: none; z-index: 0;
+}
+canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+#layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; }
+
+#dashboard { 
+    flex: 1.8; display: flex; flex-direction: column; gap: 15px; min-width: 0; height: 100%; 
+}
+
+#comms { 
+    flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; 
+}
+
+.dashboard-top { flex-shrink: 0; }
+
+.monitor-grid { 
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
+    flex: 1; min-height: 0; 
+}
+
+.monitor-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
+
+.glass-panel {
+    background: var(--glass); backdrop-filter: blur(25px); 
+    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
+    border-radius: 6px; padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    display: flex; flex-direction: column;
+    min-height: 0; position: relative;
+}
+.glass-panel:hover { border-color: var(--gold-dim); }
+
+.flex-3 { flex: 3; } .flex-7 { flex: 7; }
+
+.list-container { flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; }
+
+.status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
+.user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
+.btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
+.btn-logout:hover { border-color: var(--gold); color: var(--gold); }
+
+#clock { font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15); margin: 8px 0; letter-spacing: 2px; flex-shrink: 0; }
+#slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-family: 'Noto Serif TC'; font-weight: 500; opacity: 0.9; }
+#status { font-size: 16px; font-weight: 700; margin: 5px 0 10px; min-height: 24px; letter-spacing: 1px; color: #ccc; flex-shrink: 0; }
+
+.control-grid { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; flex-shrink: 0; }
+button.action-btn { flex: 1; min-width: 100px; padding: 15px 10px; border-radius: 2px; font-size: 14px; font-weight: 500; letter-spacing: 2px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, #2a2d35, #1a1c22); color: #ccc; }
+button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+.btn-gold { border-color: var(--gold) !important; color: var(--gold) !important; background: var(--gold-dim) !important; color: #fff !important; }
+.btn-red { border-color: var(--danger) !important; color: var(--danger) !important; background: rgba(211,47,47,0.1) !important;}
+.btn-green { border-color: var(--success) !important; color: var(--success) !important; background: rgba(76,175,80,0.1) !important;}
+
+h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; gap: 8px; font-family: 'Noto Serif TC', serif; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; flex-shrink: 0; }
+.item-card { background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent); margin-bottom: 5px; padding: 8px 12px; border-radius: 2px; border-left: 2px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.item-card.rank-1 { border-left-color: var(--gold); background: linear-gradient(90deg, var(--gold-dim), transparent); }
+.item-card.rank-2 { border-left-color: #c0c0c0; }
+.afk-timer { color: var(--danger); font-size: 11px; margin-left: 8px; font-family: 'Rajdhani'; font-weight: bold; animation: flashRed 1s infinite alternate; display: none; }
+@keyframes flashRed { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+.btn-mini { padding: 2px 6px; font-size: 10px; border-radius: 2px; cursor: pointer; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #888; }
+.btn-mini.danger:hover { background: var(--danger); } .btn-mini.success:hover { background: var(--success); color: #000;}
+.btn-arrow { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; background: none; border:none; color:#666; cursor:pointer; font-size:10px; }
+.btn-arrow:hover { color: var(--gold); transform: scale(1.2); }
+
+#chat-header { padding: 15px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.chat-title { font-weight:700; color:var(--gold); font-family: 'Noto Serif TC'; letter-spacing: 2px; font-size: 13px; }
+#onlineUserList { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; max-height: 85px; overflow-y: auto; padding-bottom: 2px; }
+.online-pill { display: flex !important; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: #aaa; white-space: nowrap; height: 24px; }
+.online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.1); }
+.online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; margin-right: 6px; }
+.online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
+
+#chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+.msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; word-break: break-all; }
+.msg-mine { align-self: flex-end; background: linear-gradient(135deg, #2a2d35, #1a1c22); border: 1px solid var(--gold-dark); color: #fff; border-bottom-right-radius: 0; }
+.msg-other { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); color: #ccc; border-bottom-left-radius: 0; }
+.msg-name { font-size: 10px; margin-bottom: 3px; opacity: 0.6; font-family: 'Noto Serif TC'; }
+.msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
+.msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
+
+.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
+input#msg { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
+input#msg:focus { border-bottom-color: var(--gold); }
+.btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
+.btn-tool:hover { color: var(--gold); }
+button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; min-width: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+
+#emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
+#emojiPicker.show { display: grid; }
+.emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; }
+.emoji-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+
+#btnAdminFloat { position: fixed; bottom: 80px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+#btnGame { position: fixed; bottom: 20px; left: 20px; z-index: 100; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.6); border: 1px solid var(--success); color: var(--success); font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+
+#adminModal, #confirmModal, #alertModal, #imgModal, #permModal { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
+#adminModal.show, #confirmModal.show, #alertModal.show, #permModal.show { display: flex; }
+.admin-card, .confirm-box { background: #0c0c0e; border: 1px solid var(--gold-dark); border-radius: 4px; padding: 30px; box-shadow: 0 0 60px rgba(0,0,0,0.9); width: 90%; max-width: 420px; }
+.admin-section { margin-bottom: 20px; }
+.btn-admin-action { padding: 12px; border-radius: 2px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; font-size: 13px; }
+.btn-admin-action:hover { border-color: #fff; color: #fff; background: #222; }
+#toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.toast { background: rgba(15, 15, 20, 0.95); border: 1px solid var(--gold-dark); color: #fff; padding: 12px 24px; border-radius: 4px; font-family: 'Noto Sans TC'; font-size: 14px; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateY(-20px); transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { border-color: var(--success); } .toast.success::before { content: '✓'; color: var(--success); font-weight: bold; }
+.toast.error { border-color: var(--danger); } .toast.error::before { content: '✕'; color: var(--danger); font-weight: bold; }
+.confirm-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+.confirm-btn { padding: 10px 20px; border-radius: 2px; border: none; cursor: pointer; font-weight: bold; font-family: 'Noto Sans TC'; }
+.yes { background: var(--danger); color: #fff; } .no { background: #333; color: #aaa; }
+
+.perm-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; text-align: center; } @keyframes pulse { 0% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.8; transform: scale(1); } }
+.perm-title { color: var(--gold); font-size: 24px; font-weight: bold; margin-bottom: 15px; text-align: center; font-family: 'Noto Serif TC'; }
+.perm-desc { color: #ccc; font-size: 15px; line-height: 1.6; max-width: 400px; margin-bottom: 30px; text-align: center; }
+.perm-btn { padding: 15px 40px; background: var(--gold); color: #000; border: none; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(197, 160, 89, 0.4); display: block; margin: 0 auto; }
+.blocked-guide { border: 1px solid var(--danger); background: rgba(211,47,47,0.1); padding: 20px; border-radius: 8px; margin-top: 20px; text-align: left; font-size: 14px; color: #ccc; }
+.blocked-guide ol { padding-left: 20px; margin: 10px 0; } .blocked-guide li { margin-bottom: 8px; }
+
+#imgModal img { max-width: 90%; max-height: 90%; border: 1px solid var(--gold); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+#broadcastBanner { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 9999; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--gold); border-radius: 4px; padding: 25px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+#broadcastBanner.active { top: 30px; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+@media (max-width: 900px) {
+    #layout { flex-direction: column; padding: 10px; }
+    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; overflow-y: auto; }
+    #comms { flex: 1; min-width: 0; height: 40vh; }
+    .monitor-grid { grid-template-columns: 1fr; }
+    .monitor-column { height: auto; }
+    .flex-3, .flex-7 { flex: none; min-height: 150px; }
+}
+</style>
+</head>
+
+<body>
+<div class="ambient-light"></div>
+<canvas id="bg"></canvas>
+
+<div id="permModal">
+    <div id="perm-default">
+        <div class="perm-icon">🔔</div>
+        <div class="perm-title">啟用尊榮通知</div>
+        <div class="perm-desc">為了確保您不錯過入場順位，<br>萬豪吸菸室需要您的通知權限。</div>
+        <button class="perm-btn" onclick="requestPermission()">開啟通知</button>
+    </div>
+    <div id="perm-blocked" style="display:none;">
+        <div class="perm-icon" style="color:var(--danger)">⚠️</div>
+        <div class="perm-title" style="color:var(--danger)">通知已被封鎖</div>
+        <div class="perm-desc">系統偵測到您封鎖了通知權限。<br>請依照下方指示解鎖以繼續使用。</div>
+        <div class="blocked-guide">
+            <strong>如何解鎖：</strong>
+            <ol><li>點擊網址列左側的 🔒 鎖頭圖示</li><li>找到「通知」或「權限」</li><li>將開關切換為 <strong>「允許 (Allow)」</strong></li><li>重新整理網頁</li></ol>
+        </div>
+        <button class="perm-btn" onclick="location.reload()" style="background:#333; color:#fff; margin-top:20px;">我已開啟，重新整理</button>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="confirmModal"><div class="confirm-box"><div class="confirm-text" id="confirmMsg">確認？</div><div class="confirm-btns"><button class="confirm-btn no" onclick="closeConfirm(false)">取消</button><button class="confirm-btn yes" onclick="closeConfirm(true)">確認</button></div></div></div>
+<div id="alertModal"><div class="confirm-box"><div class="confirm-text" id="alertMsg"></div><div class="confirm-btns"><button class="confirm-btn yes" onclick="closeAlert()" style="width:100%">我知道了</button></div></div></div>
+<div id="imgModal" onclick="this.style.display='none'"><img id="imgModalSrc" src=""></div>
+
+<div id="broadcastBanner"><h3 style="border:none; justify-content:center; color:var(--gold);">📢 萬豪吸菸室公告</h3><p id="broadcastText" style="font-size:18px; font-weight:700; color:#fff; margin:0;">---</p></div>
+
+<button id="btnAdminFloat" onclick="openAdmin()" style="display:none;">⚙️</button>
+<button id="btnGame" onclick="location.href='game.html'" title="前往遊樂場">🎮</button>
+
+<div id="adminModal" onclick="if(event.target===this)closeAdmin()">
+    <div class="admin-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
+            <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
+        </div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.12</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
+    </div>
+</div>
+
+<div id="layout">
+    <div id="dashboard">
+        <div class="glass-panel dashboard-top">
+            <div class="status-header">
+                <div style="display: flex; align-items: center;">
+                    <span class="user-badge" id="who">連線中...</span>
+                    <button class="btn-logout" onclick="enableNotification()" id="btnNotify" style="display:none;">🔔</button>
+                    <button class="btn-logout" onclick="logout()">登出</button>
+                </div>
+                <div id="slotDisplay">---</div>
+            </div>
+            <div id="clock">00:00:00</div>
+            <div id="status">系統初始化...</div>
+            <div class="control-grid">
+                <button id="bReserve" onclick="reserve()" class="action-btn">預約排隊</button>
+                <button id="bOut" onclick="goOut()" class="action-btn">現在前往</button>
+                <button id="bBack" onclick="comeBack()" class="action-btn">確認返回</button>
+                <button id="bCancel" onclick="handleCancelClick()" class="action-btn">取消預約</button>
+            </div>
+        </div>
+
+        <div class="monitor-grid">
+            <div class="monitor-column">
+                <div class="glass-panel flex-3">
+                    <h3>外出中.. (<span id="outCountNum" style="color:var(--success)">0</span>/3)</h3>
+                    <div id="outList" class="list-container"></div>
+                </div>
+                <div class="glass-panel flex-7">
+                    <h3>歷史紀錄</h3>
+                    <div id="history" class="list-container"></div>
+                </div>
+            </div>
+            <div class="monitor-column">
+                <div class="glass-panel flex-7">
+                    <h3>抽菸順序</h3>
+                    <div id="queue" class="list-container"></div>
+                </div>
+                <div class="glass-panel flex-3">
+                    <h3>系統日誌</h3>
+                    <div id="log" class="list-container" style="font-family: 'Rajdhani', monospace; font-size: 12px; color:#888;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="comms" class="glass-panel" style="padding:0;">
+        <div id="chat-header">
+            <div class="chat-title">萬豪吸菸室 CHAT</div>
+            <div id="onlineUserList"></div>
+        </div>
+        <div id="chat-box"></div>
+        <div id="emojiPicker"></div>
+        
+        <div class="input-area">
+            <div class="input-main">
+                <input type="file" id="imgInput" hidden accept="image/*" onchange="handleFile(event)">
+                <button class="btn-tool" onclick="document.getElementById('imgInput').click()" title="傳送圖片">📷</button>
+                <button class="btn-tool" onclick="toggleEmoji()" title="表情符號">😀</button>
+                <input id="msg" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter')send()" autocomplete="off">
+                <button onclick="send()" class="btn-send">➤</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const APP_VERSION = 16.12;
+document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
+
+const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
+firebase.initializeApp(config);
+const db=firebase.database(), auth=firebase.auth();
+const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast"), configRef=db.ref("config");
+
+let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
+let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
+
+function checkNotificationPermission() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") {
+        document.getElementById("permModal").classList.remove("show");
+        notifyEnabled = true;
+    } else if (Notification.permission === "denied") {
+        document.getElementById("permModal").classList.add("show");
+        document.getElementById("perm-default").style.display = "none";
+        document.getElementById("perm-blocked").style.display = "block";
+    } else {
+        document.getElementById("permModal").classList.add("show");
+        document.getElementById("perm-default").style.display = "block";
+        document.getElementById("perm-blocked").style.display = "none";
+    }
+}
+function requestPermission() {
+    Notification.requestPermission().then(permission => {
+        checkNotificationPermission();
+        if (permission === "granted") { playBeep(); showToast("✅ 通知已啟用", "success"); }
+    });
+}
+function sendPushNotification(title, body) {
+    if (Notification.permission === "granted") {
+        if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        new Notification(title, { body: body, icon: "https://cdn-icons-png.flaticon.com/512/1830/1830839.png", vibrate: [200, 100, 200] });
+    }
+}
+
+function showToast(msg, type='info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.textContent = msg;
+    container.appendChild(toast);
+    void toast.offsetWidth; toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+}
+let confirmResolve = null;
+function customConfirm(msg) {
+    return new Promise((resolve) => {
+        document.getElementById('confirmMsg').innerHTML = msg;
+        document.getElementById('confirmModal').classList.add('show');
+        confirmResolve = resolve;
+    });
+}
+function closeConfirm(result) { document.getElementById('confirmModal').classList.remove('show'); if(confirmResolve) { confirmResolve(result); confirmResolve = null; } }
+function customAlert(msg) { document.getElementById('alertMsg').innerHTML = msg; document.getElementById('alertModal').classList.add('show'); }
+function closeAlert() { document.getElementById('alertModal').classList.remove('show'); }
+function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+
+const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
+let w,h,particles=[]; function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window.onresize=resize; resize();
+for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
+function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
+
+let firstVerCheck = true;
+db.ref("config/system_version").on("value", snap => {
+    const dbVer = snap.val(); if (!dbVer) return;
+    if (APP_VERSION < dbVer) {
+        if (firstVerCheck) { window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; return; }
+        showToast(`🆕 系統已升級，3秒後自動更新...`, 'info');
+        setTimeout(() => { window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; }, 3000);
+    }
+    firstVerCheck = false;
+});
+
+function getGreeting(name) {
+    const hr = new Date().getHours(); let greet = "晚安";
+    if(hr >= 5 && hr < 12) greet = "早安"; else if(hr >= 12 && hr < 18) greet = "午安";
+    return `${greet}，${name.toUpperCase()}`;
+}
+
+auth.onAuthStateChanged(user=>{
+    if(!user){location.href="login.html";return;} me=user;
+    userRef.child(user.uid).on("value",s=>{
+        myData=s.val()||{};
+        document.getElementById("who").textContent = getGreeting(myData.name || "GUEST");
+        document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
+        
+        // 🟢 [FIX] 移除了錯誤的 chatTags 引用，這是導致卡死的主因！
+        
+        engineReady=true;
+        if(myData.role === "admin") { 
+            userRef.on("value", snap => { 
+                allUsers = snap.val() || {}; 
+                if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); 
+            }); 
+        }
+        
+        checkNotificationPermission();
+        renderStaticLists(); updateButtonStates(); renderOutList(); 
+    });
+    userRef.child(user.uid+"/online").set(true); userRef.child(user.uid+"/online").onDisconnect().set(false);
+});
+function logout(){auth.signOut().then(()=>{location.href="login.html";});}
+
+function openAdmin(){ 
+    document.getElementById('adminModal').classList.add('show'); 
+    if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); 
+    else if(myData.role === 'admin') userRef.once("value").then(snap => { allUsers = snap.val() || {}; updateAdminUserSelect(); }); 
+}
+function closeAdmin(){document.getElementById('adminModal').classList.remove('show');}
+
+function updateAdminUserSelect() {
+    const sel = document.getElementById("adminUserSelect"); 
+    if(!sel) return;
+    sel.innerHTML = "<option value=''>選擇貴賓...</option>";
+    if(!allUsers) return;
+    Object.entries(allUsers).forEach(([uid, u]) => {
+        let isReserved = cacheQueue.reserve && cacheQueue.reserve[uid]; let isOut = cacheQueue.out && cacheQueue.out[uid];
+        if(!isReserved && !isOut) { let opt = document.createElement("option"); opt.value = uid; opt.textContent = u.name; sel.appendChild(opt); }
+    });
+}
+function adminForceAdd() {
+    const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
+    if(u) {
+        let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
+        queueRef.child("reserve/"+uid).set({ name: u.name, time: Date.now(), slot: t });
+        addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
+    }
+}
+function moveQueue(uid, direction) {
+    if(!myData || myData.role !== 'admin') return;
+    let r = cacheQueue.reserve || {}; let sorted = Object.entries(r).sort((a,b) => a[1].time - b[1].time); let idx = sorted.findIndex(x => x[0] === uid);
+    if (idx === -1) return; let targetIdx = idx + direction; if (targetIdx < 0 || targetIdx >= sorted.length) return;
+    let targetUid = sorted[targetIdx][0], myTime = sorted[idx][1].time, targetTime = sorted[targetIdx][1].time;
+    if (myTime === targetTime) { if(direction < 0) targetTime -= 1; else targetTime += 1; }
+    queueRef.child('reserve/' + uid).update({ time: targetTime }); queueRef.child('reserve/' + targetUid).update({ time: myTime });
+}
+async function publishNewVersion() {
+    if(await customConfirm(`確定推送 <span style="color:var(--gold)">v${APP_VERSION.toFixed(1)}</span> 系統更新？<br><small>這將強制刷新所有人的畫面</small>`)) {
+        db.ref("config/system_version").set(APP_VERSION);
+        addLog(`ADMIN 推送更新 v${APP_VERSION.toFixed(1)}`); showToast("更新指令已發送", 'success'); closeAdmin();
+    }
+}
+
+configRef.child("playground_status").on("value", s => {
+    playgroundEnabled = s.val() || false;
+    const btn = document.getElementById("btnGame"), toggleBtn = document.getElementById("btnTogglePg");
+    if(playgroundEnabled) { btn.style.display = "flex"; } else { btn.style.display = "none"; }
+    if(toggleBtn) { toggleBtn.textContent = playgroundEnabled ? "遊樂場狀態: 開啟" : "遊樂場狀態: 關閉"; toggleBtn.style.color = playgroundEnabled ? "var(--success)" : "var(--danger)"; toggleBtn.style.borderColor = playgroundEnabled ? "var(--success)" : "var(--danger)"; }
+});
+function togglePlayground() { configRef.child("playground_status").set(!playgroundEnabled); showToast(playgroundEnabled?"已關閉遊樂場":"已開啟遊樂場", 'info');}
+
+function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i.value.trim())return;broadcastRef.set({text:i.value,t:Date.now()});i.value="";closeAdmin(); showToast("廣播已發送", 'success');}
+broadcastRef.on("value",s=>{
+    const v=s.val(); if(!v||Date.now()-v.t>10000)return;
+    const b=document.getElementById('broadcastBanner'); document.getElementById('broadcastText').textContent=v.text;
+    b.classList.add('active'); playBeep('urgent'); sendPushNotification("📢 萬豪吸菸室廣播", v.text); setTimeout(()=>b.classList.remove('active'),5000);
+});
+
+const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
+const emojiPicker = document.getElementById("emojiPicker");
+emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
+function toggleEmoji() { emojiPicker.classList.toggle("show"); }
+function handleFile(e) {
+    const file = e.target.files[0]; if(!file) return;
+    if(file.size > 2 * 1024 * 1024) { showToast("圖片不能超過 2MB", 'error'); return; }
+    const reader = new FileReader(); reader.onload = (event) => {
+        const img = new Image(); img.onload = () => {
+            const canvas = document.createElement('canvas'); let width = img.width, height = img.height;
+            if (width > 400) { height *= 400 / width; width = 400; } canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            chatRef.push({ name: myData.name, uid: me.uid, text: canvas.toDataURL('image/jpeg', 0.7), type: 'image', time: Date.now() });
+        }; img.src = event.target.result;
+    }; reader.readAsDataURL(file); e.target.value = '';
+}
+function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return; chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time:Date.now() }); i.value=""; emojiPicker.classList.remove("show"); }
+
+function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
+
+chatRef.limitToLast(30).on("value",s=>{
+    let b=document.getElementById("chat-box"); b.innerHTML="";
+    s.forEach(x=>{
+        let m=x.val(), meMsg=m.uid===me.uid;
+        let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
+        let content = m.type === 'image' 
+            ? `<img src="${m.text}" class="msg-img" onload="document.getElementById('chat-box').scrollTop=document.getElementById('chat-box').scrollHeight" onclick="showImg(this.src)">` 
+            : escapeHtml(m.text);
+        div.innerHTML=`<div class="msg-name" title="標記" onclick="mentionUser('${m.name}')">${m.name}</div>${content}`;
+        b.appendChild(div);
+    });
+    setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
+});
+
+function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
+
+function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function getSlotStatus(h,m){
+    const slots=[14,16,18,20,22,0]; let currentSlot=slots.find(s=>s===h);
+    const to12HStr = (hr) => { let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM"; let dH = (hr % 12) || 12; return `${dH}:00 ${suffix}`; };
+    const toOpenStr = (hr) => { let openH = (hr === 0) ? 23 : hr - 1; let suffix = (openH >= 12 && openH < 24) ? "PM" : "AM"; let dH = (openH % 12) || 12; return `${dH}:30 ${suffix}`; };
+    if(currentSlot!==undefined){ return {phase:'OUT',slot:currentSlot,display:`${to12HStr(currentSlot)} 開放時段`}; }
+    let target=slots.find(s=>(s===0?24:s)>h)||14; let diff=(target===0?24:target)*60-(h*60+m);
+    if(diff>0&&diff<=30){ return {phase:'RESERVE',slot:target,display:`預約中 ${to12HStr(target)}`}; }
+    return {phase:'BREAK',nextSlot:target,display:`下個時段 ${to12HStr(target)}`, hint:`${toOpenStr(target)}`};
+}
+
+function executeAfkPenalty(uid, currentIndex, sorted) {
+    let targetIndex = currentIndex + 3; 
+    let newTime;
+    if (targetIndex >= sorted.length - 1) { newTime = sorted[sorted.length - 1][1].time + 1000; } 
+    else { let t1 = sorted[targetIndex][1].time; let t2 = sorted[targetIndex + 1][1].time; newTime = t1 + (t2 - t1) / 2; if(newTime <= t1) newTime = t1 + 1; }
+
+    if (cacheQueue.reserve && cacheQueue.reserve[uid] && cacheQueue.reserve[uid].afkDeadline) {
+        queueRef.child("reserve/" + uid).update({ time: newTime, afkDeadline: null });
+        if (uid === me.uid) { customAlert("<div style='font-size:24px;margin-bottom:10px;'>⚠️</div><div style='color:var(--danger);font-size:18px;font-weight:bold;margin-bottom:15px;'>順位延後通知</div>您已超過 3 分鐘未確認前往<br>為維持排隊順暢，系統已自動將您的順位延後。"); }
+    }
+}
+
+let lastMyRank = -1;
+
+setInterval(()=>{
+    if(!engineReady)return; const now=new Date(), h=now.getHours(), m=now.getMinutes();
+    document.getElementById("clock").textContent=format12H(now);
+    if(myData && myData.name && now.getSeconds() === 0) document.getElementById("who").textContent = getGreeting(myData.name);
+    
+    currentSlotInfo=getSlotStatus(h,m);
+    let dText = currentSlotInfo.display; if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint} 開放預約)`;
+    document.getElementById("slotDisplay").textContent=dText;
+    if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue(true); 
+
+    let r=cacheQueue.reserve||{};
+    let sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    let outCount=Object.keys(cacheQueue.out||{}).length;
+    let eligibleForOut = (outCount < 3 && sorted.length >= 3 && currentSlotInfo.phase === 'OUT');
+    let penaltyExecutedThisTick = false; 
+
+    let myCurrentRank = sorted.findIndex(x => x[0] === me.uid);
+    if (myCurrentRank === 0 && lastMyRank !== 0 && currentSlotInfo.phase === 'OUT' && outCount < 3) {
+        sendPushNotification("🥂 尊敬的貴賓", "現在輪到您入場了，請前往吸菸室。");
+    }
+    lastMyRank = myCurrentRank;
+
+    sorted.forEach((u, i) => {
+        let uid = u[0]; let data = u[1];
+        let isTop2 = (i === 0 || i === 1);
+        if (isTop2 && eligibleForOut) {
+            if (!data.afkDeadline) {
+                if (uid === me.uid || myData.role === 'admin') { queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); }
+            } else {
+                let timeLeft = data.afkDeadline - Date.now();
+                if (timeLeft <= 0) { if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) { penaltyExecutedThisTick = true; executeAfkPenalty(uid, i, sorted); } }
+            }
+        } else {
+            if (data.afkDeadline && (uid === me.uid || myData.role === 'admin')) { queueRef.child("reserve/"+uid).child("afkDeadline").remove(); }
+        }
+        let span = document.getElementById(`afk-${uid}`);
+        if (span) {
+            if (data.afkDeadline) {
+                let sLeft = Math.max(0, Math.floor((data.afkDeadline - Date.now())/1000));
+                let mStr = String(Math.floor(sLeft/60)).padStart(2,'0'); let sStr = String(sLeft%60).padStart(2,'0');
+                span.innerHTML = `⏳ ${mStr}:${sStr}`; span.style.display = "inline-block";
+            } else { span.style.display = "none"; }
+        }
+    });
+
+    let o = cacheQueue.out || {};
+    Object.entries(o).forEach(([uid, u]) => {
+        let span = document.getElementById(`out-timer-${uid}`);
+        if (span) {
+            let s = Math.floor((Date.now() - u.time) / 1000);
+            span.innerHTML = `${Math.floor(s/60)}m ${s%60}s`;
+            if (s > 600) { span.style.color = "var(--danger)"; span.classList.add("text-danger"); }
+        }
+    });
+
+    updateButtonStates(); 
+},1000);
+
+queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } });
+
+let cancelConfirming = false;
+function handleCancelClick() {
+    const btn = document.getElementById('bCancel');
+    if (!cancelConfirming) {
+        cancelConfirming = true; btn.textContent = "再次點擊確認"; btn.className = "action-btn btn-red";
+        setTimeout(() => { if(cancelConfirming) { cancelConfirming = false; btn.textContent = "取消預約"; btn.className = "action-btn"; } }, 3000);
+    } else { cancelConfirming = false; cancelReserve(); }
+}
+
+function updateButtonStates(){
+    if(!me||!cacheQueue)return;
+    let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
+    let sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time); let outCount=Object.keys(o).length;
+    let myRank=sorted.findIndex(x=>x[0]===me.uid); let alreadyUsed = used[currentSlotInfo.slot]?.[me.uid];
+
+    const hideAll = () => { bReserve.style.display='none'; bOut.style.display='none'; bBack.style.display='none'; bCancel.style.display='none'; }; hideAll();
+    const setBtn = (btn, cls, txt) => { btn.style.display = 'block'; if(!cancelConfirming || btn.id !== 'bCancel') { btn.className = `action-btn ${cls}`; btn.textContent = txt; } };
+
+    if(alreadyUsed) {} 
+    else if(o[me.uid]) { setBtn(bBack, 'btn-red', '確認返回'); } 
+    else if(r[me.uid]) { setBtn(bCancel, '', '取消預約'); if(currentSlotInfo.phase==='OUT' && myRank<=1 && outCount<3){ setBtn(bOut, 'btn-green', '現在前往'); } } 
+    else { setBtn(bReserve, 'btn-gold', '預約排隊'); }
+
+    let st=document.getElementById("status");
+    if(alreadyUsed) st.innerHTML="<span style='color:#666'>本時段已享用</span>";
+    else if(o[me.uid]) st.innerHTML="<span style='color:var(--success)'>使用中 ENJOYING...</span>";
+    else if(r[me.uid]) {
+        if(currentSlotInfo.phase==='OUT'){
+            if(myRank<=1&&outCount<3) {
+                let txt = "<span style='color:var(--success)'>名額開放，請前往</span>";
+                if(sorted.length >= 3 && r[me.uid].afkDeadline) {
+                    let sLeft = Math.max(0, Math.floor((r[me.uid].afkDeadline - Date.now())/1000));
+                    let mStr = String(Math.floor(sLeft/60)).padStart(2,'0'); let sStr = String(sLeft%60).padStart(2,'0');
+                    txt = `<span style='color:var(--danger)'>請盡速前往 (倒數 ${mStr}:${sStr})</span>`;
+                }
+                st.innerHTML = txt;
+            }
+            else if(outCount>=3) st.innerHTML="<span style='color:var(--gold)'>滿位等候中...</span>";
+            else st.innerHTML=`<span>等待順位: ${myRank+1}</span>`;
+        } else {
+            let ewt = ""; if (myRank > 0) ewt = ` <span style="font-size:12px; color:#888;">(約等候 ${myRank * 15} 分)</span>`;
+            st.innerHTML=`<span style='color:var(--gold)'>預約成功 (順位 ${myRank+1})</span>${ewt}`;
+        }
+    } else {
+        if(currentSlotInfo.phase==='BREAK') st.innerHTML="<span style='color:#555'>等待下一時段</span>";
+        else if(currentSlotInfo.phase==='RESERVE') st.innerHTML="<span style='color:#2ed573'>開放預約中</span>";
+        else st.innerHTML="<span style='color:#444'>尚未預約</span>";
+    }
+    document.getElementById("outCountNum").textContent=outCount;
+}
+
+function renderStaticLists(){
+    let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
+        let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${u[1].name}')" class="btn-mini success">派發</button>`:"";
+        let moveBtns = (myData&&myData.role==="admin")?`<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`:"";
+        let rc=i===0?'rank-1':(i===1?'rank-2':'');
+        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
+    }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
+
+    let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime})); let o=cacheQueue.out||{}; 
+    Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
+    document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
+}
+
+function renderOutList(){
+    let o=cacheQueue.out||{}; 
+    document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
+        let s=Math.floor((Date.now()-u.time)/1000);
+        let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${u.name}')" class="btn-mini danger">召回</button>`:"";
+        return `<div class="item-card" style="border-left-color:var(--success);"><strong>${u.name}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
+    }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
+}
+
+function reserve(){ 
+    if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
+    let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
+    queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
+    if(Notification.permission === "default") requestPermission();
+    addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
+}
+
+function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
+
+// 🟢 關鍵修復：goOut 函式 (Transaction 交易)
+function goOut(){
+    let r = cacheQueue.reserve || {};
+    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    let myRank = sorted.findIndex(x => x[0] === me.uid);
+    
+    // 如果不是排前2名 (0, 1)，而且不是 Admin，就不能自己出去
+    if (myRank > 1 && myData.role !== 'admin') {
+        showToast("還沒輪到您，請稍候", "error");
+        return;
+    }
+
+    const outRef = queueRef.child("out");
+    outRef.transaction((currentOutData) => {
+        // 如果目前外出人數已經 >= 3，則取消操作 (回傳 undefined 代表放棄)
+        if (currentOutData && Object.keys(currentOutData).length >= 3) {
+            return; 
+        }
+        if (!currentOutData) currentOutData = {};
+        
+        // 成功加入
+        currentOutData[me.uid] = {name: myData.name, time: Date.now()};
+        return currentOutData;
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error("Transaction Error:", error);
+            showToast("系統忙碌中，請重試", "error");
+        } else if (!committed) {
+            // committed = false 代表被 transaction 擋下來了 (人數已滿)
+            showToast("動作太慢了！名額剛好被搶光", "error");
+        } else {
+            // 成功寫入 Out，現在移除 Reserve
+            queueRef.child("reserve/"+me.uid).remove();
+            addLog(`${myData.name} 出發`);
+            showToast('祝您享受美好時光', 'success');
+        }
+    });
+}
+
+// 🟢 關鍵修復：Admin 強制派發 (update 寫入)
+async function forceGoOut(uid, name) {
+    if (await customConfirm(`強制派發 <span style="color:var(--success)">${name}</span> 前往？`)) {
+        // 1. 先確認人還在不在
+        queueRef.child("reserve/" + uid).once("value").then(snapshot => {
+            if (snapshot.exists()) {
+                // 2. 準備原子更新 (Atomic Update)
+                let updates = {};
+                updates["queue/out/" + uid] = { name: name, time: Date.now() };
+                updates["queue/reserve/" + uid] = null;
+
+                // 3. 執行寫入 (Admin 權限)
+                db.ref().update(updates)
+                    .then(() => {
+                        addLog(`ADMIN 派發: ${name}`);
+                        showToast(`已成功派發 ${name}`, 'success');
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        showToast("派發失敗：權限不足或系統錯誤", "error");
+                    });
+            } else {
+                showToast("該用戶已不在排隊名單中", "error");
+            }
+        });
+    }
+}
+
+async function forceComeBack(uid, name){
+    if(await customConfirm(`確定強制召回 <span style="color:var(--gold)">${name}</span> ？`)) {
+        queueRef.child("out/"+uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+uid).remove();addLog(`ADMIN 召回: ${u.name}`); showToast(`已召回 ${u.name}`, 'success');}});
+    }
+}
+
+function comeBack(){queueRef.child("out/"+me.uid).once("value").then(s=>{let u=s.val();if(u){let now=Date.now(),slot=new Date(u.time).getHours();queueRef.child(`used/${slot}/${me.uid}`).set(true);queueRef.child("history").push({name:u.name,slot,outTime:u.time,backTime:now,over:(now-u.time)>600000});queueRef.child("out/"+me.uid).remove();addLog(`${myData.name} 返回`); showToast('歡迎回來', 'info');}});}
+
+userRef.on("value",s=>{ const list=document.getElementById("onlineUserList"); list.innerHTML=""; s.forEach(u=>{ let d=u.val(); if(d.online){ let pill = document.createElement("div"); pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; pill.innerHTML = `<div class="online-dot"></div>${d.name}`; list.appendChild(pill); }}); });
+
+async function forceReload(){ 
+    if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
+}
+
+async function resetQueue(auto = false){ 
+    if(auto || await customConfirm("<span style='color:var(--danger)'>確定清空所有排隊、外出狀態？</span><br><small>此操作無法復原</small>")) { 
+        Promise.all([ queueRef.child("reserve").remove(), queueRef.child("out").remove(), queueRef.child("used").remove() ]).then(() => { addLog("ADMIN 重置系統"); if(!auto) {showToast("系統狀態已重置", 'success'); closeAdmin();} }).catch(e => showToast("權限被拒絕", 'error'));
+    } 
+}
+async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+function addLog(t){logRef.push({t,time:Date.now()});}
+
+logRef.limitToLast(15).on("value",s=>{
+    const b=document.getElementById("log");
+    b.innerHTML="";
+    s.forEach(x=>{
+        let d=x.val();
+        let dv=document.createElement("div");
+        dv.style.marginBottom = "4px";
+        dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;
+        b.appendChild(dv);
+    });
+    b.scrollTop=b.scrollHeight;
+});
+
+let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();});
+</script>
+</body>
+</html>
