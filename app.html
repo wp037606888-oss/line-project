@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.10 </title>
+<title>萬豪吸菸室 v16.11 - 穩定修復版</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,7 +38,6 @@ body {
     overscroll-behavior-y: none;
 }
 
-/* --- 背景特效 --- */
 .ambient-light {
     position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
     background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
@@ -46,7 +45,6 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-/* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; }
 
 #dashboard { 
@@ -59,7 +57,6 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
 .dashboard-top { flex-shrink: 0; }
 
-/* --- 監控網格 --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
     flex: 1; min-height: 0; 
@@ -70,7 +67,6 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     height: 100%; min-height: 0; 
 }
 
-/* --- 玻璃卡片 --- */
 .glass-panel {
     background: var(--glass); backdrop-filter: blur(25px); 
     border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
@@ -87,7 +83,6 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; 
 }
 
-/* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
 .user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
@@ -256,7 +251,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.10</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.11</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -329,7 +324,7 @@ button.btn-send {
 </div>
 
 <script>
-const APP_VERSION = 16.10;
+const APP_VERSION = 16.11;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
@@ -682,21 +677,21 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-/* --- 🟢 關鍵修正 1: 預約功能 (修復 enableNotification 錯誤) --- */
+// 🟢 修復：預約功能改用 requestPermission
 function reserve(){ 
     if(currentSlotInfo.phase === 'BREAK'){ showToast(`尚未開放預約！請於 ${currentSlotInfo.hint} 再試。`, 'error'); return; } 
     let h=new Date().getHours(),t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h; 
     queueRef.child("reserve/"+me.uid).set({name:myData.name,time:Date.now(),slot:t, afkDeadline: null}); 
     
-    // 修復這裡：使用 requestPermission 替代舊的 enableNotification
-    if(Notification.permission !== "granted" && Notification.permission !== "denied") requestPermission();
+    // 如果權限還沒決定，才問
+    if(Notification.permission === "default") requestPermission();
     
     addLog(`${myData.name} 預約`); showToast('預約成功', 'success');
 }
 
 function cancelReserve(){queueRef.child("reserve/"+me.uid).remove();addLog(`${myData.name} 取消`); showToast('已取消預約', 'info');}
 
-// 一般人的外出 (使用 Transaction 防爆衝)
+// 🟢 修復：一般外出使用 Transaction (防爆衝)
 function goOut(){
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
@@ -709,14 +704,16 @@ function goOut(){
 
     const outRef = queueRef.child("out");
     outRef.transaction((currentOutData) => {
-        if (currentOutData === null) currentOutData = {};
-        if (Object.keys(currentOutData).length >= 3) {
+        // 如果目前外出人數已經 >= 3，則取消操作
+        if (currentOutData && Object.keys(currentOutData).length >= 3) {
             return; 
         }
+        if (!currentOutData) currentOutData = {};
         currentOutData[me.uid] = {name: myData.name, time: Date.now()};
         return currentOutData;
     }, (error, committed, snapshot) => {
         if (error) {
+            console.error("Transaction failed: ", error);
             showToast("系統忙碌中，請重試", "error");
         } else if (!committed) {
             showToast("動作太慢了！名額剛好被搶光", "error");
@@ -728,7 +725,7 @@ function goOut(){
     });
 }
 
-/* --- 🟢 關鍵修正 2: 補回遺失的 Admin 強制派發功能 --- */
+// 🟢 補回：Admin 強制派發 (無視交易鎖)
 async function forceGoOut(uid, name) {
     if (await customConfirm(`強制派發 <span style="color:var(--success)">${name}</span> 前往？`)) {
         queueRef.child("reserve/" + uid).once("value").then(snapshot => {
