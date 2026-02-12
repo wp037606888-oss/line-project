@@ -3,25 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v17.3 -安全</title>
-
-<meta http-equiv="Content-Security-Policy" content="
-default-src 'self';
-script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googleapis.com;
-style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-font-src https://fonts.gstatic.com;
-img-src 'self' data: https:;
-connect-src 
-    https://smoke-queue-default-rtdb.firebaseio.com
-    https://*.firebaseio.com
-    https://*.googleapis.com
-    https://identitytoolkit.googleapis.com
-    https://securetoken.googleapis.com
-    https://firebasestorage.googleapis.com
-    wss://*.firebaseio.com;
-frame-src https://*.firebaseapp.com;
-">
-
+<title>萬豪吸菸室 v17.1 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -283,7 +265,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.3</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.1</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -357,7 +339,7 @@ button.btn-send {
 
 <script>
 // --- 初始化設定 ---
-const APP_VERSION = 17.3;
+const APP_VERSION = 17.1;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 請務必確認這裡的 Config 正確填入你的 Firebase 資訊
@@ -370,7 +352,6 @@ const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"),
 // --- 全域變數 ---
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
-let lastSendTime = 0; // 聊天限速
 
 // --- 通知權限 ---
 function checkNotificationPermission() {
@@ -444,7 +425,7 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-// --- 核心邏輯 (v17.3) ---
+// --- 核心邏輯 (修復版) ---
 let firstVerCheck = true;
 let userListener = null;
 
@@ -465,17 +446,20 @@ function getGreeting(name) {
 }
 
 auth.onAuthStateChanged(user=>{
-    if(userListener) { userRef.child(me.uid).off("value", userListener); } 
+    if(userListener) { userRef.child(me.uid).off("value", userListener); } // 清除舊監聽
     
     if(!user){location.href="login.html";return;} me=user;
     
+    // 監聽用戶資料
     userListener = userRef.child(user.uid).on("value", s => {
         myData = s.val() || {};
         
+        // 🔥 邏輯修復：只有在沒有名字時才顯示輸入視窗，有名字後才設為 Online
         if (!myData.name) {
             document.getElementById("nameModal").style.display = "flex";
             document.getElementById("layout").style.filter = "blur(5px)"; 
         } else {
+            // ✅ 關鍵修復：確定有名字了，才設定 Online
             if(myData.online !== true) {
                 userRef.child(user.uid).update({online: true}).catch(e=>{});
                 userRef.child(user.uid+"/online").onDisconnect().set(false);
@@ -501,6 +485,7 @@ auth.onAuthStateChanged(user=>{
     });
 });
 
+// 🔥 修復：提交名字的同時設定 Online
 function submitName() {
     const nameInput = document.getElementById("newNameInput");
     const name = nameInput.value.trim();
@@ -510,7 +495,7 @@ function submitName() {
     
     userRef.child(me.uid).update({
         name: name,
-        online: true 
+        online: true // ✅ 這裡直接設為 Online
     }).then(() => {
         userRef.child(me.uid+"/online").onDisconnect().set(false);
         showToast(`歡迎加入，${name}！`, "success");
@@ -543,12 +528,14 @@ function adminForceAdd() {
     const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
     if(u) {
         let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
+        // Admin 操作使用 ServerValue.TIMESTAMP
         queueRef.child("reserve/"+uid).set({ name: u.name, time: firebase.database.ServerValue.TIMESTAMP, slot: t });
         addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
     }
 }
 function forceGoOut(uid, name) {
     if(!confirm(`確定讓 ${name} 強制外出？`)) return;
+    // Admin 強制外出也使用 Transaction 或直接寫入
     queueRef.child("out/"+uid).set({name: name, time: firebase.database.ServerValue.TIMESTAMP});
     queueRef.child("reserve/"+uid).remove();
     addLog(`ADMIN 派發: ${name}`);
@@ -609,75 +596,22 @@ function handleFile(e) {
         }; img.src = event.target.result;
     }; reader.readAsDataURL(file); e.target.value = '';
 }
-
-function send(){
-    const input=document.getElementById("msg");
-    if(!input.value.trim()) return;
-
-    if(Date.now()-lastSendTime < 1500){
-        showToast("請勿連續發言","error");
-        return;
-    }
-
-    lastSendTime = Date.now();
-
-    chatRef.push({
-        name: myData.name,
-        uid: me.uid,
-        text: input.value,
-        type: 'text',
-        time: firebase.database.ServerValue.TIMESTAMP
-    });
-
-    input.value="";
-    emojiPicker.classList.remove("show");
-}
-
+function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return; chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time: firebase.database.ServerValue.TIMESTAMP }); i.value=""; emojiPicker.classList.remove("show"); }
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
 chatRef.limitToLast(30).on("value",s=>{
-    const box=document.getElementById("chat-box");
-    box.innerHTML="";
-
+    let b=document.getElementById("chat-box"); b.innerHTML="";
     s.forEach(x=>{
-        const m=x.val();
-        const meMsg=m.uid===me.uid;
-
-        const bubble=document.createElement("div");
-        bubble.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-
-        const nameDiv=document.createElement("div");
-        nameDiv.className="msg-name";
-        nameDiv.textContent=m.name;
-        nameDiv.title="標記";
-        nameDiv.addEventListener("click",()=>{
-            mentionUser(m.name);
-        });
-
-        bubble.appendChild(nameDiv);
-
-        if(m.type==="image"){
-            const img=document.createElement("img");
-            img.src=m.text;
-            img.className="msg-img";
-            img.addEventListener("click",()=>{
-                showImg(img.src);
-            });
-            bubble.appendChild(img);
-        }else{
-            const textDiv=document.createElement("div");
-            textDiv.textContent=m.text;
-            bubble.appendChild(textDiv);
-        }
-
-        box.appendChild(bubble);
+        let m=x.val(), meMsg=m.uid===me.uid;
+        let div=document.createElement("div"); div.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
+        let content = m.type === 'image' 
+            ? `<img src="${m.text}" class="msg-img" onload="document.getElementById('chat-box').scrollTop=document.getElementById('chat-box').scrollHeight" onclick="showImg(this.src)">` 
+            : escapeHtml(m.text);
+        div.innerHTML=`<div class="msg-name" title="標記" onclick="mentionUser('${m.name}')">${m.name}</div>${content}`;
+        b.appendChild(div);
     });
-
-    setTimeout(()=>{
-        box.scrollTop=box.scrollHeight;
-    },50);
+    setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
 });
-
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
 // --- 時間與排隊邏輯 ---
@@ -732,11 +666,9 @@ setInterval(()=>{
         let isTop2 = (i === 0 || i === 1);
         if (isTop2 && eligibleForOut) {
             if (!data.afkDeadline) {
-                if (uid === me.uid || myData.role === 'admin') { 
-                    queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); 
-                }
+                if (uid === me.uid || myData.role === 'admin') { queueRef.child("reserve/"+uid).update({afkDeadline: firebase.database.ServerValue.TIMESTAMP + 180000}); }
             } else {
-                let timeLeft = data.afkDeadline - Date.now(); 
+                let timeLeft = data.afkDeadline - Date.now(); // 讀取時本地轉換沒關係
                 if (timeLeft <= 0) { if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) { penaltyExecutedThisTick = true; executeAfkPenalty(uid, i, sorted); } }
             }
         } else {
@@ -771,6 +703,7 @@ queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLi
 function reserve() {
     if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
     
+    // 🔥 修復：改用 ServerValue.TIMESTAMP 防止作弊
     queueRef.child("reserve/" + me.uid).set({
         name: myData.name,
         time: firebase.database.ServerValue.TIMESTAMP,
@@ -799,6 +732,7 @@ function cancelReserve() {
     });
 }
 
+// 🔥🔥 關鍵修復：Transaction 處理併發外出
 function goOut(){
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
@@ -809,19 +743,24 @@ function goOut(){
         return;
     }
 
+    // 使用 Transaction 確保人數正確
     queueRef.child("out").transaction((currentOut) => {
         if (currentOut === null) {
+            // 如果沒人，建立新物件
             return { [me.uid]: { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP } };
         }
         
+        // 如果已經滿 3 人，放棄交易
         if (Object.keys(currentOut).length >= 3) {
             return; 
         }
 
+        // 如果已經在裡面，不動作
         if (currentOut[me.uid]) {
             return;
         }
 
+        // 加入自己
         currentOut[me.uid] = { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP };
         return currentOut;
 
@@ -829,8 +768,10 @@ function goOut(){
         if (error) {
             showToast("系統錯誤: " + error.message, "error");
         } else if (!committed) {
+            // 沒提交成功，通常是因為上面的 return 觸發（滿位）
             showToast("動作太慢了！名額剛好被搶光", "error");
         } else {
+            // 成功寫入 out 後，移除 reserve
             queueRef.child("reserve/" + me.uid).remove();
             addLog(`${myData.name} 出發`);
             showToast('祝您享受美好時光', 'success');
@@ -842,7 +783,7 @@ function comeBack(){
     queueRef.child("out/"+me.uid).once("value").then(s=>{
         let u=s.val();
         if(u){
-            let now=Date.now(),slot=new Date().getHours(); 
+            let now=Date.now(),slot=new Date().getHours(); // 用於顯示的 Slot 可以用本地時間
             let updates = {};
             updates[`queue/used/${slot}/${me.uid}`] = true;
             updates[`queue/out/${me.uid}`] = null;
@@ -852,9 +793,9 @@ function comeBack(){
                     uid: me.uid, 
                     name: u.name,
                     slot,
-                    outTime: u.time, 
+                    outTime: u.time, // 這裡會是 TIMESTAMP 的數值
                     backTime: firebase.database.ServerValue.TIMESTAMP,
-                    over: (now - u.time) > 600000 
+                    over: (now - u.time) > 600000 // 前端簡單判斷
                 });
                 addLog(`${myData.name} 返回`); 
                 showToast('歡迎回來', 'info');
@@ -910,43 +851,40 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
-// 🔥🔥 徹底修正 XSS (Escape HTML in Template Literals)
 function renderStaticLists(){
     let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
-        let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${escapeHtml(u[1].name)}')" class="btn-mini success">派發</button>`:"";
+        let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${u[1].name}')" class="btn-mini success">派發</button>`:"";
         let moveBtns = (myData&&myData.role==="admin")?`<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`:"";
         let rc=i===0?'rank-1':(i===1?'rank-2':'');
-        // 🔥 強制 escapeHtml
-        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${escapeHtml(u[1].name)}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
+        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${u[1].name}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
 
     let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime})); let o=cacheQueue.out||{}; 
     Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
-    // 🔥 強制 escapeHtml
-    document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${escapeHtml(i.name)} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
+    document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${i.name} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
 }
 
 function renderOutList(){
     let o=cacheQueue.out||{}; 
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
-        let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${escapeHtml(u.name)}')" class="btn-mini danger">召回</button>`:"";
-        // 🔥 強制 escapeHtml
-        return `<div class="item-card" style="border-left-color:var(--success);"><strong>${escapeHtml(u.name)}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
+        let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${u.name}')" class="btn-mini danger">召回</button>`:"";
+        return `<div class="item-card" style="border-left-color:var(--success);"><strong>${u.name}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
+// 🔥 UI 修復：過濾沒有名字的 Online User
 userRef.on("value",s=>{ 
     const list=document.getElementById("onlineUserList"); 
     list.innerHTML=""; 
     s.forEach(u=>{ 
         let d=u.val(); 
+        // 必須同時有 name 且 online 為 true
         if(d.online && d.name){ 
             let pill = document.createElement("div"); 
             pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; 
-            // 🔥 強制 escapeHtml
-            pill.innerHTML = `<div class="online-dot"></div>${escapeHtml(d.name)}`; 
+            pill.innerHTML = `<div class="online-dot"></div>${d.name}`; 
             list.appendChild(pill); 
         }
     }); 
@@ -965,12 +903,12 @@ async function clearChat(){ if(await customConfirm("確定清空聊天室？")) 
 async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 
+// 🔥 日誌修正：截斷長度以符合 < 100 的規則
 function addLog(t){
     let safeT = (typeof t === 'string' && t.length > 95) ? t.slice(0, 95) + '...' : t;
     logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{});
 }
 
-// 🔥🔥 安全渲染 Log (無 innerHTML)
 logRef.limitToLast(15).on("value",s=>{
     const b=document.getElementById("log");
     b.innerHTML="";
@@ -978,17 +916,7 @@ logRef.limitToLast(15).on("value",s=>{
         let d=x.val();
         let dv=document.createElement("div");
         dv.style.marginBottom = "4px";
-        
-        // 使用 createTextNode 防止注入
-        let timeSpan = document.createElement("span");
-        timeSpan.style.opacity = "0.5";
-        timeSpan.style.fontFamily = "'Rajdhani'";
-        timeSpan.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]`;
-        
-        let textNode = document.createTextNode(" " + d.t);
-        
-        dv.appendChild(timeSpan);
-        dv.appendChild(textNode);
+        dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;
         b.appendChild(dv);
     });
     b.scrollTop=b.scrollHeight;
@@ -998,7 +926,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
-
-
-
