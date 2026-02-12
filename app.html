@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.2 </title>
+<title>萬豪吸菸室 v16.3 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -50,22 +50,31 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 /* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 20px; gap: 20px; }
 
-#dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 16px; min-width: 400px; height: 100%; overflow: hidden; }
+/* 🟢 Dashboard 關鍵修正：允許垂直滾動，防止內容被切掉 */
+#dashboard { 
+    flex: 1.8; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+    min-width: 400px; 
+    height: 100%; 
+    overflow-y: auto; /* 允許滾動 */
+    overflow-x: hidden;
+    padding-right: 5px; /* 預留捲軸空間 */
+}
+
 #comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; }
 
 /* --- 監控網格 --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 16px; 
-    flex: 1; 
-    min-height: 0; 
+    flex-shrink: 0; /* 防止網格被壓縮 */
 }
 .monitor-left { 
     display: flex; flex-direction: column; gap: 16px; 
-    height: 100%; 
 }
 .monitor-right { 
     display: flex; flex-direction: column; 
-    height: 100%;
 }
 
 /* --- 玻璃卡片 --- */
@@ -77,21 +86,24 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 }
 .glass-panel:hover { border-color: var(--gold-dim); }
 
-/* 🟢 關鍵修復：給左側面板強制最小高度，防止消失 */
+/* 左側面板設定最小高度，確保不消失 */
 .monitor-left .glass-panel {
-    flex: 1;
-    min-height: 150px; /* 這裡！保證它至少有 150px 高 */
+    min-height: 180px; 
 }
 .monitor-right .glass-panel {
-    flex: 1;
-    min-height: 0;
+    min-height: 380px; /* 右側排隊名單給高一點 */
+}
+
+/* 🟢 系統日誌：防止被壓縮 */
+#dashboard > .glass-panel:last-child {
+    flex-shrink: 0;
 }
 
 .list-container { 
     flex: 1; 
     overflow-y: auto; 
     padding-right: 4px; 
-    max-height: none; 
+    max-height: 200px; /* 限制列表內部最大高度，避免無限長 */
 }
 
 /* --- 狀態列 --- */
@@ -261,22 +273,22 @@ button.btn-send:hover { background: #fff; }
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
 .online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
 
+/* 🟢 美化滾動條 (統一視覺) */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
 #imgModal { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; }
 #imgModal img { max-width: 90%; max-height: 90%; border: 1px solid var(--gold); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
 
 @media (max-width: 900px) {
     #layout { flex-direction: column; padding: 10px; }
-    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; 
-        /* 🟢 讓 Dashboard 在手機上可以內部捲動，防止被切掉 */
-        overflow-y: auto; 
-    }
+    /* Dashboard 允許內部滾動 */
+    #dashboard { flex: none; width: 100%; min-width: 0; max-height: 60vh; }
     #comms { flex: 1; min-width: 0; height: 40vh; }
     .monitor-grid { grid-template-columns: 1fr; }
-    /* 🟢 讓左右面板在手機上不鎖高度，改為自動撐開 */
-    .monitor-left, .monitor-right { height: auto; }
+    /* 手機版讓高度自適應，不強制固定 */
+    .monitor-left .glass-panel, .monitor-right .glass-panel { min-height: auto; }
 }
 </style>
 </head>
@@ -351,7 +363,7 @@ button.btn-send:hover { background: #fff; }
         </div>
         
         <div class="admin-section">
-            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">16.2</span>)</h4>
+            <h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送控制 (當前: v<span id="verDisplay">16.3</span>)</h4>
             <button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新給全體貴賓</button>
         </div>
 
@@ -457,7 +469,7 @@ button.btn-send:hover { background: #fff; }
 
 <script>
 /* 🟢 應用程式版本控制 */
-const APP_VERSION = 16.2;
+const APP_VERSION = 16.3;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 /* --- Init --- */
@@ -809,7 +821,6 @@ function renderOutList(){
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${u.name}')" class="btn-mini danger">召回</button>`:"";
-        // 🟢 加入 id="out-timer-${uid}"
         return `<div class="item-card" style="border-left-color:var(--success);"><strong>${u.name}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
