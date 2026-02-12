@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.9 - 安全強化版</title>
+<title>萬豪吸菸室 v17.1 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -225,7 +225,7 @@ button.btn-send {
     <div class="admin-card" style="text-align:center;">
         <h2 style="color:var(--gold); margin-top:0;">👋 初次見面</h2>
         <p style="color:#ccc; margin-bottom:20px;">請輸入您在吸菸室的本名+稱號</p>
-        <input id="newNameInput" type="text" placeholder="例如: 小明-帥哥 PS.看不懂的資料會被刪除" maxlength="10" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
+        <input id="newNameInput" type="text" placeholder="例如: 小明-帥哥" maxlength="10" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
         <button onclick="submitName()" class="perm-btn" style="width:100%;">開始使用</button>
     </div>
 </div>
@@ -265,7 +265,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.9</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.1</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -339,10 +339,10 @@ button.btn-send {
 
 <script>
 // --- 初始化設定 ---
-const APP_VERSION = 16.9;
+const APP_VERSION = 17.1;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
-// 請確認這裡的 Config 正確
+// 🔥 請務必確認這裡的 Config 正確填入你的 Firebase 資訊
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 if (!firebase.apps.length) firebase.initializeApp(config);
 
@@ -425,8 +425,10 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-// --- 核心邏輯 (暱稱系統修改版) ---
+// --- 核心邏輯 (修復版) ---
 let firstVerCheck = true;
+let userListener = null;
+
 db.ref("config/system_version").on("value", snap => {
     const dbVer = snap.val(); if (!dbVer) return;
     if (APP_VERSION < dbVer) {
@@ -444,22 +446,28 @@ function getGreeting(name) {
 }
 
 auth.onAuthStateChanged(user=>{
+    if(userListener) { userRef.child(me.uid).off("value", userListener); } // 清除舊監聽
+    
     if(!user){location.href="login.html";return;} me=user;
     
     // 監聽用戶資料
-    userRef.child(user.uid).on("value", s => {
+    userListener = userRef.child(user.uid).on("value", s => {
         myData = s.val() || {};
         
-        // 🔥 檢查邏輯：如果沒有名字，顯示輸入視窗；有名字才進入系統
+        // 🔥 邏輯修復：只有在沒有名字時才顯示輸入視窗，有名字後才設為 Online
         if (!myData.name) {
             document.getElementById("nameModal").style.display = "flex";
-            document.getElementById("layout").style.filter = "blur(5px)"; // 背景模糊效果
+            document.getElementById("layout").style.filter = "blur(5px)"; 
         } else {
-            // 隱藏輸入視窗，恢復背景
+            // ✅ 關鍵修復：確定有名字了，才設定 Online
+            if(myData.online !== true) {
+                userRef.child(user.uid).update({online: true}).catch(e=>{});
+                userRef.child(user.uid+"/online").onDisconnect().set(false);
+            }
+
             document.getElementById("nameModal").style.display = "none";
             document.getElementById("layout").style.filter = "none";
             
-            // 正常渲染 UI
             document.getElementById("who").textContent = getGreeting(myData.name);
             document.getElementById("btnAdminFloat").style.display = (myData.role === "admin") ? "flex" : "none";
             
@@ -475,13 +483,9 @@ auth.onAuthStateChanged(user=>{
             renderStaticLists(); updateButtonStates(); renderOutList(); 
         }
     });
-
-    // 只更新上線狀態，使用 catch 忽略第一次因為沒有名字而失敗的錯誤
-    userRef.child(user.uid).update({online: true}).catch(e=>{});
-    userRef.child(user.uid+"/online").onDisconnect().set(false);
 });
 
-// 🔥 新增：提交名字的函式
+// 🔥 修復：提交名字的同時設定 Online
 function submitName() {
     const nameInput = document.getElementById("newNameInput");
     const name = nameInput.value.trim();
@@ -489,12 +493,12 @@ function submitName() {
     if (!name) { showToast("請輸入暱稱", "error"); return; }
     if (name.length > 10) { showToast("暱稱太長了", "error"); return; }
     
-    // 寫入資料庫：✅ 企業級寫法，只送名字，絕對不送 role
     userRef.child(me.uid).update({
-        name: name
+        name: name,
+        online: true // ✅ 這裡直接設為 Online
     }).then(() => {
+        userRef.child(me.uid+"/online").onDisconnect().set(false);
         showToast(`歡迎加入，${name}！`, "success");
-        // 更新成功後，上方的 on('value') 會自動偵測到有名字，並關閉視窗
     }).catch(e => {
         showToast("設定失敗: " + e.message, "error");
     });
@@ -524,19 +528,20 @@ function adminForceAdd() {
     const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
     if(u) {
         let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
-        queueRef.child("reserve/"+uid).set({ name: u.name, time: Date.now(), slot: t });
+        // Admin 操作使用 ServerValue.TIMESTAMP
+        queueRef.child("reserve/"+uid).set({ name: u.name, time: firebase.database.ServerValue.TIMESTAMP, slot: t });
         addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
     }
 }
 function forceGoOut(uid, name) {
     if(!confirm(`確定讓 ${name} 強制外出？`)) return;
-    queueRef.child("out/"+uid).set({name: name, time: Date.now()});
+    // Admin 強制外出也使用 Transaction 或直接寫入
+    queueRef.child("out/"+uid).set({name: name, time: firebase.database.ServerValue.TIMESTAMP});
     queueRef.child("reserve/"+uid).remove();
     addLog(`ADMIN 派發: ${name}`);
 }
 function forceComeBack(uid, name) {
     if(!confirm(`確定召回 ${name}？`)) return;
-    let now = Date.now();
     let slot = new Date().getHours();
     queueRef.child(`used/${slot}/${uid}`).set(true);
     queueRef.child("out/"+uid).remove();
@@ -566,7 +571,7 @@ configRef.child("playground_status").on("value", s => {
 });
 function togglePlayground() { configRef.child("playground_status").set(!playgroundEnabled); showToast(playgroundEnabled?"已關閉遊樂場":"已開啟遊樂場", 'info');}
 
-function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i.value.trim())return;broadcastRef.set({text:i.value,t:Date.now()});i.value="";closeAdmin(); showToast("廣播已發送", 'success');}
+function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i.value.trim())return;broadcastRef.set({text:i.value,t:firebase.database.ServerValue.TIMESTAMP});i.value="";closeAdmin(); showToast("廣播已發送", 'success');}
 broadcastRef.on("value",s=>{
     const v=s.val(); if(!v||Date.now()-v.t>10000)return;
     const b=document.getElementById('broadcastBanner'); document.getElementById('broadcastText').textContent=v.text;
@@ -587,11 +592,11 @@ function handleFile(e) {
             const canvas = document.createElement('canvas'); let width = img.width, height = img.height;
             if (width > 400) { height *= 400 / width; width = 400; } canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-            chatRef.push({ name: myData.name, uid: me.uid, text: canvas.toDataURL('image/jpeg', 0.7), type: 'image', time: Date.now() });
+            chatRef.push({ name: myData.name, uid: me.uid, text: canvas.toDataURL('image/jpeg', 0.7), type: 'image', time: firebase.database.ServerValue.TIMESTAMP });
         }; img.src = event.target.result;
     }; reader.readAsDataURL(file); e.target.value = '';
 }
-function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return; chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time:Date.now() }); i.value=""; emojiPicker.classList.remove("show"); }
+function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return; chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time: firebase.database.ServerValue.TIMESTAMP }); i.value=""; emojiPicker.classList.remove("show"); }
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
 chatRef.limitToLast(30).on("value",s=>{
@@ -661,9 +666,9 @@ setInterval(()=>{
         let isTop2 = (i === 0 || i === 1);
         if (isTop2 && eligibleForOut) {
             if (!data.afkDeadline) {
-                if (uid === me.uid || myData.role === 'admin') { queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); }
+                if (uid === me.uid || myData.role === 'admin') { queueRef.child("reserve/"+uid).update({afkDeadline: firebase.database.ServerValue.TIMESTAMP + 180000}); }
             } else {
-                let timeLeft = data.afkDeadline - Date.now();
+                let timeLeft = data.afkDeadline - Date.now(); // 讀取時本地轉換沒關係
                 if (timeLeft <= 0) { if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) { penaltyExecutedThisTick = true; executeAfkPenalty(uid, i, sorted); } }
             }
         } else {
@@ -698,9 +703,10 @@ queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLi
 function reserve() {
     if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
     
+    // 🔥 修復：改用 ServerValue.TIMESTAMP 防止作弊
     queueRef.child("reserve/" + me.uid).set({
         name: myData.name,
-        time: Date.now(),
+        time: firebase.database.ServerValue.TIMESTAMP,
         slot: currentSlotInfo.slot
     }).then(() => {
         addLog(`${myData.name} 預約排隊`);
@@ -726,6 +732,7 @@ function cancelReserve() {
     });
 }
 
+// 🔥🔥 關鍵修復：Transaction 處理併發外出
 function goOut(){
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
@@ -736,23 +743,39 @@ function goOut(){
         return;
     }
 
-    queueRef.child("out").get().then(snapshot => {
-        const outCount = snapshot.numChildren();
-        if (outCount >= 3) {
-             showToast("動作太慢了！名額剛好被搶光", "error");
-             return;
+    // 使用 Transaction 確保人數正確
+    queueRef.child("out").transaction((currentOut) => {
+        if (currentOut === null) {
+            // 如果沒人，建立新物件
+            return { [me.uid]: { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP } };
+        }
+        
+        // 如果已經滿 3 人，放棄交易
+        if (Object.keys(currentOut).length >= 3) {
+            return; 
         }
 
-        const updates = {};
-        updates[`queue/out/${me.uid}`] = {name: myData.name, time: Date.now()};
-        updates[`queue/reserve/${me.uid}`] = null;
+        // 如果已經在裡面，不動作
+        if (currentOut[me.uid]) {
+            return;
+        }
 
-        db.ref().update(updates).then(() => {
+        // 加入自己
+        currentOut[me.uid] = { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP };
+        return currentOut;
+
+    }, (error, committed, snapshot) => {
+        if (error) {
+            showToast("系統錯誤: " + error.message, "error");
+        } else if (!committed) {
+            // 沒提交成功，通常是因為上面的 return 觸發（滿位）
+            showToast("動作太慢了！名額剛好被搶光", "error");
+        } else {
+            // 成功寫入 out 後，移除 reserve
+            queueRef.child("reserve/" + me.uid).remove();
             addLog(`${myData.name} 出發`);
             showToast('祝您享受美好時光', 'success');
-        }).catch(err => {
-            showToast("系統錯誤: " + err.message, 'error');
-        });
+        }
     });
 }
 
@@ -760,20 +783,19 @@ function comeBack(){
     queueRef.child("out/"+me.uid).once("value").then(s=>{
         let u=s.val();
         if(u){
-            let now=Date.now(),slot=new Date(u.time).getHours();
+            let now=Date.now(),slot=new Date().getHours(); // 用於顯示的 Slot 可以用本地時間
             let updates = {};
             updates[`queue/used/${slot}/${me.uid}`] = true;
             updates[`queue/out/${me.uid}`] = null;
             
             db.ref().update(updates).then(() => {
-                // ✅ 修正：這裡補上了 uid: me.uid，以符合嚴格規則
                 queueRef.child("history").push({
                     uid: me.uid, 
                     name: u.name,
                     slot,
-                    outTime: u.time,
-                    backTime: now,
-                    over: (now-u.time)>600000
+                    outTime: u.time, // 這裡會是 TIMESTAMP 的數值
+                    backTime: firebase.database.ServerValue.TIMESTAMP,
+                    over: (now - u.time) > 600000 // 前端簡單判斷
                 });
                 addLog(`${myData.name} 返回`); 
                 showToast('歡迎回來', 'info');
@@ -852,7 +874,21 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-userRef.on("value",s=>{ const list=document.getElementById("onlineUserList"); list.innerHTML=""; s.forEach(u=>{ let d=u.val(); if(d.online){ let pill = document.createElement("div"); pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; pill.innerHTML = `<div class="online-dot"></div>${d.name}`; list.appendChild(pill); }}); });
+// 🔥 UI 修復：過濾沒有名字的 Online User
+userRef.on("value",s=>{ 
+    const list=document.getElementById("onlineUserList"); 
+    list.innerHTML=""; 
+    s.forEach(u=>{ 
+        let d=u.val(); 
+        // 必須同時有 name 且 online 為 true
+        if(d.online && d.name){ 
+            let pill = document.createElement("div"); 
+            pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; 
+            pill.innerHTML = `<div class="online-dot"></div>${d.name}`; 
+            list.appendChild(pill); 
+        }
+    }); 
+});
 
 async function forceReload(){ 
     if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
@@ -866,7 +902,12 @@ async function resetQueue(auto = false){
 async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
-function addLog(t){logRef.push({t,time:Date.now()}).catch(e=>{});}
+
+// 🔥 日誌修正：截斷長度以符合 < 100 的規則
+function addLog(t){
+    let safeT = (typeof t === 'string' && t.length > 95) ? t.slice(0, 95) + '...' : t;
+    logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{});
+}
 
 logRef.limitToLast(15).on("value",s=>{
     const b=document.getElementById("log");
@@ -885,5 +926,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
-
