@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v16.8 </title>
+<title>萬豪吸菸室 v16.9 </title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -57,14 +57,12 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
     flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; 
 }
 
-/* 上方固定區塊 */
 .dashboard-top { flex-shrink: 0; }
 
-/* --- 監控網格 (Grid + Flex) --- */
+/* --- 監控網格 --- */
 .monitor-grid { 
     display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-    flex: 1; /* 佔滿剩餘高度 */
-    min-height: 0; /* 防止溢出 */
+    flex: 1; min-height: 0; 
 }
 
 .monitor-column { 
@@ -83,16 +81,10 @@ canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 }
 .glass-panel:hover { border-color: var(--gold-dim); }
 
-/* --- 🟢 強制比例分配 (關鍵修復) --- */
-.flex-3 { flex: 3; } /* 30% */
-.flex-7 { flex: 7; } /* 70% */
+.flex-3 { flex: 3; } .flex-7 { flex: 7; }
 
-/* 列表容器 (內部滾動) */
 .list-container { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding-right: 4px; 
-    min-height: 0; /* 確保滾動條出現 */
+    flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; 
 }
 
 /* --- UI 元件 --- */
@@ -140,15 +132,36 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
 
-.chat-tags { display: flex; gap: 5px; margin-top: -5px; margin-bottom: 5px; flex-shrink: 0; }
-.chat-tag { font-size: 10px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #888; cursor: pointer; white-space: nowrap;}
-.chat-tag:hover { color: var(--gold); border-color: var(--gold); }
-
-.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-.input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
-input#msg { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
+/* 🟢 優化輸入區塊：移除 Tag 後更簡潔 */
+.input-area { 
+    padding: 12px; 
+    background: rgba(0,0,0,0.4); 
+    border-top: 1px solid var(--glass-border); 
+    display: flex; 
+    gap: 8px; 
+    align-items: center; 
+    flex-shrink: 0; 
+}
+.input-main { 
+    display: flex; 
+    width: 100%; 
+    gap: 8px; 
+    align-items: center; 
+}
+/* 🟢 關鍵修正：min-width: 0 防止輸入框擠出按鈕 */
+input#msg { 
+    flex: 1; 
+    min-width: 0;
+    background: transparent; 
+    border: none; 
+    border-bottom: 1px solid rgba(255,255,255,0.2); 
+    border-radius: 0; 
+    padding: 8px 5px; 
+    color: #fff; 
+    font-family: "Noto Serif TC"; 
+}
 input#msg:focus { border-bottom-color: var(--gold); }
-.btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; }
+.btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
 button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
 
@@ -241,7 +254,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.8</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">16.9</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -300,12 +313,8 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
         </div>
         <div id="chat-box"></div>
         <div id="emojiPicker"></div>
+        
         <div class="input-area">
-            <div class="chat-tags" id="chatTags">
-                <span class="chat-tag" onclick="insertTag('[滿位等候]')">滿位</span>
-                <span class="chat-tag" onclick="insertTag('[名額釋出]')">開放</span>
-                <span class="chat-tag" onclick="insertTag('[請留意音量]')">安靜</span>
-            </div>
             <div class="input-main">
                 <input type="file" id="imgInput" hidden accept="image/*" onchange="handleFile(event)">
                 <button class="btn-tool" onclick="document.getElementById('imgInput').click()" title="傳送圖片">📷</button>
@@ -318,7 +327,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
 </div>
 
 <script>
-const APP_VERSION = 16.8;
+const APP_VERSION = 16.9;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
@@ -405,13 +414,12 @@ auth.onAuthStateChanged(user=>{
         myData=s.val()||{};
         document.getElementById("who").textContent = getGreeting(myData.name || "GUEST");
         document.getElementById("btnAdminFloat").style.display=(myData.role==="admin")?"flex":"none";
-        document.getElementById("chatTags").style.display=(myData.role==="admin")?"flex":"none";
+        // 移除 chatTags 顯示判斷，因為 HTML 元素已刪除
         
         engineReady=true;
         if(myData.role === "admin") { 
             userRef.on("value", snap => { 
                 allUsers = snap.val() || {}; 
-                // 🟢 確保 Admin Modal 打開時有資料
                 if(document.getElementById('adminModal').classList.contains('show')) updateAdminUserSelect(); 
             }); 
         }
@@ -423,7 +431,6 @@ auth.onAuthStateChanged(user=>{
 });
 function logout(){auth.signOut().then(()=>{location.href="login.html";});}
 
-// 🟢 確保 Admin 函數在 Global Scope
 function openAdmin(){ 
     document.getElementById('adminModal').classList.add('show'); 
     if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); 
@@ -497,7 +504,6 @@ function handleFile(e) {
 }
 function send(){ let i=document.getElementById("msg"); if(!i.value.trim())return; chatRef.push({ name:myData.name, uid:me.uid, text:i.value, type: 'text', time:Date.now() }); i.value=""; emojiPicker.classList.remove("show"); }
 
-function insertTag(text) { const input = document.getElementById("msg"); input.value += text + " "; input.focus(); }
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
 chatRef.limitToLast(30).on("value",s=>{
@@ -675,14 +681,11 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-/* --- 🟢 關鍵修復: 使用 Transaction (交易) 解決 4 人外出問題 --- */
 function goOut(){
-    // 防呆：確認是否為前 2 名
     let r = cacheQueue.reserve || {};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let myRank = sorted.findIndex(x => x[0] === me.uid);
     
-    // 如果不是排前2名 (0, 1)，而且不是 Admin，就不能自己出去
     if (myRank > 1 && myData.role !== 'admin') {
         showToast("還沒輪到您，請稍候", "error");
         return;
@@ -690,23 +693,18 @@ function goOut(){
 
     const outRef = queueRef.child("out");
     outRef.transaction((currentOutData) => {
-        // 如果目前外出人數已經 >= 3，則取消操作 (回傳 undefined 代表放棄)
         if (currentOutData && Object.keys(currentOutData).length >= 3) {
-            return; // 放棄寫入
+            return; 
         }
         if (!currentOutData) currentOutData = {};
-        
-        // 成功加入
         currentOutData[me.uid] = {name: myData.name, time: Date.now()};
         return currentOutData;
     }, (error, committed, snapshot) => {
         if (error) {
             showToast("系統忙碌中，請重試", "error");
         } else if (!committed) {
-            // committed = false 代表被 transaction 擋下來了 (人數已滿)
             showToast("動作太慢了！名額剛好被搶光", "error");
         } else {
-            // 成功寫入 Out，現在移除 Reserve
             queueRef.child("reserve/"+me.uid).remove();
             addLog(`${myData.name} 出發`);
             showToast('祝您享受美好時光', 'success');
@@ -732,14 +730,12 @@ async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄�
 async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 function addLog(t){logRef.push({t,time:Date.now()});}
 
-// 🟢 確保日誌能正確顯示
 logRef.limitToLast(15).on("value",s=>{
     const b=document.getElementById("log");
     b.innerHTML="";
     s.forEach(x=>{
         let d=x.val();
         let dv=document.createElement("div");
-        // 增加一個 div 包裹，確保樣式正確
         dv.style.marginBottom = "4px";
         dv.innerHTML=`<span style="opacity:0.5;font-family:'Rajdhani'">[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]</span> ${d.t}`;
         b.appendChild(dv);
