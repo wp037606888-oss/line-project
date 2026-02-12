@@ -11,9 +11,14 @@ script-src 'self' 'unsafe-inline' https://www.gstatic.com;
 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
 font-src https://fonts.gstatic.com;
 img-src 'self' data: https:;
-connect-src https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
+connect-src 
+    https://smoke-queue-default-rtdb.firebaseio.com
+    https://*.firebaseio.com
+    https://*.googleapis.com
+    https://identitytoolkit.googleapis.com
+    https://securetoken.googleapis.com
+    https://firebasestorage.googleapis.com;
 ">
-
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -990,4 +995,5 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
+
 
