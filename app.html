@@ -357,7 +357,7 @@ button.btn-send {
 const APP_VERSION = 17.3;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
-// 🔥 請務必確認這裡的 Config 正確填入你的 Firebase 資訊
+// 🔥 Config
 const config={apiKey:"AIzaSyBs8g_RPs1qYdAa8_U6Uqzo3L7VZJvTWSE",authDomain:"smoke-queue.firebaseapp.com",databaseURL:"https://smoke-queue-default-rtdb.firebaseio.com",projectId:"smoke-queue"};
 if (!firebase.apps.length) firebase.initializeApp(config);
 
@@ -367,7 +367,13 @@ const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"),
 // --- 全域變數 ---
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
-let lastSendTime = 0; // 聊天限速
+let lastSendTime = 0; 
+let serverTimeOffset = 0; // 新增：伺服器時間偏移
+
+// --- 監聽伺服器時間偏移 ---
+db.ref(".info/serverTimeOffset").on("value", (snap) => {
+    serverTimeOffset = snap.val() || 0;
+});
 
 // --- 通知權限 ---
 function checkNotificationPermission() {
@@ -594,113 +600,86 @@ const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
 function toggleEmoji() { emojiPicker.classList.toggle("show"); }
 
-// --- 修正後的圖片發送 ---
-fasync function handleFile(e){
+// --- 修正後的圖片發送 (Two-Step 策略) ---
+function handleFile(e) {
+    const file = e.target.files[0]; if(!file) return;
+    if(file.size > 2 * 1024 * 1024) { showToast("圖片不能超過 2MB", 'error'); return; }
 
-    const file = e.target.files[0];
-    if(!file) return;
-
-    if(file.size > 2 * 1024 * 1024){
-        showToast("圖片不能超過 2MB", "error");
+    if (Date.now() - lastSendTime < 2000) {
+        showToast("請勿連續發言 (需間隔2秒)", "error");
+        e.target.value = '';
         return;
     }
-
-    if(Date.now()-lastSendTime < 2000){
-        showToast("請勿連續發言","error");
-        e.target.value='';
-        return;
-    }
-
     lastSendTime = Date.now();
 
-    const reader = new FileReader();
+    const reader = new FileReader(); reader.onload = (event) => {
+        const img = new Image(); img.onload = () => {
+            const canvas = document.createElement('canvas'); let width = img.width, height = img.height;
+            if (width > 400) { height *= 400 / width; width = 400; } canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            
+            // 1. 計算精確的伺服器時間 (手動計算，不用 ServerValue.TIMESTAMP)
+            const estimatedServerTime = Date.now() + serverTimeOffset;
+            const newMsgKey = chatRef.push().key;
 
-    reader.onload = async (event) => {
+            // 2. 第一步：先寫入節流閥
+            db.ref('chatThrottle/' + me.uid).set(estimatedServerTime).then(() => {
+                // 3. 第二步：節流閥寫入成功後，再寫入訊息 (使用完全相同的時間)
+                const msgData = {
+                    name: myData.name, 
+                    uid: me.uid, 
+                    text: canvas.toDataURL('image/jpeg', 0.7), 
+                    type: 'image', 
+                    time: estimatedServerTime // 這裡的時間會跟資料庫裡的 chatThrottle 一致
+                };
+                return chatRef.child(newMsgKey).set(msgData);
+            }).then(() => {
+                showToast("圖片已發送", "success");
+            }).catch(e => {
+                // 如果是第一步失敗，通常是太快(Throttle擋住)；如果是第二步失敗，是權限問題
+                if(e.code === 'PERMISSION_DENIED') showToast("發送失敗：權限不足或說話太快", "error");
+                else showToast("發送錯誤: " + e.message, "error");
+            });
 
-        const img = new Image();
-
-        img.onload = async () => {
-
-            const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-
-            if(width > 400){
-                height *= 400 / width;
-                width = 400;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            const ts = Date.now();
-
-            try {
-
-                await db.ref("chatThrottle/"+me.uid).set(ts);
-
-                await chatRef.push({
-                    name: myData.name,
-                    uid: me.uid,
-                    text: canvas.toDataURL('image/jpeg', 0.7),
-                    type: "image",
-                    time: ts
-                });
-
-            } catch(e){
-                showToast("圖片發送失敗: "+e.message,"error");
-            }
-
-        };
-
-        img.src = event.target.result;
-    };
-
-    reader.readAsDataURL(file);
-    e.target.value='';
+        }; img.src = event.target.result;
+    }; reader.readAsDataURL(file); e.target.value = '';
 }
 
-
-// --- 修正後的文字發送 ---
-async function send(){
-
-    const input = document.getElementById("msg");
+// --- 修正後的文字發送 (Two-Step 策略) ---
+function send(){
+    const input=document.getElementById("msg");
     const text = input.value.trim();
     if(!text) return;
 
     if(Date.now()-lastSendTime < 2000){
-        showToast("請勿連續發言","error");
+        showToast("請勿連續發言 (需間隔2秒)","error");
         return;
     }
-
     lastSendTime = Date.now();
-    const ts = Date.now();
 
-    try {
+    // 1. 計算精確的伺服器時間
+    const estimatedServerTime = Date.now() + serverTimeOffset;
+    const newMsgKey = chatRef.push().key;
 
-        // ① 先寫 throttle
-        await db.ref("chatThrottle/"+me.uid).set(ts);
-
-        // ② 再寫 chat
-        await chatRef.push({
+    // 2. 第一步：先寫入節流閥
+    db.ref('chatThrottle/' + me.uid).set(estimatedServerTime).then(() => {
+        // 3. 第二步：節流閥寫入成功後，再寫入訊息
+        const msgData = {
             name: myData.name,
             uid: me.uid,
-            text: text.slice(0,300),
-            type: "text",
-            time: ts
-        });
-
+            text: text,
+            type: 'text',
+            time: estimatedServerTime // 關鍵：這必須等於剛剛寫入 Throttle 的值
+        };
+        return chatRef.child(newMsgKey).set(msgData);
+    }).then(() => {
         input.value="";
         emojiPicker.classList.remove("show");
-
-    } catch(e){
-        showToast("發送失敗: "+e.message,"error");
-    }
+    }).catch(e => {
+        if(e.code === 'PERMISSION_DENIED') showToast("發送失敗：權限不足或說話太快", "error");
+        else showToast("發送錯誤: " + e.message, "error");
+    });
 }
-
 
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
 
@@ -869,22 +848,43 @@ function cancelReserve() {
 }
 
 function goOut(){
+    let r = cacheQueue.reserve || {};
+    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    let myRank = sorted.findIndex(x => x[0] === me.uid);
+    
+    if (myRank > 1 && myData.role !== 'admin') {
+        showToast("還沒輪到您，請稍候", "error");
+        return;
+    }
 
-    const ts = Date.now();
+    queueRef.child("out").transaction((currentOut) => {
+        if (currentOut === null) {
+            return { [me.uid]: { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP } };
+        }
+        
+        if (Object.keys(currentOut).length >= 3) {
+            return; 
+        }
 
-    queueRef.child("out/"+me.uid).set({
-        name: myData.name,
-        time: ts
-    }).then(()=>{
-        queueRef.child("reserve/"+me.uid).remove();
-        addLog(`${myData.name} 出發`);
-        showToast("祝您享受美好時光","success");
-    }).catch(e=>{
-        showToast("外出失敗: "+e.message,"error");
+        if (currentOut[me.uid]) {
+            return;
+        }
+
+        currentOut[me.uid] = { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP };
+        return currentOut;
+
+    }, (error, committed, snapshot) => {
+        if (error) {
+            showToast("系統錯誤: " + error.message, "error");
+        } else if (!committed) {
+            showToast("動作太慢了！名額剛好被搶光", "error");
+        } else {
+            queueRef.child("reserve/" + me.uid).remove();
+            addLog(`${myData.name} 出發`);
+            showToast('祝您享受美好時光', 'success');
+        }
     });
-
 }
-
 
 function comeBack(){
     queueRef.child("out/"+me.uid).once("value").then(s=>{
@@ -1004,11 +1004,45 @@ async function forceReload(){
     if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
 }
 
+// --- 修正後的重置系統 (符合權限規則) ---
 async function resetQueue(auto = false){ 
     if(auto || await customConfirm("<span style='color:var(--danger)'>確定清空所有排隊、外出狀態？</span><br><small>此操作無法復原</small>")) { 
-        Promise.all([ queueRef.child("reserve").remove(), queueRef.child("out").remove(), queueRef.child("used").remove() ]).then(() => { addLog("ADMIN 重置系統"); if(!auto) {showToast("系統狀態已重置", 'success'); closeAdmin();} }).catch(e => showToast("權限被拒絕", 'error'));
+        
+        // 因為規則不允許直接刪除父節點，我們必須讀取後逐一刪除子節點
+        const updates = {};
+        
+        try {
+            // 1. 抓取所有 reserve 的人
+            const rSnap = await queueRef.child("reserve").once("value");
+            rSnap.forEach(child => { updates[`queue/reserve/${child.key}`] = null; });
+
+            // 2. 抓取所有 out 的人
+            const oSnap = await queueRef.child("out").once("value");
+            oSnap.forEach(child => { updates[`queue/out/${child.key}`] = null; });
+
+            // 3. 抓取所有 used 紀錄 (結構是 used/slot/uid)
+            const uSnap = await queueRef.child("used").once("value");
+            uSnap.forEach(slotSnap => {
+                slotSnap.forEach(uidSnap => {
+                    updates[`queue/used/${slotSnap.key}/${uidSnap.key}`] = null;
+                });
+            });
+
+            // 4. 執行原子更新
+            if(Object.keys(updates).length > 0) {
+                await db.ref().update(updates);
+            }
+
+            addLog("ADMIN 重置系統"); 
+            if(!auto) { showToast("系統狀態已重置", 'success'); closeAdmin(); }
+
+        } catch(e) {
+            console.error(e);
+            showToast("重置失敗: " + e.message, 'error');
+        }
     } 
 }
+
 async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
@@ -1046,4 +1080,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
