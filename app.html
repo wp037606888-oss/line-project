@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v17.3 -安全</title>
+<title>萬豪吸菸室 v17.3 -正式版</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -847,42 +847,39 @@ function cancelReserve() {
     });
 }
 
+// --- 修正後的「現在前往」 (v17.3 Final: 使用純數字時間戳) ---
 function goOut(){
+
     let r = cacheQueue.reserve || {};
-    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-    let myRank = sorted.findIndex(x => x[0] === me.uid);
-    
-    if (myRank > 1 && myData.role !== 'admin') {
-        showToast("還沒輪到您，請稍候", "error");
+    let o = cacheQueue.out || {};
+
+    if (Object.keys(o).length >= 3) {
+        showToast("名額已滿", "error");
         return;
     }
 
-    queueRef.child("out").transaction((currentOut) => {
-        if (currentOut === null) {
-            return { [me.uid]: { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP } };
-        }
-        
-        if (Object.keys(currentOut).length >= 3) {
-            return; 
-        }
+    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    let myRank = sorted.findIndex(x => x[0] === me.uid);
 
-        if (currentOut[me.uid]) {
-            return;
-        }
+    if (myRank > 1 && myData.role !== 'admin') {
+        showToast("還沒輪到您", "error");
+        return;
+    }
 
-        currentOut[me.uid] = { name: myData.name, time: firebase.database.ServerValue.TIMESTAMP };
-        return currentOut;
+    // 關鍵修正：使用純數字，而非 ServerValue.TIMESTAMP
+    const ts = Date.now() + serverTimeOffset;
 
-    }, (error, committed, snapshot) => {
-        if (error) {
-            showToast("系統錯誤: " + error.message, "error");
-        } else if (!committed) {
-            showToast("動作太慢了！名額剛好被搶光", "error");
-        } else {
-            queueRef.child("reserve/" + me.uid).remove();
-            addLog(`${myData.name} 出發`);
-            showToast('祝您享受美好時光', 'success');
-        }
+    const updates = {};
+    updates[`queue/out/${me.uid}`] = { name: myData.name, time: ts };
+    updates[`queue/reserve/${me.uid}`] = null;
+
+    db.ref().update(updates)
+    .then(()=>{
+        addLog(`${myData.name} 出發`);
+        showToast("祝您享受美好時光","success");
+    })
+    .catch(e=>{
+        showToast("出發失敗: "+e.message,"error");
     });
 }
 
