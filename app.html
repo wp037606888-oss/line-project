@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室 v17.3 -正式版</title>
+<title>萬豪吸菸室 v17.3 -安全</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -546,6 +546,7 @@ function adminForceAdd() {
     const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
     if(u) {
         let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
+        // Admin 直接寫入 ServerValue.TIMESTAMP 是 OK 的，因為規則有豁免 admin 的 validate
         queueRef.child("reserve/"+uid).set({ name: u.name, time: firebase.database.ServerValue.TIMESTAMP, slot: t });
         addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
     }
@@ -645,16 +646,23 @@ function handleFile(e) {
     }; reader.readAsDataURL(file); e.target.value = '';
 }
 
-// --- 修正後的文字發送 (Two-Step 策略) ---
+// --- 修正後的文字發送 (Two-Step 策略 + Slice 防護) ---
 function send(){
     const input=document.getElementById("msg");
-    const text = input.value.trim();
+    let text = input.value.trim();
     if(!text) return;
 
     if(Date.now()-lastSendTime < 2000){
         showToast("請勿連續發言 (需間隔2秒)","error");
         return;
     }
+
+    // 防護：截斷超過300字的訊息，避免被 Rules 擋下
+    if(text.length > 300) {
+        text = text.slice(0, 300);
+        showToast("訊息過長，已自動截斷", "info");
+    }
+
     lastSendTime = Date.now();
 
     // 1. 計算精確的伺服器時間
@@ -815,13 +823,16 @@ setInterval(()=>{
 
 queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } });
 
-// --- 預約與操作函式 ---
+// --- 修正後的 Reserve (v17.3: 使用純數字時間戳) ---
 function reserve() {
     if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
     
+    // 修正點：使用 Date.now() + offset，確保傳入的是 Number 而非 Object，符合 Rules 驗證
+    const ts = Date.now() + serverTimeOffset;
+
     queueRef.child("reserve/" + me.uid).set({
         name: myData.name,
-        time: firebase.database.ServerValue.TIMESTAMP,
+        time: ts,
         slot: currentSlotInfo.slot
     }).then(() => {
         addLog(`${myData.name} 預約排隊`);
