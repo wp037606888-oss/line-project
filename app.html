@@ -20,8 +20,6 @@ connect-src
 frame-src https://*.firebaseapp.com;
 ">
 
-
-
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -596,40 +594,78 @@ const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
 function toggleEmoji() { emojiPicker.classList.toggle("show"); }
 
+// --- 修正後的圖片發送 ---
 function handleFile(e) {
     const file = e.target.files[0]; if(!file) return;
     if(file.size > 2 * 1024 * 1024) { showToast("圖片不能超過 2MB", 'error'); return; }
+
+    // 檢查節流 (2秒)
+    if (Date.now() - lastSendTime < 2000) {
+        showToast("請勿連續發言 (需間隔2秒)", "error");
+        e.target.value = '';
+        return;
+    }
+    lastSendTime = Date.now();
+
     const reader = new FileReader(); reader.onload = (event) => {
         const img = new Image(); img.onload = () => {
             const canvas = document.createElement('canvas'); let width = img.width, height = img.height;
             if (width > 400) { height *= 400 / width; width = 400; } canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-            chatRef.push({ name: myData.name, uid: me.uid, text: canvas.toDataURL('image/jpeg', 0.7), type: 'image', time: firebase.database.ServerValue.TIMESTAMP });
+            
+            // 原子更新：同時寫入 chat 和 chatThrottle
+            const newMsgKey = chatRef.push().key;
+            const timestamp = firebase.database.ServerValue.TIMESTAMP;
+            const updates = {};
+
+            updates[`chat/${newMsgKey}`] = { 
+                name: myData.name, 
+                uid: me.uid, 
+                text: canvas.toDataURL('image/jpeg', 0.7), 
+                type: 'image', 
+                time: timestamp 
+            };
+            updates[`chatThrottle/${me.uid}`] = timestamp;
+
+            db.ref().update(updates).catch(e => {
+                showToast("圖片發送失敗: " + e.message, "error");
+            });
         }; img.src = event.target.result;
     }; reader.readAsDataURL(file); e.target.value = '';
 }
 
+// --- 修正後的文字發送 ---
 function send(){
     const input=document.getElementById("msg");
     if(!input.value.trim()) return;
 
-    if(Date.now()-lastSendTime < 1500){
-        showToast("請勿連續發言","error");
+    // 檢查節流 (2秒)
+    if(Date.now()-lastSendTime < 2000){
+        showToast("請勿連續發言 (需間隔2秒)","error");
         return;
     }
-
     lastSendTime = Date.now();
 
-    chatRef.push({
+    // 原子更新：同時寫入 chat 和 chatThrottle
+    const newMsgKey = chatRef.push().key;
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
+    const updates = {};
+
+    updates[`chat/${newMsgKey}`] = {
         name: myData.name,
         uid: me.uid,
         text: input.value,
         type: 'text',
-        time: firebase.database.ServerValue.TIMESTAMP
-    });
+        time: timestamp
+    };
+    updates[`chatThrottle/${me.uid}`] = timestamp;
 
-    input.value="";
-    emojiPicker.classList.remove("show");
+    db.ref().update(updates).then(() => {
+        input.value="";
+        emojiPicker.classList.remove("show");
+    }).catch(e => {
+        showToast("發送失敗: " + e.message, "error");
+    });
 }
 
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
@@ -997,6 +1033,3 @@ let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.loca
 </script>
 </body>
 </html>
-
-
-
