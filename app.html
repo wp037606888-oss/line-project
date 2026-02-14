@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室VV</title>
+<title>萬豪吸菸室A</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -279,7 +279,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.17</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.18</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -367,7 +367,7 @@ button.btn-send {
     });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.17;
+const APP_VERSION = 17.18;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -392,7 +392,7 @@ let adminUserListener = null;
 let onlineUserListener = null; 
 let queueListener = null;      
 let userListener = null;
-let manualOffline = false; // 手動離線狀態鎖
+let manualOffline = false; 
 
 // --- Firebase 連線狀態監聽 ---
 db.ref(".info/connected").on("value", snap => {
@@ -495,7 +495,6 @@ db.ref("config/system_version").on("value", snap => {
     const currentUrlVer = parseFloat(urlParams.get('v'));
 
     if (APP_VERSION < dbVer) {
-        // 如果網址已經是新版號，但 APP_VERSION 還是舊的 -> 代表 HTML 檔案沒更新 -> 不 reload
         if (currentUrlVer === dbVer) {
             console.warn("⛔ 偵測到版本死結：Server 檔案尚未更新，已暫停自動刷新。");
             showToast("系統更新中，請稍候再手動重新整理...", "info");
@@ -553,7 +552,6 @@ auth.onAuthStateChanged(user=>{
             
             engineReady = true;
 
-            // 🔥 Admin Listener
             if(myData.role === "admin") { 
                 if(adminUserListener) userRef.off("value", adminUserListener); 
                 adminUserListener = userRef.on("value", snap => { 
@@ -562,7 +560,6 @@ auth.onAuthStateChanged(user=>{
                 }); 
             }
 
-            // 🔥 Online User List Listener
             if(onlineUserListener) userRef.off("value", onlineUserListener);
             onlineUserListener = userRef.on("value",s=>{ 
                 const list=document.getElementById("onlineUserList"); 
@@ -578,7 +575,6 @@ auth.onAuthStateChanged(user=>{
                 }); 
             });
 
-            // 🔥 Queue Listener
             if(queueListener) queueRef.off("value", queueListener);
             queueListener = queueRef.on("value",s=>{ 
                 lastHeartbeat = Date.now(); 
@@ -608,8 +604,6 @@ function startWatchdog() {
         if (isStuck && !manualOffline) {
             console.warn(`💀 Zombie socket 偵測 (延遲: ${timeSinceLastBeat}ms) -> 強制重載`);
             showToast("⚠️ 連線卡死，正在自動修復...", "error");
-            
-            // 🔥 這裡改用強制 Reload，這是對付 Zombie Socket 的唯一解法
             setTimeout(()=>{
                 window.location.reload();
             }, 1500);
@@ -617,7 +611,6 @@ function startWatchdog() {
     }, 5000);
 }
 
-// 🔥 [FIX: 防呆] 按鈕按下時，先檢查 me 是否存在，防止崩潰
 function submitName() {
     const nameInput = document.getElementById("newNameInput");
     const name = nameInput.value.trim();
@@ -628,14 +621,6 @@ function submitName() {
     
     btn.disabled = true;
     btn.textContent = "設定中...";
-
-    // 確保 me 存在
-    if(!me) {
-        showToast("系統連線中，請稍候再試...", "error");
-        btn.disabled = false;
-        btn.textContent = "開始使用";
-        return;
-    }
 
     userRef.child(me.uid).update({
         name: name,
@@ -950,8 +935,12 @@ setInterval(()=>{
 
     let outCount=Object.keys(cacheQueue.out||{}).length;
     
-    // 只有當「排隊人數 >= 3」時，才觸發 AFK 倒數
-    let eligibleForPenalty = (outCount < 3 && sorted.length >= 3 && currentSlotInfo.phase === 'OUT');
+    // 🔥 [修正] 只有當「排隊人數 >= 3」時，才觸發 AFK 倒數
+    let eligibleForPenalty = (
+        currentSlotInfo.phase === 'OUT' &&
+        outCount < 3 &&
+        sorted.length >= 3
+    );
     let penaltyExecutedThisTick = false; 
 
     let myCurrentRank = sorted.findIndex(x => x[0] === me.uid);
@@ -1037,6 +1026,7 @@ function updateButtonStates(){
         if(currentSlotInfo.phase==='OUT'){
             if(myRank <= 1 && outCount < 3) {
                 let txt = "<span style='color:var(--success)'>名額開放，請前往</span>";
+                // 只有當「隊伍真的很長 (>=3人)」時，才顯示倒數壓力
                 if(sorted.length >= 3 && r[me.uid].afkDeadline) {
                     let sLeft = Math.max(0, Math.floor((r[me.uid].afkDeadline - Date.now())/1000));
                     let mStr = String(Math.floor(sLeft/60)).padStart(2,'0'); let sStr = String(sLeft%60).padStart(2,'0');
@@ -1148,11 +1138,7 @@ function comeBack(){
 }
 
 function renderStaticLists(){
-    let r=cacheQueue.reserve||{};
-    
-    // 🔥 [核心修正] 移除 .filter 過濾，改為「全局排序」
-    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-
+    let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${escapeHtml(u[1].name)}')" class="btn-mini success">派發</button>`:"";
         let moveBtns = (myData&&myData.role==="admin")?`<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`:"";
