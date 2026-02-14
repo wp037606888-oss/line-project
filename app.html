@@ -555,8 +555,8 @@ function startWatchdog() {
         // 判定標準：
         // 1. 還沒 Ready (卡在連線中) 超過 15 秒
         // 2. Firebase 說有連線，但資料超過 25 秒沒更新 (Socket 假死)
-        const isStuckLoading = !engineReady && timeSinceLastBeat > 15000;
-        const isStuckSocket = firebaseConnected && engineReady && timeSinceLastBeat > 25000;
+        const isStuckLoading = !engineReady && timeSinceLastBeat > 60000;
+        const isStuckSocket = firebaseConnected && engineReady && timeSinceLastBeat > 90000;
 
         if (isStuckLoading || isStuckSocket) {
             console.warn(`💀 偵測到系統卡死 (延遲: ${timeSinceLastBeat}ms) -> 強制重整`);
@@ -1124,3 +1124,4 @@ window.addEventListener("online", () => { showToast("✅ 網路恢復", "success
 </script>
 </body>
 </html>
+
