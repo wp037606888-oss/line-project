@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室K</title>
+<title>萬豪吸菸室 半成品</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -52,7 +52,6 @@ body {
     overscroll-behavior-y: none;
 }
 
-/* --- 背景特效 --- */
 .ambient-light {
     position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
     background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
@@ -60,57 +59,24 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-/* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; transition: filter 0.3s ease; }
-
-#dashboard { 
-    flex: 1.8; display: flex; flex-direction: column; gap: 15px; min-width: 0; height: 100%; 
-}
-
-#comms { 
-    flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; 
-}
-
+#dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 15px; min-width: 0; height: 100%; }
+#comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; }
 .dashboard-top { flex-shrink: 0; }
-
-/* --- 監控網格 --- */
-.monitor-grid { 
-    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-    flex: 1; min-height: 0; 
-}
-
-.monitor-column { 
-    display: flex; flex-direction: column; gap: 15px; 
-    height: 100%; min-height: 0; 
-}
-
-/* --- 玻璃卡片 --- */
-.glass-panel {
-    background: var(--glass); backdrop-filter: blur(25px); 
-    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
-    border-radius: 6px; padding: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-    display: flex; flex-direction: column;
-    min-height: 0; position: relative;
-}
+.monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; min-height: 0; }
+.monitor-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
+.glass-panel { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; min-height: 0; position: relative; }
 .glass-panel:hover { border-color: var(--gold-dim); }
-
 .flex-3 { flex: 3; } .flex-7 { flex: 7; }
+.list-container { flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; }
 
-.list-container { 
-    flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; 
-}
-
-/* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
 .user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
 .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
-
 #clock { font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15); margin: 8px 0; letter-spacing: 2px; flex-shrink: 0; }
 #slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-family: 'Noto Serif TC'; font-weight: 500; opacity: 0.9; }
 #status { font-size: 16px; font-weight: 700; margin: 5px 0 10px; min-height: 24px; letter-spacing: 1px; color: #ccc; flex-shrink: 0; }
-
 .control-grid { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; flex-shrink: 0; }
 button.action-btn { flex: 1; min-width: 100px; padding: 15px 10px; border-radius: 2px; font-size: 14px; font-weight: 500; letter-spacing: 2px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, #2a2d35, #1a1c22); color: #ccc; }
 button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
@@ -124,7 +90,6 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .item-card.rank-2 { border-left-color: #c0c0c0; }
 .afk-timer { color: var(--danger); font-size: 11px; margin-left: 8px; font-family: 'Rajdhani'; font-weight: bold; animation: flashRed 1s infinite alternate; display: none; }
 @keyframes flashRed { 0% { opacity: 0.5; } 100% { opacity: 1; } }
-
 .btn-mini { padding: 2px 6px; font-size: 10px; border-radius: 2px; cursor: pointer; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #888; }
 .btn-mini.danger:hover { background: var(--danger); } .btn-mini.success:hover { background: var(--success); color: #000;}
 .btn-arrow { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; background: none; border:none; color:#666; cursor:pointer; font-size:10px; }
@@ -137,7 +102,6 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.1); }
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; margin-right: 6px; }
 .online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
-
 #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; word-break: break-all; }
 .msg-mine { align-self: flex-end; background: linear-gradient(135deg, #2a2d35, #1a1c22); border: 1px solid var(--gold-dark); color: #fff; border-bottom-right-radius: 0; }
@@ -145,43 +109,13 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name { font-size: 10px; margin-bottom: 3px; opacity: 0.6; font-family: 'Noto Serif TC'; }
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
-
-.input-area { 
-    padding: 12px; 
-    background: rgba(0,0,0,0.4); 
-    border-top: 1px solid var(--glass-border); 
-    display: flex; 
-    gap: 8px; 
-    align-items: center; 
-    flex-shrink: 0; 
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-}
-.input-main { 
-    display: flex; 
-    width: 100%; 
-    gap: 8px; 
-    align-items: center; 
-}
-input#msg { 
-    flex: 1; 
-    min-width: 0;
-    background: transparent; 
-    border: none; 
-    border-bottom: 1px solid rgba(255,255,255,0.2); 
-    border-radius: 0; 
-    padding: 8px 5px; 
-    color: #fff; 
-    font-family: "Noto Serif TC"; 
-}
+.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
+input#msg { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
 input#msg:focus { border-bottom-color: var(--gold); }
 .btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
-button.btn-send { 
-    background: var(--gold); border: none; color: #000; border-radius: 2px; 
-    width: 36px; height: 36px; min-width: 36px; 
-    cursor: pointer; font-weight: bold; flex-shrink: 0; 
-}
-
+button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; min-width: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
 #emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
 #emojiPicker.show { display: grid; }
 .emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; }
@@ -189,8 +123,8 @@ button.btn-send {
 
 /* Modals */
 #nameModal { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; }
-
-#adminModal, #confirmModal, #alertModal, #imgModal, #permModal { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; }
+#adminModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; }
+#confirmModal, #alertModal, #imgModal, #permModal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 3000; }
 #adminModal.show, #confirmModal.show, #alertModal.show, #permModal.show { display: flex; }
 .admin-card, .confirm-box { background: #0c0c0e; border: 1px solid var(--gold-dark); border-radius: 4px; padding: 30px; box-shadow: 0 0 60px rgba(0,0,0,0.9); width: 90%; max-width: 420px; }
 .admin-section { margin-bottom: 20px; }
@@ -204,18 +138,15 @@ button.btn-send {
 .confirm-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
 .confirm-btn { padding: 10px 20px; border-radius: 2px; border: none; cursor: pointer; font-weight: bold; font-family: 'Noto Sans TC'; }
 .yes { background: var(--danger); color: #fff; } .no { background: #333; color: #aaa; }
-
 .perm-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; text-align: center; } @keyframes pulse { 0% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.8; transform: scale(1); } }
 .perm-title { color: var(--gold); font-size: 24px; font-weight: bold; margin-bottom: 15px; text-align: center; font-family: 'Noto Serif TC'; }
 .perm-desc { color: #ccc; font-size: 15px; line-height: 1.6; max-width: 400px; margin-bottom: 30px; text-align: center; }
 .perm-btn { padding: 15px 40px; background: var(--gold); color: #000; border: none; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(197, 160, 89, 0.4); display: block; margin: 0 auto; }
 .blocked-guide { border: 1px solid var(--danger); background: rgba(211,47,47,0.1); padding: 20px; border-radius: 8px; margin-top: 20px; text-align: left; font-size: 14px; color: #ccc; }
 .blocked-guide ol { padding-left: 20px; margin: 10px 0; } .blocked-guide li { margin-bottom: 8px; }
-
 #imgModal img { max-width: 90%; max-height: 90%; border: 1px solid var(--gold); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
 #broadcastBanner { position: fixed; top: -200px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; z-index: 9999; background: rgba(10, 10, 10, 0.95); border: 1px solid var(--gold); border-radius: 4px; padding: 25px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 #broadcastBanner.active { top: 30px; }
-
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -279,7 +210,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.22</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.27</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -352,6 +283,17 @@ button.btn-send {
 </div>
 
 <script>
+    // 🔥 Reload storm protection - with auto-clear timeout
+    let reloadCount = Number(sessionStorage.getItem("reloadCount") || 0) + 1;
+    sessionStorage.setItem("reloadCount", reloadCount);
+    if (reloadCount > 5) {
+        console.warn("🚫 偵測刷新風暴，已鎖定");
+        alert("網路異常，請手動重新開啟頁面");
+        // Auto reset after 30 seconds
+        setTimeout(() => sessionStorage.removeItem("reloadCount"), 30000);
+        throw new Error("Reload storm locked");
+    }
+
     try {
         console.log("%c⛔ 這裡沒有後門，只有通往失望的大門 ⛔", "color: #ff3333; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0px #000; font-family: 'Noto Sans TC', sans-serif;");
     } catch (e) {}
@@ -359,15 +301,24 @@ button.btn-send {
     // 🔥 全域錯誤攔截 (Crash Guard)
     window.addEventListener("error", (e) => {
         console.error("🔥 System Crash:", e.error);
+        if(e.message && e.message.includes("PERMISSION_DENIED")) {
+            showToast("🔒 憑證失效，自動修復中...", "warning");
+            setTimeout(() => { auth.signOut().then(() => location.reload()); }, 1500);
+            return;
+        }
         if(typeof showToast === 'function') showToast("⚠️ 系統錯誤，請重新整理", "error");
     });
 
     window.addEventListener("unhandledrejection", (e) => {
         console.error("🔥 Async Error:", e.reason);
+        if(e.reason && (e.reason.code === "PERMISSION_DENIED" || (e.reason.message && e.reason.message.includes("PERMISSION_DENIED")))) {
+            showToast("🔒 連線憑證失效，自動修復中...", "warning");
+            setTimeout(() => { auth.signOut().then(() => location.reload()); }, 1500);
+        }
     });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.22;
+const APP_VERSION = 17.27;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -384,32 +335,107 @@ let lastSendTime = 0;
 let serverTimeOffset = 0;
 let cancelConfirming = false; 
 
-// 🔥 Watchdog & Socket 管理變數
-let firebaseConnected = true;
-let lastHeartbeat = Date.now();
-let watchdogTimer = null;
-let adminUserListener = null;  
-let onlineUserListener = null; 
-let queueListener = null;      
-let userListener = null;
-let manualOffline = false; // 手動離線狀態鎖
+// 🔥 連線引擎狀態
+let engineState = {
+    heartbeat: Date.now(),
+    recoveryStage: 0,
+    reloadHandled: null,
+    versionHandled: null
+};
 
-// --- Firebase 連線狀態監聽 ---
+/* --- 模組 A: 心跳穩定層 --- */
+setInterval(() => {
+    engineState.heartbeat = Date.now();
+}, 2000);
+
+/* --- 模組 B: 智慧連線管理器 (Smart Watchdog) --- */
+setInterval(() => {
+    if (document.hidden) return;
+    if (!navigator.onLine) return; // 沒網路時暫停 watchdog
+
+    const delta = Date.now() - engineState.heartbeat;
+
+    if (delta < 45000) {
+        engineState.recoveryStage = 0;
+        return;
+    }
+
+    console.warn("⚠️ 連線異常，階段:", engineState.recoveryStage);
+
+    if (engineState.recoveryStage === 0) {
+        engineState.recoveryStage = 1;
+        showToast("嘗試恢復連線...", "info");
+        db.goOffline();
+        setTimeout(() => db.goOnline(), 1500);
+        return;
+    }
+
+    if (engineState.recoveryStage === 1) {
+        engineState.recoveryStage = 2;
+        showToast("重新建立連線...", "error");
+        db.goOffline();
+        setTimeout(() => db.goOnline(), 5000);
+        return;
+    }
+
+    if (engineState.recoveryStage === 2) {
+        showToast("系統重啟中...", "error");
+        setTimeout(() => window.location.reload(), 2000);
+    }
+
+}, 5000);
+
+// Firebase 連線狀態監聽
 db.ref(".info/connected").on("value", snap => {
-    firebaseConnected = snap.val() === true;
-    if (firebaseConnected) {
-        console.log("✅ Firebase 連線已建立");
-        lastHeartbeat = Date.now(); 
+    if (snap.val() === true) {
+        engineState.heartbeat = Date.now();
+        engineState.recoveryStage = 0;
+        // 連線成功，重置計數
+        setTimeout(() => sessionStorage.removeItem("reloadCount"), 5000);
         showToast("✅ 網路已連線", "success");
-    } else {
-        console.warn("🔥 Firebase 連線中斷");
-        showToast("⚠️ 網路中斷，等待恢復...", "error");
     }
 });
 
 // --- 監聽伺服器時間偏移 ---
 db.ref(".info/serverTimeOffset").on("value", (snap) => {
     serverTimeOffset = snap.val() || 0;
+});
+
+// --- 模組 C: 冪等刷新系統 ---
+function handleReloadSignal(id, type) {
+    if (!id) return;
+
+    const key = `handled_${type}`;
+    if (engineState[key] == id) return;
+    
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(type) == id) return;
+
+    engineState[key] = id;
+    console.log(`🔄 接收 ${type}:`, id);
+    showToast("系統更新中...", "info");
+
+    setTimeout(() => {
+        url.search = `?${type}=${id}`; // Clean URL replacement
+        window.location.href = url.toString();
+    }, Math.random() * 3000 + 500);
+}
+
+// 監聽管理員刷新
+db.ref("reload").on("value", snap => {
+    handleReloadSignal(snap.val(), "reload");
+});
+
+// 監聽系統版本
+db.ref("config/system_version").on("value", snap => {
+    if (new URL(window.location.href).searchParams.get("reload")) {
+        console.log("🔒 reload 優先，跳過 version");
+        return;
+    }
+    const v = snap.val();
+    if (!v) return;
+    if (APP_VERSION >= v) return;
+    handleReloadSignal(v, "version");
 });
 
 // --- 通知權限 ---
@@ -477,43 +503,6 @@ function customAlert(msg) { document.getElementById('alertMsg').innerHTML = msg;
 function closeAlert() { document.getElementById('alertModal').classList.remove('show'); }
 function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
-// --- 背景特效 ---
-const canvas=document.getElementById("bg"), ctx=canvas.getContext("2d");
-let w,h,particles=[]; 
-function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window.onresize=resize; resize();
-for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
-function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
-
-// --- 核心邏輯 (v17.11) ---
-let firstVerCheck = true;
-
-db.ref("config/system_version").on("value", snap => {
-    const dbVer = snap.val(); if (!dbVer) return;
-    
-    // 🔥 防呆：檢查網址列是否已經包含目標版本號
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentUrlVer = parseFloat(urlParams.get('v'));
-
-    if (APP_VERSION < dbVer) {
-        if (currentUrlVer === dbVer) {
-            console.warn("⛔ 偵測到版本死結：Server 檔案尚未更新，已暫停自動刷新。");
-            showToast("系統更新中，請稍候再手動重新整理...", "info");
-            return;
-        }
-
-        if (firstVerCheck) { 
-            window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; 
-            return; 
-        }
-        
-        showToast(`🆕 系統已升級 (v${dbVer})，3秒後自動更新...`, 'info');
-        setTimeout(() => { 
-            window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; 
-        }, 3000);
-    }
-    firstVerCheck = false;
-});
-
 function getGreeting(name) {
     const hr = new Date().getHours(); let greet = "晚安";
     if(hr >= 5 && hr < 12) greet = "早安"; else if(hr >= 12 && hr < 18) greet = "午安";
@@ -521,19 +510,17 @@ function getGreeting(name) {
 }
 
 auth.onAuthStateChanged(user=>{
-    // 🔥 全面清理舊的監聽器
     if(userListener) { userRef.child(me?.uid || 'unknown').off("value", userListener); }
-    if(adminUserListener && me) { userRef.off("value", adminUserListener); adminUserListener = null; }
+    // 🔥 Fix: Admin listener cleanup
+    if(adminUserListener) { userRef.off("value", adminUserListener); adminUserListener = null; }
     if(onlineUserListener) userRef.off("value", onlineUserListener); 
     if(queueListener) queueRef.off("value", queueListener);          
     
     if(!user){location.href="login.html";return;} 
     me=user;
 
-    startWatchdog(); 
-    
     userListener = userRef.child(user.uid).on("value", s => {
-        lastHeartbeat = Date.now();
+        engineState.heartbeat = Date.now();
         myData = s.val() || {};
         
         if (!myData.name) {
@@ -552,7 +539,6 @@ auth.onAuthStateChanged(user=>{
             
             engineReady = true;
 
-            // 🔥 Admin Listener
             if(myData.role === "admin") { 
                 if(adminUserListener) userRef.off("value", adminUserListener); 
                 adminUserListener = userRef.on("value", snap => { 
@@ -561,7 +547,6 @@ auth.onAuthStateChanged(user=>{
                 }); 
             }
 
-            // 🔥 Online User List Listener
             if(onlineUserListener) userRef.off("value", onlineUserListener);
             onlineUserListener = userRef.on("value",s=>{ 
                 const list=document.getElementById("onlineUserList"); 
@@ -577,10 +562,9 @@ auth.onAuthStateChanged(user=>{
                 }); 
             });
 
-            // 🔥 Queue Listener
             if(queueListener) queueRef.off("value", queueListener);
             queueListener = queueRef.on("value",s=>{ 
-                lastHeartbeat = Date.now(); 
+                engineState.heartbeat = Date.now(); 
                 cacheQueue=s.val()||{}; 
                 if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } 
             });
@@ -590,31 +574,6 @@ auth.onAuthStateChanged(user=>{
         }
     });
 });
-
-// 🔥 [ZOMBIE KILLER] 強制自救重載
-function startWatchdog() {
-    if (watchdogTimer) return;
-    console.log("🛡️ Watchdog 系統啟動");
-    
-    watchdogTimer = setInterval(() => {
-        if (document.hidden || manualOffline) { lastHeartbeat = Date.now(); return; }
-
-        const now = Date.now();
-        const timeSinceLastBeat = now - lastHeartbeat;
-        
-        const isStuck = (!engineReady && timeSinceLastBeat > 30000) || (engineReady && timeSinceLastBeat > 60000);
-
-        if (isStuck && !manualOffline) {
-            console.warn(`💀 Zombie socket 偵測 (延遲: ${timeSinceLastBeat}ms) -> 強制重載`);
-            showToast("⚠️ 連線卡死，正在自動修復...", "error");
-            
-            // 🔥 這裡改用強制 Reload，這是對付 Zombie Socket 的唯一解法
-            setTimeout(()=>{
-                window.location.reload();
-            }, 1500);
-        }
-    }, 5000);
-}
 
 function submitName() {
     const nameInput = document.getElementById("newNameInput");
@@ -626,6 +585,13 @@ function submitName() {
     
     btn.disabled = true;
     btn.textContent = "設定中...";
+
+    if(!me) {
+        showToast("系統連線中，請稍候再試...", "error");
+        btn.disabled = false;
+        btn.textContent = "開始使用";
+        return;
+    }
 
     userRef.child(me.uid).update({
         name: name,
@@ -674,13 +640,11 @@ function updateAdminUserSelect() {
     });
 }
 
-// 🔥 [FIXED: Slot Data Consistency]
-function adminForceAdd() {
+// 🔥 Admin Functions (Async + Custom Confirm)
+async function adminForceAdd() {
     const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
     if(u) {
-        // 🔥 [修正] 使用合法 slot，若 BREAK 則排下一場
         let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
-        
         queueRef.child("reserve/"+uid).set({ 
             name: u.name, 
             time: firebase.database.ServerValue.TIMESTAMP, 
@@ -690,12 +654,9 @@ function adminForceAdd() {
     }
 }
 
-function forceGoOut(uid, name) {
-    if(!confirm(`確定讓 ${name} 強制外出？`)) return;
-    
-    // 🔥 [修正] 確保寫入正確 slot
+async function forceGoOut(uid, name) {
+    if(!await customConfirm(`確定讓 ${name} 強制外出？`)) return;
     let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
-
     queueRef.child("out/"+uid).set({
         name: name, 
         time: firebase.database.ServerValue.TIMESTAMP,
@@ -705,33 +666,22 @@ function forceGoOut(uid, name) {
     addLog(`ADMIN 派發: ${name}`);
 }
 
-function forceComeBack(uid, name) {
-    if(!confirm(`確定召回 ${name}？`)) return;
-    
+async function forceComeBack(uid, name) {
+    if(!await customConfirm(`確定召回 ${name}？`)) return;
     queueRef.child("out/"+uid).once("value").then(snap => {
         const userData = snap.val();
-        
-        // 🔥 [修正] 優先使用 DB 中的 slot，確保資料一致性
-        // 如果 DB 壞了 (undefined)，才退回到 currentSlot (而不是 random hour)
         let slot = (userData && userData.slot !== undefined) 
                     ? userData.slot 
                     : (currentSlotInfo.slot || currentSlotInfo.nextSlot); 
-        
         queueRef.child(`used/${slot}/${uid}`).set(true);
         queueRef.child("out/"+uid).remove();
-
         if(userData) {
             queueRef.child("history").push({
-                uid: uid, 
-                name: userData.name,
-                slot: slot,
-                outTime: userData.time, 
-                backTime: firebase.database.ServerValue.TIMESTAMP,
-                over: false,
-                note: "(管理員召回)"
+                uid: uid, name: userData.name, slot: slot,
+                outTime: userData.time, backTime: firebase.database.ServerValue.TIMESTAMP,
+                over: false, note: "(管理員召回)"
             });
         }
-        
         addLog(`ADMIN 召回: ${name}`);
     });
 }
@@ -744,11 +694,21 @@ function moveQueue(uid, direction) {
     if (myTime === targetTime) { if(direction < 0) targetTime -= 1; else targetTime += 1; }
     queueRef.child('reserve/' + uid).update({ time: targetTime }); queueRef.child('reserve/' + targetUid).update({ time: myTime });
 }
+
 async function publishNewVersion() {
-    if(await customConfirm(`確定推送 <span style="color:var(--gold)">v${APP_VERSION.toFixed(1)}</span> 系統更新？<br><small>這將強制刷新所有人的畫面</small>`)) {
+    if(await customConfirm(`確定推送 v${APP_VERSION} 系統更新？`)) {
         db.ref("config/system_version").set(APP_VERSION);
-        addLog(`ADMIN 推送更新 v${APP_VERSION.toFixed(1)}`); showToast("更新指令已發送", 'success'); closeAdmin();
+        addLog(`ADMIN 推送更新 v${APP_VERSION}`); 
+        showToast("更新指令已發送", 'success'); 
+        closeAdmin();
     }
+}
+async function forceReload(){ 
+    if(await customConfirm("確定強制刷新全體畫面？")) { 
+        db.ref("reload").set(Date.now()); 
+        showToast("已發送刷新指令", 'success'); 
+        closeAdmin(); 
+    } 
 }
 
 configRef.child("playground_status").on("value", s => {
@@ -766,7 +726,7 @@ broadcastRef.on("value",s=>{
     b.classList.add('active'); playBeep('urgent'); sendPushNotification("📢 萬豪吸菸室廣播", v.text); setTimeout(()=>b.classList.remove('active'),5000);
 });
 
-// --- Chat ---
+// --- Chat (Restored) ---
 const emojis = ["😀","😂","😍","😎","🤔","😭","😡","👍","👎","🚬","🔥","☕","🍺","💨","👀","❤️","✅","❌"];
 const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
@@ -776,11 +736,7 @@ function handleFile(e) {
     const file = e.target.files[0]; if(!file) return;
     if(file.size > 2 * 1024 * 1024) { showToast("圖片不能超過 2MB", 'error'); return; }
 
-    if (Date.now() - lastSendTime < 2000) {
-        showToast("請勿連續發言 (需間隔2秒)", "error");
-        e.target.value = '';
-        return;
-    }
+    if (Date.now() - lastSendTime < 2000) { showToast("請勿連續發言", "error"); e.target.value = ''; return; }
     lastSendTime = Date.now();
 
     const reader = new FileReader(); reader.onload = (event) => {
@@ -793,21 +749,9 @@ function handleFile(e) {
             const newMsgKey = chatRef.push().key;
 
             db.ref('chatThrottle/' + me.uid).set(estimatedServerTime).then(() => {
-                const msgData = {
-                    name: myData.name, 
-                    uid: me.uid, 
-                    text: canvas.toDataURL('image/jpeg', 0.7), 
-                    type: 'image', 
-                    time: estimatedServerTime 
-                };
+                const msgData = { name: myData.name, uid: me.uid, text: canvas.toDataURL('image/jpeg', 0.7), type: 'image', time: estimatedServerTime };
                 return chatRef.child(newMsgKey).set(msgData);
-            }).then(() => {
-                showToast("圖片已發送", "success");
-            }).catch(e => {
-                if(e.code === 'PERMISSION_DENIED') showToast("發送失敗：權限不足或說話太快", "error");
-                else showToast("發送錯誤: " + e.message, "error");
-            });
-
+            }).then(() => { showToast("圖片已發送", "success"); }).catch(e => { showToast("發送失敗", "error"); });
         }; img.src = event.target.result;
     }; reader.readAsDataURL(file); e.target.value = '';
 }
@@ -816,38 +760,17 @@ function send(){
     const input=document.getElementById("msg");
     let text = input.value.trim();
     if(!text) return;
-
-    if(Date.now()-lastSendTime < 2000){
-        showToast("請勿連續發言 (需間隔2秒)","error");
-        return;
-    }
-
-    if(text.length > 300) {
-        text = text.slice(0, 300);
-        showToast("訊息過長，已自動截斷", "info");
-    }
-
+    if(Date.now()-lastSendTime < 2000){ showToast("請勿連續發言", "error"); return; }
+    if(text.length > 300) { text = text.slice(0, 300); showToast("訊息過長，已自動截斷", "info"); }
     lastSendTime = Date.now();
 
     const estimatedServerTime = Date.now() + serverTimeOffset;
     const newMsgKey = chatRef.push().key;
 
     db.ref('chatThrottle/' + me.uid).set(estimatedServerTime).then(() => {
-        const msgData = {
-            name: myData.name,
-            uid: me.uid,
-            text: text,
-            type: 'text',
-            time: estimatedServerTime
-        };
+        const msgData = { name: myData.name, uid: me.uid, text: text, type: 'text', time: estimatedServerTime };
         return chatRef.child(newMsgKey).set(msgData);
-    }).then(() => {
-        input.value="";
-        emojiPicker.classList.remove("show");
-    }).catch(e => {
-        if(e.code === 'PERMISSION_DENIED') showToast("發送失敗：權限不足或說話太快", "error");
-        else showToast("發送錯誤: " + e.message, "error");
-    });
+    }).then(() => { input.value=""; emojiPicker.classList.remove("show"); }).catch(e => { showToast("發送失敗", "error"); });
 }
 
 function mentionUser(name) { const input = document.getElementById("msg"); input.value = `@${name} ` + input.value; input.focus(); }
@@ -855,98 +778,56 @@ function mentionUser(name) { const input = document.getElementById("msg"); input
 chatRef.limitToLast(30).on("value",s=>{
     const box=document.getElementById("chat-box");
     box.innerHTML="";
-
     s.forEach(x=>{
         const m=x.val();
         const meMsg=m.uid===me.uid;
-
         const bubble=document.createElement("div");
         bubble.className=`msg-bubble ${meMsg?'msg-mine':'msg-other'}`;
-
         const nameDiv=document.createElement("div");
         nameDiv.className="msg-name";
         nameDiv.textContent=m.name;
-        nameDiv.title="標記";
-        nameDiv.addEventListener("click",()=>{
-            mentionUser(m.name);
-        });
-
+        nameDiv.addEventListener("click",()=>{ mentionUser(m.name); });
         bubble.appendChild(nameDiv);
-
         if(m.type==="image"){
             const img=document.createElement("img");
-            img.src=m.text;
-            img.className="msg-img";
-            img.addEventListener("click",()=>{
-                showImg(img.src);
-            });
+            img.src=m.text; img.className="msg-img";
+            img.addEventListener("click",()=>{ showImg(img.src); });
             bubble.appendChild(img);
         }else{
             const textDiv=document.createElement("div");
             textDiv.textContent=m.text;
             bubble.appendChild(textDiv);
         }
-
         box.appendChild(bubble);
     });
-
-    setTimeout(()=>{
-        box.scrollTop=box.scrollHeight;
-    },50);
+    setTimeout(()=>{ box.scrollTop=box.scrollHeight; },50);
 });
 
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
-// --- 時間與排隊邏輯 (90分鐘完整版) ---
+// --- 時間與排隊邏輯 ---
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 
 function getSlotStatus(h, m) {
     const slots = [14, 16, 18, 20, 22, 0]; 
-    
-    // 1. 檢查是否在「使用時段 (OUT)」內 (整點 60 分鐘)
     let currentSlot = slots.find(s => s === h);
-    
-    const to12HStr = (hr) => { 
-        let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM"; 
-        let dH = (hr % 12) || 12; 
-        return `${dH}:00 ${suffix}`; 
-    };
+    const to12HStr = (hr) => { let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM"; let dH = (hr % 12) || 12; return `${dH}:00 ${suffix}`; };
 
-    if (currentSlot !== undefined) { 
-        return { 
-            phase: 'OUT', 
-            slot: currentSlot, 
-            display: `${to12HStr(currentSlot)} 開放與預約` 
-        }; 
-    }
+    if (currentSlot !== undefined) { return { phase: 'OUT', slot: currentSlot, display: `${to12HStr(currentSlot)} 開放與預約` }; }
 
-    // 2. 檢查是否在「預約時段 (RESERVE)」內 (時段前 30 分鐘)
     let target = slots.find(s => (s === 0 ? 24 : s) > h);
     if (target === undefined) target = 14; 
-
     let targetH = (target === 0 ? 24 : target);
     let diff = (targetH * 60) - (h * 60 + m);
 
-    if (diff > 0 && diff <= 30) { 
-        return { 
-            phase: 'RESERVE', 
-            slot: target, 
-            display: `預約中 ${to12HStr(target)}` 
-        }; 
-    }
+    if (diff > 0 && diff <= 30) { return { phase: 'RESERVE', slot: target, display: `預約中 ${to12HStr(target)}` }; }
 
-    // 3. 休息中 (BREAK)
     let openH = targetH - 1;
     let displayOpenH = openH >= 24 ? openH - 24 : openH;
     let suffix = (displayOpenH >= 12 && displayOpenH < 24) ? "PM" : "AM";
     let dH = (displayOpenH % 12) || 12;
 
-    return { 
-        phase: 'BREAK', 
-        nextSlot: target, 
-        display: `等待下一場 (${dH}:30 ${suffix} 開放)`, 
-        hint: `${dH}:30 ${suffix}` 
-    };
+    return { phase: 'BREAK', nextSlot: target, display: `等待下一場 (${dH}:30 ${suffix} 開放)`, hint: `${dH}:30 ${suffix}` };
 }
 
 function executeAfkPenalty(uid, currentIndex, sorted) {
@@ -973,18 +854,9 @@ setInterval(()=>{
     if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue(true); 
 
     let r=cacheQueue.reserve||{};
-    
-    // 🔥 [核心修正] 全局排序 (解決跨場順位問題)
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-
     let outCount=Object.keys(cacheQueue.out||{}).length;
-    
-    // 🔥 [修正] 只有當「排隊人數 >= 3」時，才觸發 AFK 倒數
-    let eligibleForPenalty = (
-        currentSlotInfo.phase === 'OUT' &&
-        outCount < 3 &&
-        sorted.length >= 3
-    );
+    let eligibleForPenalty = (currentSlotInfo.phase === 'OUT' && outCount < 3 && sorted.length >= 3);
     let penaltyExecutedThisTick = false; 
 
     let myCurrentRank = sorted.findIndex(x => x[0] === me.uid);
@@ -999,9 +871,7 @@ setInterval(()=>{
         
         if (isTop2 && eligibleForPenalty) {
             if (!data.afkDeadline) {
-                if (uid === me.uid || myData.role === 'admin') { 
-                    queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); 
-                }
+                if (uid === me.uid || myData.role === 'admin') { queueRef.child("reserve/"+uid).update({afkDeadline: Date.now() + 180000}); }
             } else {
                 let timeLeft = data.afkDeadline - Date.now(); 
                 if (timeLeft <= 0) { if (!penaltyExecutedThisTick && (uid === me.uid || myData.role === 'admin')) { penaltyExecutedThisTick = true; executeAfkPenalty(uid, i, sorted); } }
@@ -1028,17 +898,13 @@ setInterval(()=>{
             if (s > 600) { span.style.color = "var(--danger)"; span.classList.add("text-danger"); }
         }
     });
-
     updateButtonStates(); 
 },1000);
 
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
-    
-    // 🔥 [核心修正] 全局排序，不filter舊slot
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-
     let outCount=Object.keys(o).length;
     let myRank=sorted.findIndex(x=>x[0]===me.uid); 
     let alreadyUsed = used[currentSlotInfo.slot]?.[me.uid];
@@ -1055,11 +921,7 @@ function updateButtonStates(){
     else if(o[me.uid]) { setBtn(bBack, 'btn-red', '確認返回'); } 
     else if(r[me.uid]) { 
         setBtn(bCancel, '', '取消預約'); 
-        
-        // 只要是開放時段，且排名 <= 1，且外面有空位 -> 亮綠燈
-        if(currentSlotInfo.phase === 'OUT' && myRank <= 1 && outCount < 3){ 
-            setBtn(bOut, 'btn-green', '現在前往'); 
-        } 
+        if(currentSlotInfo.phase === 'OUT' && myRank <= 1 && outCount < 3){ setBtn(bOut, 'btn-green', '現在前往'); } 
     } 
     else { setBtn(bReserve, 'btn-gold', '預約排隊'); }
 
@@ -1090,25 +952,14 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
-// 🔥 [FIX: 防呆]
 function reserve() {
-    if(!me) { showToast("系統連線中，請稍候...", "info"); return; }
-    if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
-    
+    if(!me) { showToast("系統連線中...", "info"); return; }
+    if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約時段", "error"); return; }
     const ts = Date.now() + serverTimeOffset;
-    // 🔥 [FIXED] 寫入時也確保 Slot 正確
     let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
-
-    queueRef.child("reserve/" + me.uid).set({
-        name: myData.name,
-        time: ts,
-        slot: targetSlot
-    }).then(() => {
-        addLog(`${myData.name} 預約排隊`);
-        showToast("預約成功", "success");
-    }).catch(e => {
-        showToast("預約失敗: " + e.message, "error");
-    });
+    queueRef.child("reserve/" + me.uid).set({ name: myData.name, time: ts, slot: targetSlot })
+        .then(() => { addLog(`${myData.name} 預約排隊`); showToast("預約成功", "success"); })
+        .catch(e => { showToast("預約失敗: " + e.message, "error"); });
 }
 
 function handleCancelClick() {
@@ -1122,78 +973,38 @@ function handleCancelClick() {
 
 function cancelReserve() {
     if(!me) return;
-    queueRef.child("reserve/" + me.uid).remove().then(() => {
-        addLog(`${myData.name} 取消預約`);
-        showToast("已取消預約", "info");
-    });
+    queueRef.child("reserve/" + me.uid).remove().then(() => { addLog(`${myData.name} 取消預約`); showToast("已取消預約", "info"); });
 }
 
-// 🔥 [FIXED] 一般外出 - 寫入正確 slot
 function goOut(){
     if(!me) return;
     let r = cacheQueue.reserve || {};
     let o = cacheQueue.out || {};
-
     if (Object.keys(o).length >= 3) { showToast("名額已滿", "error"); return; }
-
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let myRank = sorted.findIndex(x => x[0] === me.uid);
-
     if (myRank > 1 && myData.role !== 'admin') { showToast("還沒輪到您", "error"); return; }
-
     const ts = Date.now() + serverTimeOffset;
     let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
-
     const updates = {};
-    updates[`queue/out/${me.uid}`] = { 
-        name: myData.name, 
-        time: ts,
-        slot: targetSlot 
-    };
+    updates[`queue/out/${me.uid}`] = { name: myData.name, time: ts, slot: targetSlot };
     updates[`queue/reserve/${me.uid}`] = null;
-
-    db.ref().update(updates)
-    .then(()=>{
-        addLog(`${myData.name} 出發`);
-        showToast("祝您享受美好時光","success");
-    })
-    .catch(e=>{
-        showToast("出發失敗: "+e.message,"error");
-    });
+    db.ref().update(updates).then(()=>{ addLog(`${myData.name} 出發`); showToast("祝您享受美好時光","success"); }).catch(e=>{ showToast("出發失敗: "+e.message,"error"); });
 }
 
-// 🔥 [FIXED] 一般返回 - 優先讀 DB slot
 function comeBack(){
     if(!me) return;
-    
     queueRef.child("out/"+me.uid).once("value").then(s=>{
         let u = s.val();
-        
         let now=Date.now();
-        let slot = (u && u.slot !== undefined) 
-                    ? u.slot 
-                    : (currentSlotInfo.slot || currentSlotInfo.nextSlot); 
-        
+        let slot = (u && u.slot !== undefined) ? u.slot : (currentSlotInfo.slot || currentSlotInfo.nextSlot); 
         let updates = {};
         updates[`queue/used/${slot}/${me.uid}`] = true;
         updates[`queue/out/${me.uid}`] = null;
-        
         db.ref().update(updates).then(() => {
-            if(u) {
-                queueRef.child("history").push({
-                    uid: me.uid, 
-                    name: u.name,
-                    slot: slot,
-                    outTime: u.time, 
-                    backTime: firebase.database.ServerValue.TIMESTAMP,
-                    over: (now - u.time) > 600000 
-                });
-            }
-            addLog(`${myData.name} 返回`); 
-            showToast('歡迎回來', 'info');
-        }).catch(err => {
-            showToast("操作失敗: " + err.message, "error");
-        });
+            if(u) { queueRef.child("history").push({ uid: me.uid, name: u.name, slot: slot, outTime: u.time, backTime: firebase.database.ServerValue.TIMESTAMP, over: (now - u.time) > 600000 }); }
+            addLog(`${myData.name} 返回`); showToast('歡迎回來', 'info');
+        }).catch(err => { showToast("操作失敗: " + err.message, "error"); });
     });
 }
 
@@ -1205,9 +1016,7 @@ function renderStaticLists(){
         let rc=i===0?'rank-1':(i===1?'rank-2':'');
         return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${escapeHtml(u[1].name)}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
-
-    let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime})); let o=cacheQueue.out||{}; 
-    Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
+    let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime})); 
     document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${escapeHtml(i.name)} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
 }
 
@@ -1220,10 +1029,6 @@ function renderOutList(){
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
-async function forceReload(){ 
-    if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
-}
-
 async function resetQueue(auto = false){ 
     if(auto || await customConfirm("<span style='color:var(--danger)'>確定清空所有排隊、外出狀態？</span><br><small>此操作無法復原</small>")) { 
         const updates = {};
@@ -1233,90 +1038,24 @@ async function resetQueue(auto = false){
             const oSnap = await queueRef.child("out").once("value");
             oSnap.forEach(child => { updates[`queue/out/${child.key}`] = null; });
             const uSnap = await queueRef.child("used").once("value");
-            uSnap.forEach(slotSnap => {
-                slotSnap.forEach(uidSnap => {
-                    updates[`queue/used/${slotSnap.key}/${uidSnap.key}`] = null;
-                });
-            });
+            uSnap.forEach(slotSnap => { slotSnap.forEach(uidSnap => { updates[`queue/used/${slotSnap.key}/${uidSnap.key}`] = null; }); });
             if(Object.keys(updates).length > 0) { await db.ref().update(updates); }
             addLog("ADMIN 重置系統"); 
             if(!auto) { showToast("系統狀態已重置", 'success'); closeAdmin(); }
-        } catch(e) {
-            console.error(e);
-            showToast("重置失敗: " + e.message, 'error');
-        }
+        } catch(e) { console.error(e); showToast("重置失敗: " + e.message, 'error'); }
     } 
 }
 
 async function clearChat(){ if(await customConfirm("確定清空聊天室？")) chatRef.remove().then(() => {showToast("聊天室已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearHistory(){ if(await customConfirm("確定清空歷史紀錄？")) queueRef.child("history").remove().then(() => {showToast("歷史紀錄已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
 async function clearLog(){ if(await customConfirm("確定清空系統日誌？")) logRef.remove().then(() => {showToast("系統日誌已清空", 'success'); closeAdmin();}).catch(e => showToast("權限被拒絕", 'error')); }
+function addLog(t){ let safeT = (typeof t === 'string' && t.length > 95) ? t.slice(0, 95) + '...' : t; logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{}); }
+logRef.limitToLast(15).on("value",s=>{ const b=document.getElementById("log"); b.innerHTML=""; s.forEach(x=>{ let d=x.val(); let dv=document.createElement("div"); dv.style.marginBottom = "4px"; let timeSpan = document.createElement("span"); timeSpan.style.opacity = "0.5"; timeSpan.style.fontFamily = "'Rajdhani'"; timeSpan.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]`; let textNode = document.createTextNode(" " + d.t); dv.appendChild(timeSpan); dv.appendChild(textNode); b.appendChild(dv); }); b.scrollTop=b.scrollHeight; });
 
-function addLog(t){
-    let safeT = (typeof t === 'string' && t.length > 95) ? t.slice(0, 95) + '...' : t;
-    logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{});
-}
-
-logRef.limitToLast(15).on("value",s=>{
-    const b=document.getElementById("log");
-    b.innerHTML="";
-    s.forEach(x=>{
-        let d=x.val();
-        let dv=document.createElement("div");
-        dv.style.marginBottom = "4px";
-        let timeSpan = document.createElement("span");
-        timeSpan.style.opacity = "0.5";
-        timeSpan.style.fontFamily = "'Rajdhani'";
-        timeSpan.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]`;
-        let textNode = document.createTextNode(" " + d.t);
-        dv.appendChild(timeSpan);
-        dv.appendChild(textNode);
-        b.appendChild(dv);
-    });
-    b.scrollTop=b.scrollHeight;
-});
-
-// 🔥 [FIXED] 冪等性刷新：檢查 DB reload 值是否已經處理過
-db.ref("reload").on("value", s => {
-    const v = s.val();
-    if(!v) return;
-    
-    // 🔥 [MODIFIED] 使用 ?reload= 參數來控制刷新，與 ?v= 版本號分開
-    const url = new URL(window.location.href);
-    const currentReload = url.searchParams.get('reload');
-
-    if (currentReload == v) return; // 如果已經是這個 reload ID，就不動作
-
-    // 隨機延遲，防止 DDOS
-    const randomDelay = Math.floor(Math.random() * 4500) + 500;
-    
-    console.log(`收到刷新指令 ${v}，將在 ${randomDelay}ms 後執行...`);
-    showToast("系統維護，即將自動重整...", "info");
-
-    setTimeout(() => {
-        url.searchParams.set('reload', v);
-        window.location.href = url.toString();
-    }, randomDelay);
-});
-
-// 🔥 自動斷線機制 + 狀態鎖 (解決 Watchdog 打架問題)
 document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-        manualOffline = true; // 上鎖
-        console.log("😴 進入背景，暫停連線");
-        db.goOffline(); 
-    } else {
-        manualOffline = false; // 解鎖
-        console.log("🤩 回到前台，恢復連線");
-        db.goOnline();
-        lastHeartbeat = Date.now(); 
-        
-        setTimeout(() => {
-            if(me) userRef.child(me.uid).update({online: true}).catch(()=>{});
-        }, 1000);
-    }
+    if (document.hidden) { manualOffline = true; console.log("😴 進入背景，暫停連線"); db.goOffline(); } 
+    else { manualOffline = false; console.log("🤩 回到前台，恢復連線"); db.goOnline(); lastHeartbeat = Date.now(); setTimeout(() => { if(me) userRef.child(me.uid).update({online: true}).catch(()=>{}); }, 1000); }
 });
-
 window.addEventListener("offline", () => { showToast("⚠️ 網路斷線", "error"); });
 window.addEventListener("online", () => { showToast("✅ 網路恢復", "success"); });
 </script>
