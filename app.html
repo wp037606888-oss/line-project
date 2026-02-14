@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室</title>
+<title>萬豪吸菸室 V3.0</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -284,7 +284,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.10</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.12</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -358,13 +358,25 @@ button.btn-send {
 
 <script>
     try {
-    console.log("%c⛔ 這裡沒有後門，只有通往失望的大門 ⛔", "color: #ff3333; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0px #000; font-family: 'Noto Sans TC', sans-serif;");
-    console.log("%c有時間在這裡研究原始碼，不如去排隊抽根菸吧。", "color: white; font-size: 30px; font-weight: bold; background: #d32f2f; padding: 5px; border-radius: 4px;");
-    console.log("%c別費心研究了，這段程式碼寫得比你的人生規劃還嚴謹。 ( ˘•ω•˘ )", "color: #C5A059; font-size: 25px; font-style: italic; background: #222; padding: 5px; border-radius: 4px; margin-top: 10px;");
-} catch (e) { console.error("Console warning failed"); }
+        console.log("%c⛔ 這裡沒有後門，只有通往失望的大門 ⛔", "color: #ff3333; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 0px #000; font-family: 'Noto Sans TC', sans-serif;");
+    } catch (e) {}
+
+    // 🔥 全域錯誤攔截 (Crash Guard)
+    window.addEventListener("error", (e) => {
+        console.error("🔥 System Crash:", e.error);
+        // 如果 UI 還能顯示，就彈出 Toast
+        if(typeof showToast === 'function') {
+            showToast("⚠️ 系統發生錯誤，建議重新整理", "error");
+        }
+    });
+
+    // 🔥 非同步錯誤攔截 (Promise Guard)
+    window.addEventListener("unhandledrejection", (e) => {
+        console.error("🔥 Async Error:", e.reason);
+    });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.10;
+const APP_VERSION = 17.12;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -379,8 +391,7 @@ let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 let lastSendTime = 0; 
 let serverTimeOffset = 0;
-// 🔥 [修正] 補回這個關鍵變數，防止 updateButtonStates 報錯
-let cancelConfirming = false; 
+let cancelConfirming = false; // 🔥 [RESTORED]
 
 // 🔥 Watchdog & Socket 管理變數
 let firebaseConnected = true;
@@ -482,15 +493,33 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-// --- 核心邏輯 (v17.10) ---
+// --- 核心邏輯 (v17.11) ---
 let firstVerCheck = true;
 
 db.ref("config/system_version").on("value", snap => {
     const dbVer = snap.val(); if (!dbVer) return;
+    
+    // 🔥 防呆：檢查網址列是否已經包含目標版本號
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUrlVer = parseFloat(urlParams.get('v'));
+
     if (APP_VERSION < dbVer) {
-        if (firstVerCheck) { window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; return; }
-        showToast(`🆕 系統已升級，3秒後自動更新...`, 'info');
-        setTimeout(() => { window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; }, 3000);
+        // 如果網址已經是新版號，但 APP_VERSION 還是舊的 -> 代表 HTML 檔案沒更新 -> 不 reload
+        if (currentUrlVer === dbVer) {
+            console.warn("⛔ 偵測到版本死結：Server 檔案尚未更新，已暫停自動刷新。");
+            showToast("系統更新中，請稍候再手動重新整理...", "info");
+            return;
+        }
+
+        if (firstVerCheck) { 
+            window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; 
+            return; 
+        }
+        
+        showToast(`🆕 系統已升級 (v${dbVer})，3秒後自動更新...`, 'info');
+        setTimeout(() => { 
+            window.location.href = window.location.href.split('?')[0] + "?v=" + dbVer; 
+        }, 3000);
     }
     firstVerCheck = false;
 });
@@ -976,89 +1005,7 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
-// 🔥 [RESTORED] 這些被誤刪的按鈕操作函式
-function reserve() {
-    if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
-    const ts = Date.now() + serverTimeOffset;
-    queueRef.child("reserve/" + me.uid).set({
-        name: myData.name,
-        time: ts,
-        slot: currentSlotInfo.slot
-    }).then(() => {
-        addLog(`${myData.name} 預約排隊`);
-        showToast("預約成功", "success");
-    }).catch(e => {
-        showToast("預約失敗: " + e.message, "error");
-    });
-}
-
-function handleCancelClick() {
-    const btn = document.getElementById('bCancel');
-    if (!cancelConfirming) {
-        cancelConfirming = true; btn.textContent = "再次點擊確認"; btn.className = "action-btn btn-red";
-        setTimeout(() => { if(cancelConfirming) { cancelConfirming = false; btn.textContent = "取消預約"; btn.className = "action-btn"; } }, 3000);
-    } else { cancelConfirming = false; cancelReserve(); }
-}
-
-function cancelReserve() {
-    queueRef.child("reserve/" + me.uid).remove().then(() => {
-        addLog(`${myData.name} 取消預約`);
-        showToast("已取消預約", "info");
-    });
-}
-
-function goOut(){
-    let r = cacheQueue.reserve || {};
-    let o = cacheQueue.out || {};
-
-    if (Object.keys(o).length >= 3) { showToast("名額已滿", "error"); return; }
-
-    let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
-    let myRank = sorted.findIndex(x => x[0] === me.uid);
-
-    if (myRank > 1 && myData.role !== 'admin') { showToast("還沒輪到您", "error"); return; }
-
-    const ts = Date.now() + serverTimeOffset;
-    const updates = {};
-    updates[`queue/out/${me.uid}`] = { name: myData.name, time: ts };
-    updates[`queue/reserve/${me.uid}`] = null;
-
-    db.ref().update(updates)
-    .then(()=>{
-        addLog(`${myData.name} 出發`);
-        showToast("祝您享受美好時光","success");
-    })
-    .catch(e=>{
-        showToast("出發失敗: "+e.message,"error");
-    });
-}
-
-function comeBack(){
-    queueRef.child("out/"+me.uid).once("value").then(s=>{
-        let u=s.val();
-        if(u){
-            let now=Date.now(),slot=new Date().getHours(); 
-            let updates = {};
-            updates[`queue/used/${slot}/${me.uid}`] = true;
-            updates[`queue/out/${me.uid}`] = null;
-            
-            db.ref().update(updates).then(() => {
-                queueRef.child("history").push({
-                    uid: me.uid, 
-                    name: u.name,
-                    slot,
-                    outTime: u.time, 
-                    backTime: firebase.database.ServerValue.TIMESTAMP,
-                    over: (now - u.time) > 600000 
-                });
-                addLog(`${myData.name} 返回`); 
-                showToast('歡迎回來', 'info');
-            });
-        }
-    });
-}
-
-// 🔥 [RESTORED] 渲染函式
+// 🔥 [RESTORED] 渲染函式 (Queue & History)
 function renderStaticLists(){
     let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
@@ -1073,6 +1020,7 @@ function renderStaticLists(){
     document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${escapeHtml(i.name)} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
 }
 
+// 🔥 [RESTORED] 渲染函式 (Out List)
 function renderOutList(){
     let o=cacheQueue.out||{}; 
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
@@ -1138,7 +1086,19 @@ logRef.limitToLast(15).on("value",s=>{
     b.scrollTop=b.scrollHeight;
 });
 
-let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();});
+// 🔥 [FIXED] 冪等性刷新：檢查 DB reload 值是否已經處理過
+db.ref("reload").on("value", s => {
+    const v = s.val();
+    if(!v) return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentV = parseFloat(urlParams.get('v'));
+
+    // 如果網址上的 v 等於資料庫的 v，代表已經刷新過了，不要再刷 (停止迴圈)
+    if (currentV == v) return;
+
+    window.location.href = window.location.href.split('?')[0] + '?v=' + v;
+});
 
 // 🔥 自動斷線機制 + 狀態鎖 (解決 Watchdog 打架問題)
 document.addEventListener("visibilitychange", () => {
