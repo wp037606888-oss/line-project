@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室 半成品2</title>
+<title>萬豪吸菸室 半成品</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -52,6 +52,7 @@ body {
     overscroll-behavior-y: none;
 }
 
+/* --- 背景特效 --- */
 .ambient-light {
     position: fixed; top: -20%; left: 50%; width: 100vw; height: 100vh;
     background: radial-gradient(ellipse at center, rgba(197, 160, 89, 0.08) 0%, transparent 60%);
@@ -59,24 +60,57 @@ body {
 }
 canvas#bg { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
+/* --- 主佈局 --- */
 #layout { display: flex; width: 100%; height: 100%; z-index: 10; position: relative; padding: 15px; gap: 15px; transition: filter 0.3s ease; }
-#dashboard { flex: 1.8; display: flex; flex-direction: column; gap: 15px; min-width: 0; height: 100%; }
-#comms { flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; }
-.dashboard-top { flex-shrink: 0; }
-.monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; min-height: 0; }
-.monitor-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
-.glass-panel { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; min-height: 0; position: relative; }
-.glass-panel:hover { border-color: var(--gold-dim); }
-.flex-3 { flex: 3; } .flex-7 { flex: 7; }
-.list-container { flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; }
 
+#dashboard { 
+    flex: 1.8; display: flex; flex-direction: column; gap: 15px; min-width: 0; height: 100%; 
+}
+
+#comms { 
+    flex: 1; display: flex; flex-direction: column; gap: 0; min-width: 320px; height: 100%; overflow: hidden; position: relative; 
+}
+
+.dashboard-top { flex-shrink: 0; }
+
+/* --- 監控網格 --- */
+.monitor-grid { 
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
+    flex: 1; min-height: 0; 
+}
+
+.monitor-column { 
+    display: flex; flex-direction: column; gap: 15px; 
+    height: 100%; min-height: 0; 
+}
+
+/* --- 玻璃卡片 --- */
+.glass-panel {
+    background: var(--glass); backdrop-filter: blur(25px); 
+    border: 1px solid var(--glass-border); border-top: 1px solid rgba(255,255,255,0.15); 
+    border-radius: 6px; padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    display: flex; flex-direction: column;
+    min-height: 0; position: relative;
+}
+.glass-panel:hover { border-color: var(--gold-dim); }
+
+.flex-3 { flex: 3; } .flex-7 { flex: 7; }
+
+.list-container { 
+    flex: 1; overflow-y: auto; padding-right: 4px; min-height: 0; 
+}
+
+/* --- UI 元件 --- */
 .status-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; flex-shrink: 0; }
 .user-badge { background: linear-gradient(90deg, var(--gold-dim), transparent); padding: 4px 12px; border-radius: 2px; font-size: 14px; border-left: 3px solid var(--gold); color: #fff; font-weight: 500; display: flex; align-items: center; }
 .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #aaa; cursor: pointer; padding: 4px 10px; border-radius: 2px; font-size: 11px; margin-left: 10px; }
 .btn-logout:hover { border-color: var(--gold); color: var(--gold); }
+
 #clock { font-family: 'Rajdhani', sans-serif; font-size: 44px; line-height: 1; font-weight: 700; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.15); margin: 8px 0; letter-spacing: 2px; flex-shrink: 0; }
 #slotDisplay { font-size: 14px; color: var(--gold); letter-spacing: 1px; font-family: 'Noto Serif TC'; font-weight: 500; opacity: 0.9; }
 #status { font-size: 16px; font-weight: 700; margin: 5px 0 10px; min-height: 24px; letter-spacing: 1px; color: #ccc; flex-shrink: 0; }
+
 .control-grid { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; flex-shrink: 0; }
 button.action-btn { flex: 1; min-width: 100px; padding: 15px 10px; border-radius: 2px; font-size: 14px; font-weight: 500; letter-spacing: 2px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, #2a2d35, #1a1c22); color: #ccc; }
 button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
@@ -90,6 +124,7 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .item-card.rank-2 { border-left-color: #c0c0c0; }
 .afk-timer { color: var(--danger); font-size: 11px; margin-left: 8px; font-family: 'Rajdhani'; font-weight: bold; animation: flashRed 1s infinite alternate; display: none; }
 @keyframes flashRed { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
 .btn-mini { padding: 2px 6px; font-size: 10px; border-radius: 2px; cursor: pointer; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #888; }
 .btn-mini.danger:hover { background: var(--danger); } .btn-mini.success:hover { background: var(--success); color: #000;}
 .btn-arrow { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; background: none; border:none; color:#666; cursor:pointer; font-size:10px; }
@@ -102,6 +137,7 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .online-pill.admin { border-color: var(--gold-dark); color: var(--gold); background: rgba(197,160,89,0.1); }
 .online-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; margin-right: 6px; }
 .online-pill.online .online-dot { background: var(--success); box-shadow: 0 0 5px var(--success); }
+
 #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .msg-bubble { max-width: 85%; padding: 8px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5; word-break: break-all; }
 .msg-mine { align-self: flex-end; background: linear-gradient(135deg, #2a2d35, #1a1c22); border: 1px solid var(--gold-dark); color: #fff; border-bottom-right-radius: 0; }
@@ -109,13 +145,43 @@ h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--gold); text-transform: up
 .msg-name { font-size: 10px; margin-bottom: 3px; opacity: 0.6; font-family: 'Noto Serif TC'; }
 .msg-name:hover { color: var(--gold); opacity: 1; cursor: pointer; }
 .msg-img { max-width: 100%; border-radius: 2px; cursor: pointer; margin-top: 5px; border: 1px solid rgba(255,255,255,0.1); }
-.input-area { padding: 12px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-.input-main { display: flex; width: 100%; gap: 8px; align-items: center; }
-input#msg { flex: 1; min-width: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); border-radius: 0; padding: 8px 5px; color: #fff; font-family: "Noto Serif TC"; }
+
+.input-area { 
+    padding: 12px; 
+    background: rgba(0,0,0,0.4); 
+    border-top: 1px solid var(--glass-border); 
+    display: flex; 
+    gap: 8px; 
+    align-items: center; 
+    flex-shrink: 0; 
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.input-main { 
+    display: flex; 
+    width: 100%; 
+    gap: 8px; 
+    align-items: center; 
+}
+input#msg { 
+    flex: 1; 
+    min-width: 0;
+    background: transparent; 
+    border: none; 
+    border-bottom: 1px solid rgba(255,255,255,0.2); 
+    border-radius: 0; 
+    padding: 8px 5px; 
+    color: #fff; 
+    font-family: "Noto Serif TC"; 
+}
 input#msg:focus { border-bottom-color: var(--gold); }
 .btn-tool { background: transparent; border: none; font-size: 16px; cursor: pointer; padding: 5px; color: #666; flex-shrink: 0; }
 .btn-tool:hover { color: var(--gold); }
-button.btn-send { background: var(--gold); border: none; color: #000; border-radius: 2px; width: 36px; height: 36px; min-width: 36px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+button.btn-send { 
+    background: var(--gold); border: none; color: #000; border-radius: 2px; 
+    width: 36px; height: 36px; min-width: 36px; 
+    cursor: pointer; font-weight: bold; flex-shrink: 0; 
+}
+
 #emojiPicker { position: absolute; bottom: 70px; left: 10px; width: 280px; background: rgba(15,15,20,0.95); border: 1px solid var(--gold-dark); border-radius: 4px; padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 50; }
 #emojiPicker.show { display: grid; }
 .emoji-btn { font-size: 20px; background: transparent; border: none; cursor: pointer; padding: 5px; border-radius: 2px; }
@@ -210,7 +276,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.28</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.29</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -318,7 +384,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
     });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.28;
+const APP_VERSION = 17.29;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -329,12 +395,17 @@ const db=firebase.database(), auth=firebase.auth();
 const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast"), configRef=db.ref("config");
 
 // --- 全域變數 ---
+// 🔥 [FIXED] 補上缺失的全域變數宣告
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 let lastSendTime = 0; 
 let serverTimeOffset = 0;
 let cancelConfirming = false; 
-// 🔥 補上漏掉的全域變數
+// 🔥 這些就是之前缺少的變數
+let userListener = null;
+let adminUserListener = null;
+let onlineUserListener = null;
+let queueListener = null;
 let manualOffline = false;
 
 // 🔥 連線引擎狀態
@@ -347,8 +418,7 @@ let engineState = {
 
 /* --- 模組 A: 心跳穩定層 --- */
 setInterval(() => {
-    // 只有在 engineReady (資料載入完畢) 後才更新心跳，讓 watchdog 能正確抓到初始化卡死
-    if (engineReady) engineState.heartbeat = Date.now();
+    engineState.heartbeat = Date.now();
 }, 2000);
 
 /* --- 模組 B: 智慧連線管理器 (Smart Watchdog) --- */
@@ -419,7 +489,6 @@ function handleReloadSignal(id, type) {
     showToast("系統更新中...", "info");
 
     setTimeout(() => {
-        // 🔥 Clean URL replacement (不疊加參數)
         url.search = `?${type}=${id}`; 
         window.location.href = url.toString();
     }, Math.random() * 3000 + 500);
@@ -1067,7 +1136,6 @@ async function clearLog(){ if(await customConfirm("確定清空系統日誌？")
 function addLog(t){ let safeT = (typeof t === 'string' && t.length > 95) ? t.slice(0, 95) + '...' : t; logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{}); }
 logRef.limitToLast(15).on("value",s=>{ const b=document.getElementById("log"); b.innerHTML=""; s.forEach(x=>{ let d=x.val(); let dv=document.createElement("div"); dv.style.marginBottom = "4px"; let timeSpan = document.createElement("span"); timeSpan.style.opacity = "0.5"; timeSpan.style.fontFamily = "'Rajdhani'"; timeSpan.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]`; let textNode = document.createTextNode(" " + d.t); dv.appendChild(timeSpan); dv.appendChild(textNode); b.appendChild(dv); }); b.scrollTop=b.scrollHeight; });
 
-// 🔥 [FIX: Sync visibility and watchdog]
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) { 
         manualOffline = true; 
@@ -1075,7 +1143,7 @@ document.addEventListener("visibilitychange", () => {
         db.goOffline(); 
     } else { 
         manualOffline = false; 
-        engineState.heartbeat = Date.now(); // 重置 watchdog
+        engineState.heartbeat = Date.now(); // 🔥 Fix: Reset watchdog heartbeat on resume
         console.log("🤩 回到前台，恢復連線"); 
         db.goOnline(); 
         
