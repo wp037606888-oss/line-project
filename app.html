@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室V4</title>
+<title>萬豪吸菸室 V5.0</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -284,7 +284,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.14</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.12</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -364,15 +364,19 @@ button.btn-send {
     // 🔥 全域錯誤攔截 (Crash Guard)
     window.addEventListener("error", (e) => {
         console.error("🔥 System Crash:", e.error);
-        if(typeof showToast === 'function') showToast("⚠️ 系統錯誤，請重新整理", "error");
+        // 如果 UI 還能顯示，就彈出 Toast
+        if(typeof showToast === 'function') {
+            showToast("⚠️ 系統發生錯誤，建議重新整理", "error");
+        }
     });
 
+    // 🔥 非同步錯誤攔截 (Promise Guard)
     window.addEventListener("unhandledrejection", (e) => {
         console.error("🔥 Async Error:", e.reason);
     });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.14;
+const APP_VERSION = 17.12;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -387,7 +391,7 @@ let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 let lastSendTime = 0; 
 let serverTimeOffset = 0;
-let cancelConfirming = false; 
+let cancelConfirming = false; // 🔥 [RESTORED]
 
 // 🔥 Watchdog & Socket 管理變數
 let firebaseConnected = true;
@@ -397,7 +401,7 @@ let adminUserListener = null;
 let onlineUserListener = null; 
 let queueListener = null;      
 let userListener = null;
-let manualOffline = false; 
+let manualOffline = false; // 手動離線狀態鎖
 
 // --- Firebase 連線狀態監聽 ---
 db.ref(".info/connected").on("value", snap => {
@@ -489,7 +493,7 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-// --- 核心邏輯 (v17.14) ---
+// --- 核心邏輯 (v17.11) ---
 let firstVerCheck = true;
 
 db.ref("config/system_version").on("value", snap => {
@@ -500,6 +504,7 @@ db.ref("config/system_version").on("value", snap => {
     const currentUrlVer = parseFloat(urlParams.get('v'));
 
     if (APP_VERSION < dbVer) {
+        // 如果網址已經是新版號，但 APP_VERSION 還是舊的 -> 代表 HTML 檔案沒更新 -> 不 reload
         if (currentUrlVer === dbVer) {
             console.warn("⛔ 偵測到版本死結：Server 檔案尚未更新，已暫停自動刷新。");
             showToast("系統更新中，請稍候再手動重新整理...", "info");
@@ -557,6 +562,7 @@ auth.onAuthStateChanged(user=>{
             
             engineReady = true;
 
+            // 🔥 Admin Listener
             if(myData.role === "admin") { 
                 if(adminUserListener) userRef.off("value", adminUserListener); 
                 adminUserListener = userRef.on("value", snap => { 
@@ -565,6 +571,7 @@ auth.onAuthStateChanged(user=>{
                 }); 
             }
 
+            // 🔥 Online User List Listener
             if(onlineUserListener) userRef.off("value", onlineUserListener);
             onlineUserListener = userRef.on("value",s=>{ 
                 const list=document.getElementById("onlineUserList"); 
@@ -580,6 +587,7 @@ auth.onAuthStateChanged(user=>{
                 }); 
             });
 
+            // 🔥 Queue Listener
             if(queueListener) queueRef.off("value", queueListener);
             queueListener = queueRef.on("value",s=>{ 
                 lastHeartbeat = Date.now(); 
@@ -593,12 +601,13 @@ auth.onAuthStateChanged(user=>{
     });
 });
 
-// 🔥 [ZOMBIE KILLER] 強制自救重載
+// Watchdog：軟重連 (Soft Reconnect)
 function startWatchdog() {
     if (watchdogTimer) return;
     console.log("🛡️ Watchdog 系統啟動");
     
     watchdogTimer = setInterval(() => {
+        // 🔥 狀態鎖：手動離線時 Watchdog 暫停
         if (document.hidden || manualOffline) { lastHeartbeat = Date.now(); return; }
 
         const now = Date.now();
@@ -607,11 +616,16 @@ function startWatchdog() {
         const isStuck = (!engineReady && timeSinceLastBeat > 30000) || (engineReady && timeSinceLastBeat > 60000);
 
         if (isStuck && !manualOffline) {
-            console.warn(`💀 Zombie socket 偵測 (延遲: ${timeSinceLastBeat}ms) -> 強制重載`);
-            showToast("⚠️ 連線卡死，正在自動修復...", "error");
-            setTimeout(()=>{
-                window.location.reload();
-            }, 1500);
+            console.warn(`💀 偵測到連線僵死 (延遲: ${timeSinceLastBeat}ms) -> 執行軟重連`);
+            showToast("⚠️ 網路不穩，正在重新連線...", "error");
+            db.goOffline();
+            setTimeout(() => {
+                if(!manualOffline) { 
+                    db.goOnline();
+                    lastHeartbeat = Date.now(); 
+                    showToast("✅ 已嘗試重連", "success");
+                }
+            }, 1000);
         }
     }, 5000);
 }
@@ -645,6 +659,7 @@ function submitName() {
     });
 }
 
+// 🔥 登出清理
 function logout(){
     if(userListener && me) userRef.child(me.uid).off("value", userListener);
     if(adminUserListener) userRef.off("value", adminUserListener);
@@ -656,6 +671,7 @@ function logout(){
     });
 }
 
+// --- Admin ---
 function openAdmin(){ 
     document.getElementById('adminModal').classList.add('show'); 
     if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); 
@@ -856,57 +872,50 @@ chatRef.limitToLast(30).on("value",s=>{
 
 function showImg(src) { document.getElementById("imgModalSrc").src = src; document.getElementById("imgModal").style.display = "flex"; }
 
-// --- 時間與排隊邏輯 (90分鐘完整版) ---
+// --- 時間與排隊邏輯 ---
 function format12H(d){return d.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
-
 function getSlotStatus(h, m) {
-    const slots = [14, 16, 18, 20, 22, 0]; 
-    
-    // 1. 檢查是否在「使用時段 (OUT)」內 (整點 60 分鐘)
-    let currentSlot = slots.find(s => s === h);
-    
-    const to12HStr = (hr) => { 
-        let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM"; 
-        let dH = (hr % 12) || 12; 
-        return `${dH}:00 ${suffix}`; 
+    const slots = [14, 16, 18, 20, 22, 0];
+    const now = h * 60 + m;
+
+    const to12H = (hr) => {
+        let suffix = (hr >= 12 && hr < 24) ? "PM" : "AM";
+        let dH = (hr % 12) || 12;
+        return `${dH}:00 ${suffix}`;
     };
 
-    if (currentSlot !== undefined) { 
-        return { 
-            phase: 'OUT', 
-            slot: currentSlot, 
-            display: `${to12HStr(currentSlot)} 開放與預約` 
-        }; 
+    for (let s of slots) {
+        let start = (s === 0 ? 24 : s) * 60;
+        let reserveStart = start - 30;
+        let reserveEnd = start + 59;
+
+        if (now >= reserveStart && now <= reserveEnd) {
+            if (now >= start) {
+                return {
+                    phase: 'OUT',
+                    slot: s,
+                    display: `${to12H(s)} 使用中`
+                };
+            }
+
+            return {
+                phase: 'RESERVE',
+                slot: s,
+                display: `預約中 ${to12H(s)}`
+            };
+        }
     }
 
-    // 2. 檢查是否在「預約時段 (RESERVE)」內 (時段前 30 分鐘)
-    let target = slots.find(s => (s === 0 ? 24 : s) > h);
-    if (target === undefined) target = 14; 
+    let next = slots.find(s => (s === 0 ? 24 : s) * 60 > now) ?? 14;
 
-    let targetH = (target === 0 ? 24 : target);
-    let diff = (targetH * 60) - (h * 60 + m);
-
-    if (diff > 0 && diff <= 30) { 
-        return { 
-            phase: 'RESERVE', 
-            slot: target, 
-            display: `預約中 ${to12HStr(target)}` 
-        }; 
-    }
-
-    // 3. 休息中 (BREAK)
-    let openH = targetH - 1;
-    let displayOpenH = openH >= 24 ? openH - 24 : openH;
-    let suffix = (displayOpenH >= 12 && displayOpenH < 24) ? "PM" : "AM";
-    let dH = (displayOpenH % 12) || 12;
-
-    return { 
-        phase: 'BREAK', 
-        nextSlot: target, 
-        display: `等待下一場 (${dH}:30 ${suffix} 開放)`, 
-        hint: `${dH}:30 ${suffix}` 
+    return {
+        phase: 'BREAK',
+        nextSlot: next,
+        display: `等待下一場`,
+        hint: `${to12H(next)}`
     };
 }
+
 
 function executeAfkPenalty(uid, currentIndex, sorted) {
     let targetIndex = currentIndex + 3; 
@@ -981,6 +990,7 @@ setInterval(()=>{
     updateButtonStates(); 
 },1000);
 
+// 🔥 [RESTORED & FIXED] 核心 UI 更新函數
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
@@ -1026,6 +1036,31 @@ function updateButtonStates(){
         else st.innerHTML="<span style='color:#444'>尚未預約</span>";
     }
     document.getElementById("outCountNum").textContent=outCount;
+}
+
+// 🔥 [RESTORED] 渲染函式 (Queue & History)
+function renderStaticLists(){
+    let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
+    document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
+        let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${escapeHtml(u[1].name)}')" class="btn-mini success">派發</button>`:"";
+        let moveBtns = (myData&&myData.role==="admin")?`<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`:"";
+        let rc=i===0?'rank-1':(i===1?'rank-2':'');
+        return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${escapeHtml(u[1].name)}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
+    }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
+
+    let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime})); let o=cacheQueue.out||{}; 
+    Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
+    document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${escapeHtml(i.name)} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
+}
+
+// 🔥 [RESTORED] 渲染函式 (Out List)
+function renderOutList(){
+    let o=cacheQueue.out||{}; 
+    document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
+        let s=Math.floor((Date.now()-u.time)/1000);
+        let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${escapeHtml(u.name)}')" class="btn-mini danger">召回</button>`:"";
+        return `<div class="item-card" style="border-left-color:var(--success);"><strong>${escapeHtml(u.name)}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
+    }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
 
 async function forceReload(){ 
