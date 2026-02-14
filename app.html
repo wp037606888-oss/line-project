@@ -943,7 +943,7 @@ setInterval(()=>{
     let r=cacheQueue.reserve||{};
     let sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let outCount=Object.keys(cacheQueue.out||{}).length;
-    let eligibleForOut = (outCount < 3 && sorted.length >= 3 && currentSlotInfo.phase === 'OUT');
+    let eligibleForOut = (outCount < 3 && currentSlotInfo.phase === 'OUT');
     let penaltyExecutedThisTick = false; 
 
     let myCurrentRank = sorted.findIndex(x => x[0] === me.uid);
@@ -1176,4 +1176,5 @@ window.addEventListener("online", () => { showToast("✅ 網路恢復", "success
 </script>
 </body>
 </html>
+
 
