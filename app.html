@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室 半成品</title>
+<title>萬豪吸菸室 半成品2</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -210,7 +210,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.27</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.28</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -318,7 +318,7 @@ button.btn-send { background: var(--gold); border: none; color: #000; border-rad
     });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.27;
+const APP_VERSION = 17.28;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -334,6 +334,8 @@ let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 let lastSendTime = 0; 
 let serverTimeOffset = 0;
 let cancelConfirming = false; 
+// 🔥 補上漏掉的全域變數
+let manualOffline = false;
 
 // 🔥 連線引擎狀態
 let engineState = {
@@ -345,7 +347,8 @@ let engineState = {
 
 /* --- 模組 A: 心跳穩定層 --- */
 setInterval(() => {
-    engineState.heartbeat = Date.now();
+    // 只有在 engineReady (資料載入完畢) 後才更新心跳，讓 watchdog 能正確抓到初始化卡死
+    if (engineReady) engineState.heartbeat = Date.now();
 }, 2000);
 
 /* --- 模組 B: 智慧連線管理器 (Smart Watchdog) --- */
@@ -416,7 +419,8 @@ function handleReloadSignal(id, type) {
     showToast("系統更新中...", "info");
 
     setTimeout(() => {
-        url.search = `?${type}=${id}`; // Clean URL replacement
+        // 🔥 Clean URL replacement (不疊加參數)
+        url.search = `?${type}=${id}`; 
         window.location.href = url.toString();
     }, Math.random() * 3000 + 500);
 }
@@ -721,7 +725,8 @@ function togglePlayground() { configRef.child("playground_status").set(!playgrou
 
 function sendBroadcast(){const i=document.getElementById('broadcastInput');if(!i.value.trim())return;broadcastRef.set({text:i.value,t:firebase.database.ServerValue.TIMESTAMP});i.value="";closeAdmin(); showToast("廣播已發送", 'success');}
 broadcastRef.on("value",s=>{
-    const v=s.val(); if(!v||Date.now()-v.t>10000)return;
+    // 🔥 Fix: Time drift correction
+    const v=s.val(); if(!v||(Date.now() + serverTimeOffset - v.t > 10000))return;
     const b=document.getElementById('broadcastBanner'); document.getElementById('broadcastText').textContent=v.text;
     b.classList.add('active'); playBeep('urgent'); sendPushNotification("📢 萬豪吸菸室廣播", v.text); setTimeout(()=>b.classList.remove('active'),5000);
 });
@@ -843,6 +848,8 @@ function executeAfkPenalty(uid, currentIndex, sorted) {
 }
 
 let lastMyRank = -1;
+let lastResetDay = null; // 🔥 Fix: Debounce reset
+
 setInterval(()=>{
     if(!engineReady)return; const now=new Date(), h=now.getHours(), m=now.getMinutes();
     document.getElementById("clock").textContent=format12H(now);
@@ -851,7 +858,15 @@ setInterval(()=>{
     currentSlotInfo=getSlotStatus(h,m);
     let dText = currentSlotInfo.display; if(currentSlotInfo.phase === 'BREAK') dText += ` (${currentSlotInfo.hint} 開放預約)`;
     document.getElementById("slotDisplay").textContent=dText;
-    if(h===1&&m===0&&now.getSeconds()===0&&myData.role==="admin") resetQueue(true); 
+    
+    // 🔥 Fix: Debounce reset logic
+    if(h===1 && m===0 && now.getSeconds()===0){
+        let day = now.toDateString();
+        if(lastResetDay !== day){
+            lastResetDay = day;
+            resetQueue(true);
+        }
+    }
 
     let r=cacheQueue.reserve||{};
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
@@ -1052,9 +1067,20 @@ async function clearLog(){ if(await customConfirm("確定清空系統日誌？")
 function addLog(t){ let safeT = (typeof t === 'string' && t.length > 95) ? t.slice(0, 95) + '...' : t; logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{}); }
 logRef.limitToLast(15).on("value",s=>{ const b=document.getElementById("log"); b.innerHTML=""; s.forEach(x=>{ let d=x.val(); let dv=document.createElement("div"); dv.style.marginBottom = "4px"; let timeSpan = document.createElement("span"); timeSpan.style.opacity = "0.5"; timeSpan.style.fontFamily = "'Rajdhani'"; timeSpan.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]`; let textNode = document.createTextNode(" " + d.t); dv.appendChild(timeSpan); dv.appendChild(textNode); b.appendChild(dv); }); b.scrollTop=b.scrollHeight; });
 
+// 🔥 [FIX: Sync visibility and watchdog]
 document.addEventListener("visibilitychange", () => {
-    if (document.hidden) { manualOffline = true; console.log("😴 進入背景，暫停連線"); db.goOffline(); } 
-    else { manualOffline = false; console.log("🤩 回到前台，恢復連線"); db.goOnline(); lastHeartbeat = Date.now(); setTimeout(() => { if(me) userRef.child(me.uid).update({online: true}).catch(()=>{}); }, 1000); }
+    if (document.hidden) { 
+        manualOffline = true; 
+        console.log("😴 進入背景，暫停連線"); 
+        db.goOffline(); 
+    } else { 
+        manualOffline = false; 
+        engineState.heartbeat = Date.now(); // 重置 watchdog
+        console.log("🤩 回到前台，恢復連線"); 
+        db.goOnline(); 
+        
+        setTimeout(() => { if(me) userRef.child(me.uid).update({online: true}).catch(()=>{}); }, 1000); 
+    }
 });
 window.addEventListener("offline", () => { showToast("⚠️ 網路斷線", "error"); });
 window.addEventListener("online", () => { showToast("✅ 網路恢復", "success"); });
