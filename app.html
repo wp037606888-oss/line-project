@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 
-<title>萬豪吸菸室Z</title>
+<title>萬豪吸菸室K</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -279,7 +279,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.19</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.22</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -367,7 +367,7 @@ button.btn-send {
     });
 
 // --- 初始化設定 ---
-const APP_VERSION = 17.19;
+const APP_VERSION = 17.22;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -495,7 +495,6 @@ db.ref("config/system_version").on("value", snap => {
     const currentUrlVer = parseFloat(urlParams.get('v'));
 
     if (APP_VERSION < dbVer) {
-        // 如果網址已經是新版號，但 APP_VERSION 還是舊的 -> 代表 HTML 檔案沒更新 -> 不 reload
         if (currentUrlVer === dbVer) {
             console.warn("⛔ 偵測到版本死結：Server 檔案尚未更新，已暫停自動刷新。");
             showToast("系統更新中，請稍候再手動重新整理...", "info");
@@ -598,7 +597,6 @@ function startWatchdog() {
     console.log("🛡️ Watchdog 系統啟動");
     
     watchdogTimer = setInterval(() => {
-        // 🔥 狀態鎖：手動離線時 Watchdog 暫停
         if (document.hidden || manualOffline) { lastHeartbeat = Date.now(); return; }
 
         const now = Date.now();
@@ -607,16 +605,13 @@ function startWatchdog() {
         const isStuck = (!engineReady && timeSinceLastBeat > 30000) || (engineReady && timeSinceLastBeat > 60000);
 
         if (isStuck && !manualOffline) {
-            console.warn(`💀 偵測到連線僵死 (延遲: ${timeSinceLastBeat}ms) -> 執行軟重連`);
-            showToast("⚠️ 網路不穩，正在重新連線...", "error");
-            db.goOffline();
-            setTimeout(() => {
-                if(!manualOffline) { 
-                    db.goOnline();
-                    lastHeartbeat = Date.now(); 
-                    showToast("✅ 已嘗試重連", "success");
-                }
-            }, 1000);
+            console.warn(`💀 Zombie socket 偵測 (延遲: ${timeSinceLastBeat}ms) -> 強制重載`);
+            showToast("⚠️ 連線卡死，正在自動修復...", "error");
+            
+            // 🔥 這裡改用強制 Reload，這是對付 Zombie Socket 的唯一解法
+            setTimeout(()=>{
+                window.location.reload();
+            }, 1500);
         }
     }, 5000);
 }
@@ -650,7 +645,6 @@ function submitName() {
     });
 }
 
-// 🔥 登出清理
 function logout(){
     if(userListener && me) userRef.child(me.uid).off("value", userListener);
     if(adminUserListener) userRef.off("value", adminUserListener);
@@ -662,7 +656,6 @@ function logout(){
     });
 }
 
-// --- Admin ---
 function openAdmin(){ 
     document.getElementById('adminModal').classList.add('show'); 
     if(Object.keys(allUsers).length > 0) updateAdminUserSelect(); 
@@ -680,26 +673,67 @@ function updateAdminUserSelect() {
         if(!isReserved && !isOut) { let opt = document.createElement("option"); opt.value = uid; opt.textContent = u.name; sel.appendChild(opt); }
     });
 }
+
+// 🔥 [FIXED: Slot Data Consistency]
 function adminForceAdd() {
     const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
     if(u) {
-        let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
-        queueRef.child("reserve/"+uid).set({ name: u.name, time: firebase.database.ServerValue.TIMESTAMP, slot: t });
+        // 🔥 [修正] 使用合法 slot，若 BREAK 則排下一場
+        let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
+        
+        queueRef.child("reserve/"+uid).set({ 
+            name: u.name, 
+            time: firebase.database.ServerValue.TIMESTAMP, 
+            slot: targetSlot 
+        });
         addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
     }
 }
+
 function forceGoOut(uid, name) {
     if(!confirm(`確定讓 ${name} 強制外出？`)) return;
-    queueRef.child("out/"+uid).set({name: name, time: firebase.database.ServerValue.TIMESTAMP});
+    
+    // 🔥 [修正] 確保寫入正確 slot
+    let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
+
+    queueRef.child("out/"+uid).set({
+        name: name, 
+        time: firebase.database.ServerValue.TIMESTAMP,
+        slot: targetSlot
+    });
     queueRef.child("reserve/"+uid).remove();
     addLog(`ADMIN 派發: ${name}`);
 }
+
 function forceComeBack(uid, name) {
     if(!confirm(`確定召回 ${name}？`)) return;
-    let slot = new Date().getHours();
-    queueRef.child(`used/${slot}/${uid}`).set(true);
-    queueRef.child("out/"+uid).remove();
-    addLog(`ADMIN 召回: ${name}`);
+    
+    queueRef.child("out/"+uid).once("value").then(snap => {
+        const userData = snap.val();
+        
+        // 🔥 [修正] 優先使用 DB 中的 slot，確保資料一致性
+        // 如果 DB 壞了 (undefined)，才退回到 currentSlot (而不是 random hour)
+        let slot = (userData && userData.slot !== undefined) 
+                    ? userData.slot 
+                    : (currentSlotInfo.slot || currentSlotInfo.nextSlot); 
+        
+        queueRef.child(`used/${slot}/${uid}`).set(true);
+        queueRef.child("out/"+uid).remove();
+
+        if(userData) {
+            queueRef.child("history").push({
+                uid: uid, 
+                name: userData.name,
+                slot: slot,
+                outTime: userData.time, 
+                backTime: firebase.database.ServerValue.TIMESTAMP,
+                over: false,
+                note: "(管理員召回)"
+            });
+        }
+        
+        addLog(`ADMIN 召回: ${name}`);
+    });
 }
 
 function moveQueue(uid, direction) {
@@ -940,7 +974,7 @@ setInterval(()=>{
 
     let r=cacheQueue.reserve||{};
     
-    // 🔥 [核心修正] 移除 .filter 過濾，改為「全局排序」
+    // 🔥 [核心修正] 全局排序 (解決跨場順位問題)
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
 
     let outCount=Object.keys(cacheQueue.out||{}).length;
@@ -1002,11 +1036,11 @@ function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
     
-    // 🔥 [核心修正] 移除 .filter 過濾，改為「全局排序」
+    // 🔥 [核心修正] 全局排序，不filter舊slot
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
 
     let outCount=Object.keys(o).length;
-    let myRank=sorted.findIndex(x=>x[0]===me.uid); // 全局排名
+    let myRank=sorted.findIndex(x=>x[0]===me.uid); 
     let alreadyUsed = used[currentSlotInfo.slot]?.[me.uid];
 
     const bReserve = document.getElementById('bReserve');
@@ -1022,7 +1056,7 @@ function updateButtonStates(){
     else if(r[me.uid]) { 
         setBtn(bCancel, '', '取消預約'); 
         
-        // 只要現在是開放時段，且我是前兩名，且外面有空位 -> 就可以出去
+        // 只要是開放時段，且排名 <= 1，且外面有空位 -> 亮綠燈
         if(currentSlotInfo.phase === 'OUT' && myRank <= 1 && outCount < 3){ 
             setBtn(bOut, 'btn-green', '現在前往'); 
         } 
@@ -1036,7 +1070,6 @@ function updateButtonStates(){
         if(currentSlotInfo.phase==='OUT'){
             if(myRank <= 1 && outCount < 3) {
                 let txt = "<span style='color:var(--success)'>名額開放，請前往</span>";
-                // 只有當「隊伍真的很長 (>=3人)」時，才顯示倒數壓力
                 if(sorted.length >= 3 && r[me.uid].afkDeadline) {
                     let sLeft = Math.max(0, Math.floor((r[me.uid].afkDeadline - Date.now())/1000));
                     let mStr = String(Math.floor(sLeft/60)).padStart(2,'0'); let sStr = String(sLeft%60).padStart(2,'0');
@@ -1057,18 +1090,19 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
-// 🔥 [FIX: 防呆] 按鈕按下時，先檢查 me 是否存在，防止崩潰
+// 🔥 [FIX: 防呆]
 function reserve() {
-    // 1. 防呆：如果 me 還是空的 (沒載入完)，不要跑，顯示 Loading
     if(!me) { showToast("系統連線中，請稍候...", "info"); return; }
-
     if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
     
     const ts = Date.now() + serverTimeOffset;
+    // 🔥 [FIXED] 寫入時也確保 Slot 正確
+    let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
+
     queueRef.child("reserve/" + me.uid).set({
         name: myData.name,
         time: ts,
-        slot: currentSlotInfo.slot
+        slot: targetSlot
     }).then(() => {
         addLog(`${myData.name} 預約排隊`);
         showToast("預約成功", "success");
@@ -1094,6 +1128,7 @@ function cancelReserve() {
     });
 }
 
+// 🔥 [FIXED] 一般外出 - 寫入正確 slot
 function goOut(){
     if(!me) return;
     let r = cacheQueue.reserve || {};
@@ -1107,8 +1142,14 @@ function goOut(){
     if (myRank > 1 && myData.role !== 'admin') { showToast("還沒輪到您", "error"); return; }
 
     const ts = Date.now() + serverTimeOffset;
+    let targetSlot = currentSlotInfo.phase === 'BREAK' ? currentSlotInfo.nextSlot : currentSlotInfo.slot;
+
     const updates = {};
-    updates[`queue/out/${me.uid}`] = { name: myData.name, time: ts };
+    updates[`queue/out/${me.uid}`] = { 
+        name: myData.name, 
+        time: ts,
+        slot: targetSlot 
+    };
     updates[`queue/reserve/${me.uid}`] = null;
 
     db.ref().update(updates)
@@ -1121,29 +1162,38 @@ function goOut(){
     });
 }
 
+// 🔥 [FIXED] 一般返回 - 優先讀 DB slot
 function comeBack(){
     if(!me) return;
+    
     queueRef.child("out/"+me.uid).once("value").then(s=>{
-        let u=s.val();
-        if(u){
-            let now=Date.now(),slot=new Date().getHours(); 
-            let updates = {};
-            updates[`queue/used/${slot}/${me.uid}`] = true;
-            updates[`queue/out/${me.uid}`] = null;
-            
-            db.ref().update(updates).then(() => {
+        let u = s.val();
+        
+        let now=Date.now();
+        let slot = (u && u.slot !== undefined) 
+                    ? u.slot 
+                    : (currentSlotInfo.slot || currentSlotInfo.nextSlot); 
+        
+        let updates = {};
+        updates[`queue/used/${slot}/${me.uid}`] = true;
+        updates[`queue/out/${me.uid}`] = null;
+        
+        db.ref().update(updates).then(() => {
+            if(u) {
                 queueRef.child("history").push({
                     uid: me.uid, 
                     name: u.name,
-                    slot,
+                    slot: slot,
                     outTime: u.time, 
                     backTime: firebase.database.ServerValue.TIMESTAMP,
                     over: (now - u.time) > 600000 
                 });
-                addLog(`${myData.name} 返回`); 
-                showToast('歡迎回來', 'info');
-            });
-        }
+            }
+            addLog(`${myData.name} 返回`); 
+            showToast('歡迎回來', 'info');
+        }).catch(err => {
+            showToast("操作失敗: " + err.message, "error");
+        });
     });
 }
 
