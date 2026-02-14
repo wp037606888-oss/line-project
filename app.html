@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>萬豪吸菸室</title>
+<title>萬豪吸菸室 k1.0</title>
 
 <meta http-equiv="Content-Security-Policy" content="
 default-src 'self' https://www.gstatic.com https://cdn-icons-png.flaticon.com;
@@ -240,7 +240,7 @@ button.btn-send {
     <div class="admin-card" style="text-align:center;">
         <h2 style="color:var(--gold); margin-top:0;">👋 初次見面</h2>
         <p style="color:#ccc; margin-bottom:20px;">請輸入您在吸菸室的本名+稱號</p>
-        <input id="newNameInput" type="text" placeholder="例如: 小明-帥哥" maxlength="10" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
+        <input id="newNameInput" type="text" placeholder="例如: 小明-帥哥" maxlength="20" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; text-align:center; font-size:16px; margin-bottom:20px;">
         <button onclick="submitName()" class="perm-btn" style="width:100%;">開始使用</button>
     </div>
 </div>
@@ -280,7 +280,7 @@ button.btn-send {
             <h2 style="margin:0; color:var(--gold); font-family:'Noto Serif TC'">行政管理台</h2>
             <button onclick="closeAdmin()" style="background:none; border:none; color:#666; cursor:pointer;">✕</button>
         </div>
-        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.3</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
+        <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">版本推送 (v<span id="verDisplay">17.4</span>)</h4><button onclick="publishNewVersion()" style="width:100%; background:var(--gold); color:#000; border:none; padding:12px; font-weight:bold; border-radius:2px; cursor:pointer;">推送更新</button></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">插隊管理</h4><div style="display:flex; gap:10px;"><select id="adminUserSelect" style="flex:1; background:#1a1a1a; color:#fff; padding:10px; border-radius:2px; border:1px solid #333;"></select><button onclick="adminForceAdd()" style="background:var(--gold); color:#000; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">加入</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">廣播</h4><div style="display:flex; gap:10px;"><input id="broadcastInput" style="flex:1; background:#1a1a1a; border:1px solid #333; padding:10px; color:#fff; border-radius:2px;" placeholder="內容..."><button onclick="sendBroadcast()" style="background:#444; color:#fff; border:none; padding:0 15px; font-weight:bold; border-radius:2px; cursor:pointer;">發送</button></div></div>
         <div class="admin-section"><h4 style="color:#888; font-size:11px; margin-bottom:10px;">維護</h4><div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;"><button id="btnTogglePg" class="btn-admin-action" style="grid-column: span 2;" onclick="togglePlayground()">遊樂場狀態</button><button onclick="resetQueue()" class="btn-admin-action" style="border-color:var(--danger); color:var(--danger);">重置系統</button><button onclick="clearChat()" class="btn-admin-action">清空聊天</button><button onclick="clearHistory()" class="btn-admin-action">清空歷史</button><button onclick="clearLog()" class="btn-admin-action">清空日誌</button><button onclick="forceReload()" class="btn-admin-action" style="grid-column: span 2;">全體強制刷新</button></div></div>
@@ -358,8 +358,9 @@ button.btn-send {
     console.log("%c有時間在這裡研究原始碼，不如去排隊抽根菸吧。", "color: white; font-size: 30px; font-weight: bold; background: #d32f2f; padding: 5px; border-radius: 4px;");
     console.log("%c別費心研究了，這段程式碼寫得比你的人生規劃還嚴謹。 ( ˘•ω•˘ )", "color: #C5A059; font-size: 25px; font-style: italic; background: #222; padding: 5px; border-radius: 4px; margin-top: 10px;");
 } catch (e) { console.error("Console warning failed"); }
+
 // --- 初始化設定 ---
-const APP_VERSION = 17.3;
+const APP_VERSION = 17.4;
 document.getElementById('verDisplay').textContent = APP_VERSION.toFixed(1);
 
 // 🔥 Config
@@ -369,11 +370,29 @@ if (!firebase.apps.length) firebase.initializeApp(config);
 const db=firebase.database(), auth=firebase.auth();
 const queueRef=db.ref("queue"), userRef=db.ref("users"), chatRef=db.ref("chat"), logRef=db.ref("log"), broadcastRef=db.ref("broadcast"), configRef=db.ref("config");
 
-// --- 全域變數 ---
+// --- 全域變數 & Watchdog 設定 ---
 let me, myData, engineReady=false, cacheQueue={}, currentSlotInfo={phase:'',slot:0}, allUsers={};
 let audioCtx=null, notifyEnabled=false, playgroundEnabled = false;
 let lastSendTime = 0; 
-let serverTimeOffset = 0; // 新增：伺服器時間偏移
+let serverTimeOffset = 0;
+
+// 🔥 Watchdog 核心變數
+let firebaseConnected = true;
+let lastHeartbeat = Date.now();
+let watchdogTimer = null;
+
+// --- Firebase 連線狀態監聽 ---
+db.ref(".info/connected").on("value", snap => {
+    firebaseConnected = snap.val() === true;
+    if (firebaseConnected) {
+        console.log("✅ Firebase 連線已建立");
+        lastHeartbeat = Date.now(); // 連上時更新心跳
+        showToast("✅ 網路已連線", "success");
+    } else {
+        console.warn("🔥 Firebase 連線中斷");
+        showToast("⚠️ 網路中斷，等待恢復...", "error");
+    }
+});
 
 // --- 監聽伺服器時間偏移 ---
 db.ref(".info/serverTimeOffset").on("value", (snap) => {
@@ -452,7 +471,7 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;} window
 for(let i=0;i<40;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vy:Math.random()*0.3+0.1,size:Math.random()*1.5,alpha:Math.random()*0.5+0.1});
 function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{p.y-=p.vy;if(p.y<0){p.y=h;p.x=Math.random()*w;}ctx.fillStyle=`rgba(197, 160, 89,${p.alpha})`;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fill();});requestAnimationFrame(draw);}draw();
 
-// --- 核心邏輯 (v17.3) ---
+// --- 核心邏輯 (v17.4) ---
 let firstVerCheck = true;
 let userListener = null;
 
@@ -475,15 +494,24 @@ function getGreeting(name) {
 auth.onAuthStateChanged(user=>{
     if(userListener) { userRef.child(me.uid).off("value", userListener); } 
     
-    if(!user){location.href="login.html";return;} me=user;
+    if(!user){location.href="login.html";return;} 
+    me=user;
+
+    // 🔥 啟動看門狗 (自動重連)
+    startWatchdog(); 
     
     userListener = userRef.child(user.uid).on("value", s => {
+        // 🔥 更新心跳：收到資料代表連線正常
+        lastHeartbeat = Date.now();
+
         myData = s.val() || {};
         
+        // 修正：如果沒有名字，顯示輸入框，不要直接更新 online，避免卡住
         if (!myData.name) {
             document.getElementById("nameModal").style.display = "flex";
-            document.getElementById("layout").style.filter = "blur(5px)"; 
+            document.getElementById("layout").style.filter = "blur(5px)";
         } else {
+            // 有名字後才更新連線狀態
             if(myData.online !== true) {
                 userRef.child(user.uid).update({online: true}).catch(e=>{});
                 userRef.child(user.uid+"/online").onDisconnect().set(false);
@@ -509,13 +537,51 @@ auth.onAuthStateChanged(user=>{
     });
 });
 
+// 🔥 新增：Watchdog 函數 (防止畫面卡死)
+function startWatchdog() {
+    if (watchdogTimer) return;
+    console.log("🛡️ Watchdog 系統啟動");
+    
+    watchdogTimer = setInterval(() => {
+        // 如果網頁在背景，暫停檢測以省電
+        if (document.hidden) {
+            lastHeartbeat = Date.now();
+            return;
+        }
+
+        const now = Date.now();
+        const timeSinceLastBeat = now - lastHeartbeat;
+        
+        // 判定標準：
+        // 1. 還沒 Ready (卡在連線中) 超過 15 秒
+        // 2. Firebase 說有連線，但資料超過 25 秒沒更新 (Socket 假死)
+        const isStuckLoading = !engineReady && timeSinceLastBeat > 15000;
+        const isStuckSocket = firebaseConnected && engineReady && timeSinceLastBeat > 25000;
+
+        if (isStuckLoading || isStuckSocket) {
+            console.warn(`💀 偵測到系統卡死 (延遲: ${timeSinceLastBeat}ms) -> 強制重整`);
+            clearInterval(watchdogTimer);
+            showToast("⚠️ 連線異常，系統自動修復中...", "error");
+            playBeep('urgent');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+    }, 5000);
+}
+
+// 修正後的 Submit Name (配合新規則)
 function submitName() {
     const nameInput = document.getElementById("newNameInput");
     const name = nameInput.value.trim();
+    const btn = document.querySelector("#nameModal button");
     
     if (!name) { showToast("請輸入暱稱", "error"); return; }
-    if (name.length > 10) { showToast("暱稱太長了", "error"); return; }
+    if (name.length > 20) { showToast("暱稱太長了 (限20字)", "error"); return; }
     
+    btn.disabled = true;
+    btn.textContent = "設定中...";
+
     userRef.child(me.uid).update({
         name: name,
         online: true 
@@ -523,7 +589,14 @@ function submitName() {
         userRef.child(me.uid+"/online").onDisconnect().set(false);
         showToast(`歡迎加入，${name}！`, "success");
     }).catch(e => {
-        showToast("設定失敗: " + e.message, "error");
+        btn.disabled = false;
+        btn.textContent = "開始使用";
+        console.error(e);
+        if(e.code === 'PERMISSION_DENIED') {
+            showToast("名稱格式錯誤或權限不足", "error");
+        } else {
+            showToast("設定失敗: " + e.message, "error");
+        }
     });
 }
 
@@ -551,7 +624,6 @@ function adminForceAdd() {
     const uid = document.getElementById("adminUserSelect").value; if(!uid) return; const u = allUsers[uid];
     if(u) {
         let h=new Date().getHours(), t=currentSlotInfo.phase==='RESERVE'?currentSlotInfo.slot:h;
-        // Admin 直接寫入 ServerValue.TIMESTAMP 是 OK 的，因為規則有豁免 admin 的 validate
         queueRef.child("reserve/"+uid).set({ name: u.name, time: firebase.database.ServerValue.TIMESTAMP, slot: t });
         addLog(`ADMIN 加入: ${u.name}`); closeAdmin(); showToast(`已將 ${u.name} 加入排隊`, 'success');
     }
@@ -606,7 +678,6 @@ const emojiPicker = document.getElementById("emojiPicker");
 emojis.forEach(e => { const btn = document.createElement("button"); btn.className = "emoji-btn"; btn.textContent = e; btn.onclick = () => { document.getElementById("msg").value += e; toggleEmoji(); document.getElementById("msg").focus(); }; emojiPicker.appendChild(btn); });
 function toggleEmoji() { emojiPicker.classList.toggle("show"); }
 
-// --- 修正後的圖片發送 (Two-Step 策略) ---
 function handleFile(e) {
     const file = e.target.files[0]; if(!file) return;
     if(file.size > 2 * 1024 * 1024) { showToast("圖片不能超過 2MB", 'error'); return; }
@@ -624,25 +695,21 @@ function handleFile(e) {
             if (width > 400) { height *= 400 / width; width = 400; } canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
             
-            // 1. 計算精確的伺服器時間 (手動計算，不用 ServerValue.TIMESTAMP)
             const estimatedServerTime = Date.now() + serverTimeOffset;
             const newMsgKey = chatRef.push().key;
 
-            // 2. 第一步：先寫入節流閥
             db.ref('chatThrottle/' + me.uid).set(estimatedServerTime).then(() => {
-                // 3. 第二步：節流閥寫入成功後，再寫入訊息 (使用完全相同的時間)
                 const msgData = {
                     name: myData.name, 
                     uid: me.uid, 
                     text: canvas.toDataURL('image/jpeg', 0.7), 
                     type: 'image', 
-                    time: estimatedServerTime // 這裡的時間會跟資料庫裡的 chatThrottle 一致
+                    time: estimatedServerTime 
                 };
                 return chatRef.child(newMsgKey).set(msgData);
             }).then(() => {
                 showToast("圖片已發送", "success");
             }).catch(e => {
-                // 如果是第一步失敗，通常是太快(Throttle擋住)；如果是第二步失敗，是權限問題
                 if(e.code === 'PERMISSION_DENIED') showToast("發送失敗：權限不足或說話太快", "error");
                 else showToast("發送錯誤: " + e.message, "error");
             });
@@ -651,7 +718,6 @@ function handleFile(e) {
     }; reader.readAsDataURL(file); e.target.value = '';
 }
 
-// --- 修正後的文字發送 (Two-Step 策略 + Slice 防護) ---
 function send(){
     const input=document.getElementById("msg");
     let text = input.value.trim();
@@ -662,7 +728,6 @@ function send(){
         return;
     }
 
-    // 防護：截斷超過300字的訊息，避免被 Rules 擋下
     if(text.length > 300) {
         text = text.slice(0, 300);
         showToast("訊息過長，已自動截斷", "info");
@@ -670,19 +735,16 @@ function send(){
 
     lastSendTime = Date.now();
 
-    // 1. 計算精確的伺服器時間
     const estimatedServerTime = Date.now() + serverTimeOffset;
     const newMsgKey = chatRef.push().key;
 
-    // 2. 第一步：先寫入節流閥
     db.ref('chatThrottle/' + me.uid).set(estimatedServerTime).then(() => {
-        // 3. 第二步：節流閥寫入成功後，再寫入訊息
         const msgData = {
             name: myData.name,
             uid: me.uid,
             text: text,
             type: 'text',
-            time: estimatedServerTime // 關鍵：這必須等於剛剛寫入 Throttle 的值
+            time: estimatedServerTime
         };
         return chatRef.child(newMsgKey).set(msgData);
     }).then(() => {
@@ -826,15 +888,16 @@ setInterval(()=>{
     updateButtonStates(); 
 },1000);
 
-queueRef.on("value",s=>{ cacheQueue=s.val()||{}; if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } });
+// 🔥 這裡也有加心跳偵測
+queueRef.on("value",s=>{ 
+    lastHeartbeat = Date.now(); 
+    cacheQueue=s.val()||{}; 
+    if(engineReady){ renderStaticLists(); updateButtonStates(); renderOutList(); } 
+});
 
-// --- 修正後的 Reserve (v17.3: 使用純數字時間戳) ---
 function reserve() {
     if (currentSlotInfo.phase === 'BREAK') { showToast("目前非預約/開放時段", "error"); return; }
-    
-    // 修正點：使用 Date.now() + offset，確保傳入的是 Number 而非 Object，符合 Rules 驗證
     const ts = Date.now() + serverTimeOffset;
-
     queueRef.child("reserve/" + me.uid).set({
         name: myData.name,
         time: ts,
@@ -863,28 +926,18 @@ function cancelReserve() {
     });
 }
 
-// --- 修正後的「現在前往」 (v17.3 Final: 使用純數字時間戳) ---
 function goOut(){
-
     let r = cacheQueue.reserve || {};
     let o = cacheQueue.out || {};
 
-    if (Object.keys(o).length >= 3) {
-        showToast("名額已滿", "error");
-        return;
-    }
+    if (Object.keys(o).length >= 3) { showToast("名額已滿", "error"); return; }
 
     let sorted = Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     let myRank = sorted.findIndex(x => x[0] === me.uid);
 
-    if (myRank > 1 && myData.role !== 'admin') {
-        showToast("還沒輪到您", "error");
-        return;
-    }
+    if (myRank > 1 && myData.role !== 'admin') { showToast("還沒輪到您", "error"); return; }
 
-    // 關鍵修正：使用純數字，而非 ServerValue.TIMESTAMP
     const ts = Date.now() + serverTimeOffset;
-
     const updates = {};
     updates[`queue/out/${me.uid}`] = { name: myData.name, time: ts };
     updates[`queue/reserve/${me.uid}`] = null;
@@ -971,20 +1024,17 @@ function updateButtonStates(){
     document.getElementById("outCountNum").textContent=outCount;
 }
 
-// 🔥🔥 徹底修正 XSS (Escape HTML in Template Literals)
 function renderStaticLists(){
     let r=cacheQueue.reserve||{}, sorted=Object.entries(r).sort((a,b)=>a[1].time-b[1].time);
     document.getElementById("queue").innerHTML=sorted.map((u,i)=>{
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceGoOut('${u[0]}', '${escapeHtml(u[1].name)}')" class="btn-mini success">派發</button>`:"";
         let moveBtns = (myData&&myData.role==="admin")?`<button onclick="moveQueue('${u[0]}', -1)" class="btn-arrow" title="上移">▲</button><button onclick="moveQueue('${u[0]}', 1)" class="btn-arrow" title="下移">▼</button>`:"";
         let rc=i===0?'rank-1':(i===1?'rank-2':'');
-        // 🔥 強制 escapeHtml
         return `<div class="item-card ${rc}"><div><span style="font-family:'Rajdhani';color:var(--gold);margin-right:8px;font-weight:bold;">#${i+1}</span><strong>${escapeHtml(u[1].name)}</strong><span id="afk-${u[0]}" class="afk-timer"></span></div><div style="display:flex;align-items:center;"><small style='opacity:0.4;margin-right:5px;font-family:"Rajdhani"'>${new Date(u[1].time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}</small>${btn}${moveBtns}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>目前空閒</div>";
 
     let hist=[]; if(cacheQueue.history)Object.values(cacheQueue.history).forEach(h=>hist.push({...h,sortT:h.backTime})); let o=cacheQueue.out||{}; 
     Object.entries(o).forEach(([uid,u])=>{if(Math.floor((Date.now()-u.time)/1000)>600)hist.push({name:u.name,outTime:u.time,backTime:null,over:true,sortT:Date.now()});});
-    // 🔥 強制 escapeHtml
     document.getElementById("history").innerHTML=hist.sort((a,b)=>b.sortT-a.sortT).slice(0,20).map(i=>`<div class="item-card" style="padding:8px 12px;min-height:0;border:none;background:rgba(255,255,255,0.02);"><span>${escapeHtml(i.name)} ${i.over?'<span style="color:var(--danger)">!</span>':''}</span><small style='opacity:0.5;font-family:"Rajdhani"'>${new Date(i.outTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})} - ${i.backTime?new Date(i.backTime).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'}):'OUT'}</small></div>`).join('');
 }
 
@@ -993,7 +1043,6 @@ function renderOutList(){
     document.getElementById("outList").innerHTML=Object.entries(o).map(([uid,u])=>{
         let s=Math.floor((Date.now()-u.time)/1000);
         let btn=(myData&&myData.role==="admin")?`<button onclick="forceComeBack('${uid}', '${escapeHtml(u.name)}')" class="btn-mini danger">召回</button>`:"";
-        // 🔥 強制 escapeHtml
         return `<div class="item-card" style="border-left-color:var(--success);"><strong>${escapeHtml(u.name)}</strong><div style="display:flex;align-items:center;gap:8px;"><span id="out-timer-${uid}" class="${s>600?'text-danger':''}" style="font-family:'Rajdhani';color:${s>600?'var(--danger)':'#aaa'}">${Math.floor(s/60)}m ${s%60}s</span>${btn}</div></div>`;
     }).join('')||"<div style='opacity:0.3;padding:10px;text-align:center;'>無人外出</div>";
 }
@@ -1006,7 +1055,6 @@ userRef.on("value",s=>{
         if(d.online && d.name){ 
             let pill = document.createElement("div"); 
             pill.className = `online-pill online ${d.role==='admin' ? 'admin' : ''}`; 
-            // 🔥 強制 escapeHtml
             pill.innerHTML = `<div class="online-dot"></div>${escapeHtml(d.name)}`; 
             list.appendChild(pill); 
         }
@@ -1017,38 +1065,23 @@ async function forceReload(){
     if(await customConfirm("確定強制刷新全體畫面？")) { db.ref("reload").set(Date.now()); showToast("已發送刷新指令", 'success'); closeAdmin(); } 
 }
 
-// --- 修正後的重置系統 (符合權限規則) ---
 async function resetQueue(auto = false){ 
     if(auto || await customConfirm("<span style='color:var(--danger)'>確定清空所有排隊、外出狀態？</span><br><small>此操作無法復原</small>")) { 
-        
-        // 因為規則不允許直接刪除父節點，我們必須讀取後逐一刪除子節點
         const updates = {};
-        
         try {
-            // 1. 抓取所有 reserve 的人
             const rSnap = await queueRef.child("reserve").once("value");
             rSnap.forEach(child => { updates[`queue/reserve/${child.key}`] = null; });
-
-            // 2. 抓取所有 out 的人
             const oSnap = await queueRef.child("out").once("value");
             oSnap.forEach(child => { updates[`queue/out/${child.key}`] = null; });
-
-            // 3. 抓取所有 used 紀錄 (結構是 used/slot/uid)
             const uSnap = await queueRef.child("used").once("value");
             uSnap.forEach(slotSnap => {
                 slotSnap.forEach(uidSnap => {
                     updates[`queue/used/${slotSnap.key}/${uidSnap.key}`] = null;
                 });
             });
-
-            // 4. 執行原子更新
-            if(Object.keys(updates).length > 0) {
-                await db.ref().update(updates);
-            }
-
+            if(Object.keys(updates).length > 0) { await db.ref().update(updates); }
             addLog("ADMIN 重置系統"); 
             if(!auto) { showToast("系統狀態已重置", 'success'); closeAdmin(); }
-
         } catch(e) {
             console.error(e);
             showToast("重置失敗: " + e.message, 'error');
@@ -1065,7 +1098,6 @@ function addLog(t){
     logRef.push({t: safeT, time: firebase.database.ServerValue.TIMESTAMP}).catch(e=>{});
 }
 
-// 🔥🔥 安全渲染 Log (無 innerHTML)
 logRef.limitToLast(15).on("value",s=>{
     const b=document.getElementById("log");
     b.innerHTML="";
@@ -1073,15 +1105,11 @@ logRef.limitToLast(15).on("value",s=>{
         let d=x.val();
         let dv=document.createElement("div");
         dv.style.marginBottom = "4px";
-        
-        // 使用 createTextNode 防止注入
         let timeSpan = document.createElement("span");
         timeSpan.style.opacity = "0.5";
         timeSpan.style.fontFamily = "'Rajdhani'";
         timeSpan.textContent = `[${new Date(d.time).toLocaleTimeString([],{hour12:true,hour:'2-digit',minute:'2-digit'})}]`;
-        
         let textNode = document.createTextNode(" " + d.t);
-        
         dv.appendChild(timeSpan);
         dv.appendChild(textNode);
         b.appendChild(dv);
@@ -1090,8 +1118,9 @@ logRef.limitToLast(15).on("value",s=>{
 });
 
 let fR=true;db.ref("reload").on("value",s=>{if(fR){fR=false;return;} window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();});
+
+window.addEventListener("offline", () => { showToast("⚠️ 網路斷線", "error"); });
+window.addEventListener("online", () => { showToast("✅ 網路恢復", "success"); });
 </script>
 </body>
 </html>
-
-
