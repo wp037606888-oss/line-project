@@ -989,8 +989,28 @@ setInterval(()=>{
 
     updateButtonStates(); 
 },1000);
-
+ 
 // 🔥 [RESTORED & FIXED] 核心 UI 更新函數
+function reserve() {
+    if (currentSlotInfo.phase === 'BREAK') {
+        showToast("目前不是預約時段", "error");
+        return;
+    }
+
+    const ts = Date.now() + serverTimeOffset;
+
+    queueRef.child("reserve/" + me.uid).set({
+        name: myData.name,
+        time: ts,
+        slot: currentSlotInfo.slot
+    }).then(() => {
+        addLog(`${myData.name} 預約排隊`);
+        showToast("預約成功", "success");
+    }).catch(e => {
+        showToast("預約失敗: " + e.message, "error");
+    });
+}
+
 function updateButtonStates(){
     if(!me||!cacheQueue)return;
     let r=cacheQueue.reserve||{},o=cacheQueue.out||{},used=cacheQueue.used||{};
@@ -1156,3 +1176,4 @@ window.addEventListener("online", () => { showToast("✅ 網路恢復", "success
 </script>
 </body>
 </html>
+
