@@ -300,6 +300,7 @@ button.btn-send {
                 <div style="display: flex; align-items: center;">
                     <span class="user-badge" id="who">連線中...</span>
                     <button class="btn-logout" onclick="requestPermission()" id="btnNotify" style="display:none;">🔔</button>
+                    <button class="btn-logout" onclick="forceReset()">🔧 修復</button>
                     <button class="btn-logout" onclick="logout()">登出</button>
                 </div>
                 <div id="slotDisplay">---</div>
@@ -1016,6 +1017,47 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("offline", () => { showToast("⚠️ 網路斷線", "error"); });
 window.addEventListener("online", () => { showToast("✅ 網路恢復", "success"); });
+// ============================
+// 🔧 使用者自助修復按鈕
+// ============================
+function forceReset() {
+
+    if (!confirm("確定清除本機網站資料並重新整理？\n\n這通常可以解決排隊異常問題。")) {
+        return;
+    }
+
+    try {
+
+        // 清除 local & session
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 清除 IndexedDB（Firebase 會用）
+        if (window.indexedDB && indexedDB.databases) {
+            indexedDB.databases().then(dbs => {
+                dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+            });
+        }
+
+        // 清除 service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(reg => reg.unregister());
+            });
+        }
+
+        alert("✅ 本機資料已清除，系統即將重新整理");
+
+        setTimeout(() => {
+            location.reload(true);
+        }, 800);
+
+    } catch (e) {
+        console.error(e);
+        location.reload(true);
+    }
+}
 </script>
 </body>
 </html>
+
