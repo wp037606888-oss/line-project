@@ -3,17 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>兩岸溝通助手 - 2026 穩定版</title>
-    <script type="importmap">
-      {
-        "imports": {
-          "@google/generative-ai": "https://esm.run/@google/generative-ai"
-        }
-      }
-    </script>
+    <title>兩岸溝通助手 - 終極相容版</title>
     <style>
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding-top: 50px; margin: 0; }
-        .box { background: white; padding: 35px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 90%; max-width: 600px; }
+        .box { background: white; padding: 35px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 95%; max-width: 600px; }
         h2 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
         textarea { width: 100%; height: 150px; padding: 15px; border: 2px solid #e8e8e8; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
         .btns { display: flex; gap: 15px; margin: 20px 0; }
@@ -29,7 +22,7 @@
 
 <div class="box">
     <h2>兩岸溝通助手</h2>
-    <textarea id="inp" placeholder="例如：我等等要去搭公交..."></textarea>
+    <textarea id="inp" placeholder="在此輸入文字，例如：我等等要去搭公交..."></textarea>
     <div class="btns">
         <button id="b1" class="to-cn" onclick="run('tw2cn')">轉大陸用語</button>
         <button id="b2" class="to-tw" onclick="run('cn2tw')">轉台灣用語</button>
@@ -38,14 +31,10 @@
     <div id="res">等待輸入中...</div>
 </div>
 
-<script type="module">
-    import { GoogleGenerativeAI } from "@google/generative-ai";
+<script>
+    const API_KEY = "AIzaSyA6raMtENO2QRUXARDRIEFh3bkToSU61ig";
 
-    // 使用您測試成功的 API Key
-    const API_KEY = "AIzaSyA6raMtENO2QRUXARDRIEFh3bkToSU61ig"; 
-    const genAI = new GoogleGenerativeAI(API_KEY);
-
-    window.run = async (mode) => {
+    async function run(mode) {
         const text = document.getElementById('inp').value.trim();
         const resDiv = document.getElementById('res');
         if (!text) return alert("請輸入內容");
@@ -54,32 +43,43 @@
         document.getElementById('b1').disabled = true;
         document.getElementById('b2').disabled = true;
 
-        try {
-            // 修正點：直接指定模型名稱，SDK 會自動處理最新的版本路徑
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            
-            let systemPrompt = mode === 'tw2cn' 
-                ? "將以下台灣繁體轉為大陸簡體，並修正語法(影片->视频、軟體->软件、搭公車->搭公交)：\n\n" 
-                : "將以下大陸簡體轉為台灣繁體，並修正語法(公交->公車、质量->品質、视频->影片)：\n\n";
+        // 2026 最穩定的 REST API 請求路徑
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-            const result = await model.generateContent(systemPrompt + text);
-            const response = await result.response;
-            resDiv.innerText = response.text();
+        let systemPrompt = mode === 'tw2cn' 
+            ? "你是一位專業的兩岸溝通專家。請將以下台灣繁體內容轉換為大陸簡體，並精確修正為大陸在地用語（例如影片轉視頻、軟體轉軟件）。直接輸出結果：\n\n" 
+            : "你是一位專業的兩岸溝通專家。請將以下大陸簡體內容轉換為台灣繁體，並精確修正為台灣在地用語（例如公交轉公車、質量轉品質）。直接輸出結果：\n\n";
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemPrompt + text }] }]
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+
+            resDiv.innerText = data.candidates[0].content.parts[0].text;
             
         } catch (e) {
             console.error(e);
             resDiv.innerHTML = `
                 <div class="error-box">
                     <strong>連線發生錯誤</strong><br>
-                    代碼：${e.message}<br><br>
-                    1. 請確認 AdBlock 是否已關閉。<br>
-                    2. 若在公司內網，請嘗試切換手機熱點測試。
+                    訊息：${e.message}<br><br>
+                    若仍報錯，請確認您的 API Key 是否具備 Gemini 1.5 Flash 的存取權限。
                 </div>`;
         } finally {
             document.getElementById('b1').disabled = false;
             document.getElementById('b2').disabled = false;
         }
-    };
+    }
 </script>
 
 </body>
