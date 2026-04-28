@@ -3,83 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>兩岸溝通助手 - 終極相容版</title>
+    <title>兩岸溝通助手</title>
+
     <style>
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding-top: 50px; margin: 0; }
-        .box { background: white; padding: 35px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 95%; max-width: 600px; }
-        h2 { color: #1a73e8; text-align: center; margin-bottom: 25px; }
-        textarea { width: 100%; height: 150px; padding: 15px; border: 2px solid #e8e8e8; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
-        .btns { display: flex; gap: 15px; margin: 20px 0; }
-        button { flex: 1; padding: 16px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px; color: white; transition: 0.3s; }
-        .to-cn { background: #34a853; } .to-tw { background: #ea4335; }
-        button:hover { opacity: 0.9; transform: translateY(-2px); }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #res { background: #f8faff; padding: 20px; border-radius: 12px; min-height: 100px; border-left: 6px solid #1a73e8; white-space: pre-wrap; font-size: 18px; line-height: 1.6; color: #222; }
-        .error-box { background: #fff1f0; color: #d93025; padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 14px; border: 1px solid #ffa39e; }
+        body {
+            font-family: "PingFang TC","Microsoft JhengHei",sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+            margin: 0;
+        }
+
+        .box {
+            background: white;
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 95%;
+            max-width: 600px;
+        }
+
+        h2 {
+            color: #1a73e8;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #e8e8e8;
+            font-size: 16px;
+        }
+
+        .btns {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+        }
+
+        .to-cn { background: #34a853; }
+        .to-tw { background: #ea4335; }
+
+        #res {
+            background: #f8faff;
+            padding: 20px;
+            border-radius: 12px;
+            min-height: 100px;
+            border-left: 6px solid #1a73e8;
+            white-space: pre-wrap;
+        }
+
+        .error {
+            color: red;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="box">
     <h2>兩岸溝通助手</h2>
-    <textarea id="inp" placeholder="在此輸入文字，例如：我等等要去搭公交..."></textarea>
+
+    <textarea id="inp" placeholder="輸入文字..."></textarea>
+
     <div class="btns">
-        <button id="b1" class="to-cn" onclick="run('tw2cn')">轉大陸用語</button>
-        <button id="b2" class="to-tw" onclick="run('cn2tw')">轉台灣用語</button>
+        <button class="to-cn" onclick="run('tw2cn')">轉大陸用語</button>
+        <button class="to-tw" onclick="run('cn2tw')">轉台灣用語</button>
     </div>
-    <div style="font-weight:bold; margin-bottom:10px;">轉換結果：</div>
-    <div id="res">等待輸入中...</div>
+
+    <div>轉換結果：</div>
+    <div id="res">等待輸入...</div>
 </div>
 
 <script>
-    const API_KEY = "AIzaSyA6raMtENO2QRUXARDRIEFh3bkToSU61ig";
+const API_KEY = "AIzaSyA6raMtENO2QRUXARDRIEFh3bkToSU61ig";
 
-    async function run(mode) {
-        const text = document.getElementById('inp').value.trim();
-        const resDiv = document.getElementById('res');
-        if (!text) return alert("請輸入內容");
+async function run(mode) {
+    const text = document.getElementById("inp").value.trim();
+    const resDiv = document.getElementById("res");
 
-        resDiv.innerText = "連線中...";
-        document.getElementById('b1').disabled = true;
-        document.getElementById('b2').disabled = true;
-
-        // 2026 最穩定的 REST API 請求路徑
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
-        let systemPrompt = mode === 'tw2cn' 
-            ? "你是一位專業的兩岸溝通專家。請將以下台灣繁體內容轉換為大陸簡體，並精確修正為大陸在地用語（例如影片轉視頻、軟體轉軟件）。直接輸出結果：\n\n" 
-            : "你是一位專業的兩岸溝通專家。請將以下大陸簡體內容轉換為台灣繁體，並精確修正為台灣在地用語（例如公交轉公車、質量轉品質）。直接輸出結果：\n\n";
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: systemPrompt + text }] }]
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.error.message);
-            }
-
-            resDiv.innerText = data.candidates[0].content.parts[0].text;
-            
-        } catch (e) {
-            console.error(e);
-            resDiv.innerHTML = `
-                <div class="error-box">
-                    <strong>連線發生錯誤</strong><br>
-                    訊息：${e.message}<br><br>
-                    若仍報錯，請確認您的 API Key 是否具備 Gemini 1.5 Flash 的存取權限。
-                </div>`;
-        } finally {
-            document.getElementById('b1').disabled = false;
-            document.getElementById('b2').disabled = false;
-        }
+    if (!text) {
+        alert("請輸入內容");
+        return;
     }
+
+    resDiv.innerText = "轉換中...";
+
+    let prompt = mode === "tw2cn"
+        ? "把這段台灣用語轉成中國大陸用語（簡體+在地詞）：\n"
+        : "把這段中國大陸用語轉成台灣用語（繁體+在地詞）：\n";
+
+    try {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        role: "user",
+                        parts: [{
+                            text: prompt + text
+                        }]
+                    }]
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        resDiv.innerText = result || "沒有回傳結果";
+
+    } catch (err) {
+        console.error(err);
+        resDiv.innerHTML = `<div class="error">錯誤：${err.message}</div>`;
+    }
+}
 </script>
 
 </body>
